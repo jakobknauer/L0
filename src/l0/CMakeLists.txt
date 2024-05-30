@@ -1,0 +1,7 @@
+add_subdirectory(ast)
+add_subdirectory(generation)
+add_subdirectory(lexing)
+add_subdirectory(main)
+add_subdirectory(parsing)
+add_subdirectory(semantics)
+add_subdirectory(types)
