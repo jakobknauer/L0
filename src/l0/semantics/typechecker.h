@@ -7,6 +7,7 @@
 #include "l0/ast/expression.h"
 #include "l0/ast/module.h"
 #include "l0/ast/statement.h"
+#include "l0/semantics/binary_op_overload_resolver.h"
 #include "l0/types/types.h"
 
 namespace l0
@@ -21,7 +22,8 @@ class Typechecker : private IExpressionVisitor, private IStatementVisitor
 
    private:
     Module& module_;
-    std::unordered_map<std::string, const std::shared_ptr<Type>> simple_types_;
+    std::unordered_map<std::string, const std::shared_ptr<Type>> simple_types_{};
+    detail::BinaryOpOverloadResolver binary_op_overload_resolver_{};
 
     void Visit(const Declaration& declaration) override;
     void Visit(const ExpressionStatement& expression_statement) override;

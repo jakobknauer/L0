@@ -97,34 +97,7 @@ void AstPrinter::Visit(const BinaryOp& binary_op)
 {
     out_ << "(";
     binary_op.left->Accept(*this);
-
-    std::string op;
-    switch (binary_op.op)
-    {
-        case BinaryOp::Operator::Plus:
-            op = "+";
-            break;
-        case BinaryOp::Operator::Minus:
-            op = "-";
-            break;
-        case BinaryOp::Operator::Asterisk:
-            op = "*";
-            break;
-        case l0::BinaryOp::Operator::AmpersandAmpersand:
-            op = "&&";
-            break;
-        case l0::BinaryOp::Operator::PipePipe:
-            op = "||";
-            break;
-        case l0::BinaryOp::Operator::EqualsEquals:
-            op = "==";
-            break;
-        case l0::BinaryOp::Operator::BangEquals:
-            op = "!=";
-            break;
-    }
-    out_ << " " << op << " ";
-
+    out_ << " " << str(binary_op.op) << " ";
     binary_op.right->Accept(*this);
     out_ << ")";
 }
@@ -183,6 +156,27 @@ void AstPrinter::Visit(const FunctionTypeAnnotation& fta)
     }
     out_ << ") -> ";
     fta.return_type->Accept(*this);
+}
+
+std::string str(BinaryOp::Operator op)
+{
+    switch (op)
+    {
+        case BinaryOp::Operator::Plus:
+            return "+";
+        case BinaryOp::Operator::Minus:
+            return "-";
+        case BinaryOp::Operator::Asterisk:
+            return "*";
+        case l0::BinaryOp::Operator::AmpersandAmpersand:
+            return "&&";
+        case l0::BinaryOp::Operator::PipePipe:
+            return "||";
+        case l0::BinaryOp::Operator::EqualsEquals:
+            return "==";
+        case l0::BinaryOp::Operator::BangEquals:
+            return "!=";
+    }
 }
 
 }  // namespace l0
