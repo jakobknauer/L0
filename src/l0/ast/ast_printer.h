@@ -2,10 +2,10 @@
 #define L0_AST_AST_PRINTER_H
 
 #include "l0/ast/expression.h"
+#include "l0/ast/indent.h"
 #include "l0/ast/module.h"
 #include "l0/ast/statement.h"
 #include "l0/ast/type_annotation.h"
-#include "l0/ast/indent.h"
 
 namespace l0
 {
@@ -39,8 +39,10 @@ class AstPrinter : IExpressionVisitor, IStatementVisitor, ITypeAnnotationVisitor
     void Visit(const FunctionTypeAnnotation& fta) override;
 
     std::ostream& out_;
-    detail::Indent indent_;    
+    detail::Indent indent_;
 };
+
+std::string str(BinaryOp::Operator op);
 
 }  // namespace l0
 
