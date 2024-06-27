@@ -3,7 +3,7 @@
 namespace l0
 {
 
-AstPrinter::AstPrinter(std::ostream& out) : out_{out} {}
+AstPrinter::AstPrinter(std::ostream& out) : out_{out}, indent_{out_} {}
 
 void AstPrinter::Print(Module& module)
 {
@@ -47,24 +47,28 @@ void AstPrinter::Visit(const ConditionalStatement& conditional_statement)
     out_ << ":\n";
 
     out_ << "{\n";
+    ++indent_;
     for (const auto& statement : *conditional_statement.then_block)
     {
         Print(*statement);
     }
-    out_ << "}\n";
+    --indent_;
+    out_ << "}";
 
     if (!conditional_statement.else_block)
     {
         return;
     }
 
-    out_ << "else\n";
+    out_ << "\nelse\n";
     out_ << "{\n";
+    ++indent_;
     for (const auto& statement : *conditional_statement.else_block)
     {
         Print(*statement);
     }
-    out_ << "}\n";
+    --indent_;
+    out_ << "}";
 }
 
 void AstPrinter::Visit(const WhileLoop& while_loop)
@@ -74,11 +78,13 @@ void AstPrinter::Visit(const WhileLoop& while_loop)
     out_ << ":\n";
 
     out_ << "{\n";
+    ++indent_;
     for (const auto& statement : *while_loop.body)
     {
         Print(*statement);
     }
-    out_ << "}\n";
+    --indent_;
+    out_ << "}";
 }
 
 void AstPrinter::Visit(const Assignment& assignment)
@@ -155,11 +161,13 @@ void AstPrinter::Visit(const Function& function)
     out_ << ") -> ";
     function.return_type_annotation->Accept(*this);
     out_ << "\n{\n";
+    ++indent_;
     for (auto& statement : *function.statements)
     {
         statement->Accept(*this);
         out_ << ";\n";
     }
+    --indent_;
     out_ << "}";
 }
 

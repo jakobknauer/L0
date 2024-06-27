@@ -1,15 +1,17 @@
 add_library(
   ast
-  ast_printer.h
   ast_printer.cpp
-  expression.h
+  ast_printer.h
   expression.cpp
+  expression.h
+  indent.cpp
+  indent.h
   module.h
-  scope.h
   scope.cpp
-  statement.h
+  scope.h
   statement.cpp
-  type_annotation.h
-  type_annotation.cpp)
+  statement.h
+  type_annotation.cpp
+  type_annotation.h)
 
 target_link_libraries(ast types)
