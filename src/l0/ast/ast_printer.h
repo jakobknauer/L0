@@ -5,6 +5,7 @@
 #include "l0/ast/module.h"
 #include "l0/ast/statement.h"
 #include "l0/ast/type_annotation.h"
+#include "l0/ast/indent.h"
 
 namespace l0
 {
@@ -38,6 +39,7 @@ class AstPrinter : IExpressionVisitor, IStatementVisitor, ITypeAnnotationVisitor
     void Visit(const FunctionTypeAnnotation& fta) override;
 
     std::ostream& out_;
+    detail::Indent indent_;    
 };
 
 }  // namespace l0
