@@ -13,7 +13,7 @@
 namespace l0
 {
 
-class Typechecker : private IExpressionVisitor, private IStatementVisitor
+class Typechecker : private IConstExpressionVisitor, private IConstStatementVisitor
 {
    public:
     Typechecker(Module& module);

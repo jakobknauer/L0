@@ -10,7 +10,7 @@
 namespace l0
 {
 
-class AstPrinter : IExpressionVisitor, IStatementVisitor, ITypeAnnotationVisitor
+class AstPrinter : IConstExpressionVisitor, IConstStatementVisitor, ITypeAnnotationVisitor
 {
    public:
     AstPrinter(std::ostream& out);

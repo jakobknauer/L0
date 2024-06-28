@@ -10,13 +10,15 @@
 namespace l0
 {
 
+class IConstExpressionVisitor;
 class IExpressionVisitor;
 
 class Expression
 {
    public:
     virtual ~Expression() = default;
-    virtual void Accept(IExpressionVisitor& visitor) const = 0;
+    virtual void Accept(IConstExpressionVisitor& visitor) const = 0;
+    virtual void Accept(IExpressionVisitor& visitor) = 0;
 
     mutable std::shared_ptr<Type> type;
 };
@@ -26,7 +28,8 @@ class Assignment : public Expression
    public:
     Assignment(std::string variable, std::unique_ptr<Expression> expression);
 
-    void Accept(IExpressionVisitor& visitor) const override;
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
 
     std::string variable;
     std::unique_ptr<Expression> expression;
@@ -50,7 +53,8 @@ class BinaryOp : public Expression
 
     BinaryOp(std::unique_ptr<Expression> left, std::unique_ptr<Expression> right, Operator op);
 
-    void Accept(IExpressionVisitor& visitor) const override;
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
 
     std::unique_ptr<Expression> left;
     std::unique_ptr<Expression> right;
@@ -62,7 +66,8 @@ class Variable : public Expression
    public:
     Variable(std::string name);
 
-    void Accept(IExpressionVisitor& visitor) const override;
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
 
     std::string name;
 
@@ -76,7 +81,8 @@ class Call : public Expression
    public:
     Call(std::unique_ptr<Variable> function, std::unique_ptr<ArgumentList> arguments);
 
-    void Accept(IExpressionVisitor& visitor) const override;
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
 
     std::unique_ptr<Variable> function;
     std::unique_ptr<ArgumentList> arguments;
@@ -85,7 +91,8 @@ class Call : public Expression
 class UnitLiteral : public Expression
 {
    public:
-    void Accept(IExpressionVisitor& visitor) const override;
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
 };
 
 class BooleanLiteral : public Expression
@@ -93,7 +100,8 @@ class BooleanLiteral : public Expression
    public:
     BooleanLiteral(bool value);
 
-    void Accept(IExpressionVisitor& visitor) const override;
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
 
     bool value;
 };
@@ -103,7 +111,8 @@ class IntegerLiteral : public Expression
    public:
     IntegerLiteral(std::int64_t value);
 
-    void Accept(IExpressionVisitor& visitor) const override;
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
 
     std::int64_t value;
 };
@@ -113,7 +122,8 @@ class StringLiteral : public Expression
    public:
     StringLiteral(std::string value);
 
-    void Accept(IExpressionVisitor& visitor) const override;
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
 
     std::string value;
 };
@@ -144,7 +154,8 @@ class Function : public Expression
         std::unique_ptr<StatementBlock> statements
     );
 
-    void Accept(IExpressionVisitor& visitor) const override;
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
 
     std::unique_ptr<ParameterDeclarationList> parameters;
     std::unique_ptr<TypeAnnotation> return_type_annotation;
@@ -154,10 +165,10 @@ class Function : public Expression
     mutable std::shared_ptr<Scope> locals = std::make_shared<Scope>();
 };
 
-class IExpressionVisitor
+class IConstExpressionVisitor
 {
    public:
-    virtual ~IExpressionVisitor() = default;
+    virtual ~IConstExpressionVisitor() = default;
 
     virtual void Visit(const Assignment& assignment) = 0;
     virtual void Visit(const BinaryOp& binary_op) = 0;
@@ -168,6 +179,22 @@ class IExpressionVisitor
     virtual void Visit(const IntegerLiteral& literal) = 0;
     virtual void Visit(const StringLiteral& literal) = 0;
     virtual void Visit(const Function& function) = 0;
+};
+
+class IExpressionVisitor
+{
+   public:
+    virtual ~IExpressionVisitor() = default;
+
+    virtual void Visit(Assignment& assignment) = 0;
+    virtual void Visit(BinaryOp& binary_op) = 0;
+    virtual void Visit(Variable& variable) = 0;
+    virtual void Visit(Call& call) = 0;
+    virtual void Visit(UnitLiteral& literal) = 0;
+    virtual void Visit(BooleanLiteral& literal) = 0;
+    virtual void Visit(IntegerLiteral& literal) = 0;
+    virtual void Visit(StringLiteral& literal) = 0;
+    virtual void Visit(Function& function) = 0;
 };
 
 }  // namespace l0
