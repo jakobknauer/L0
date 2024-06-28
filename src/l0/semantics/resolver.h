@@ -10,7 +10,7 @@
 namespace l0
 {
 
-class Resolver : IExpressionVisitor, IStatementVisitor
+class Resolver : IConstExpressionVisitor, IConstStatementVisitor
 {
    public:
     Resolver(const Module& module);

@@ -16,7 +16,7 @@
 namespace l0
 {
 
-class Generator : private IExpressionVisitor, IStatementVisitor
+class Generator : private IConstExpressionVisitor, IConstStatementVisitor
 {
    public:
     Generator(Module& module);

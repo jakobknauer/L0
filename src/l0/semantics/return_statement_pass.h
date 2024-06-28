@@ -11,7 +11,7 @@
 namespace l0
 {
 
-class ReturnStatementPass : private IStatementVisitor, private IExpressionVisitor
+class ReturnStatementPass : private IConstStatementVisitor, private IConstExpressionVisitor
 {
    public:
     ReturnStatementPass(Module& module);
