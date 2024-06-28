@@ -21,6 +21,15 @@ class Type
     virtual bool Equals(const Type& other) const = 0;
 };
 
+class UnitType : public Type
+{
+   public:
+    std::string ToString() const override;
+
+   protected:
+    bool Equals(const Type& other) const override;
+};
+
 class BooleanType : public Type
 {
    public:

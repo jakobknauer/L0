@@ -25,12 +25,12 @@ class Generator : private IExpressionVisitor, IStatementVisitor
 
    private:
     Module& ast_module_;
-    TypeConverter type_converter_;
 
     llvm::LLVMContext context_{};
     llvm::IRBuilder<> builder_;
     llvm::Module llvm_module_;
 
+    TypeConverter type_converter_;
     llvm::Value* result_;
 
     void DeclareExternals();
@@ -47,6 +47,7 @@ class Generator : private IExpressionVisitor, IStatementVisitor
     void Visit(const BinaryOp& binary_op) override;
     void Visit(const Variable& variable) override;
     void Visit(const Call& call) override;
+    void Visit(const UnitLiteral& literal) override;
     void Visit(const BooleanLiteral& literal) override;
     void Visit(const IntegerLiteral& literal) override;
     void Visit(const StringLiteral& literal) override;

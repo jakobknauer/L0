@@ -3,7 +3,10 @@
 namespace l0
 {
 
-TypeConverter::TypeConverter(llvm::LLVMContext& context) : context_{context} {}
+TypeConverter::TypeConverter(llvm::LLVMContext& context) : context_{context}
+{
+    llvm::StructType::create(context_, {}, "Unit", true);
+}
 
 llvm::Type* TypeConverter::Convert(const Type& type)
 {
@@ -18,6 +21,10 @@ llvm::Type* TypeConverter::Convert(const Type& type)
     else if (dynamic_cast<const BooleanType*>(&type))
     {
         return llvm::IntegerType::getInt1Ty(context_);
+    }
+    else if (dynamic_cast<const UnitType*>(&type))
+    {
+        return llvm::StructType::getTypeByName(context_, "Unit");
     }
 
     const auto& function_type = dynamic_cast<const FunctionType&>(type);

@@ -8,6 +8,10 @@ namespace l0
 
 bool operator==(const Type& lhs, const Type& rhs) { return typeid(lhs) == typeid(rhs) && lhs.Equals(rhs); }
 
+std::string UnitType::ToString() const { return "()"; }
+
+bool UnitType::Equals(const Type& other) const { return true; }
+
 std::string BooleanType::ToString() const { return "Boolean"; }
 
 bool BooleanType::Equals(const Type& other) const { return true; }

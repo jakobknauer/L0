@@ -116,6 +116,8 @@ void AstPrinter::Visit(const Call& call)
     out_ << ")";
 }
 
+void AstPrinter::Visit(const UnitLiteral& literal) { out_ << "unit"; }
+
 void AstPrinter::Visit(const BooleanLiteral& literal) { out_ << (literal.value ? "true" : "false"); }
 
 void AstPrinter::Visit(const IntegerLiteral& literal) { out_ << literal.value; }
