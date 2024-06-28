@@ -9,19 +9,19 @@ ReturnStatementPass::ReturnStatementPass(Module& module) : module_{module} {}
 
 void ReturnStatementPass::Run() { Visit(*module_.statements); }
 
-void ReturnStatementPass::Visit(const Declaration& declaration)
+void ReturnStatementPass::Visit(Declaration& declaration)
 {
     declaration.initializer->Accept(*this);
-    always_returns_ = false;
+    statement_returns_ = false;
 }
 
-void ReturnStatementPass::Visit(const ExpressionStatement& expression_statement)
+void ReturnStatementPass::Visit(ExpressionStatement& expression_statement)
 {
     expression_statement.expression->Accept(*this);
-    always_returns_ = false;
+    statement_returns_ = false;
 }
 
-void ReturnStatementPass::Visit(const ReturnStatement& return_statement)
+void ReturnStatementPass::Visit(ReturnStatement& return_statement)
 {
     if (*return_statement.value->type != *expected_return_value_.top())
     {
@@ -34,44 +34,44 @@ void ReturnStatementPass::Visit(const ReturnStatement& return_statement)
 
     return_statement.value->Accept(*this);
 
-    always_returns_ = true;
+    statement_returns_ = true;
 }
 
-void ReturnStatementPass::Visit(const ConditionalStatement& conditional_statement)
+void ReturnStatementPass::Visit(ConditionalStatement& conditional_statement)
 {
     conditional_statement.condition->Accept(*this);
 
     Visit(*conditional_statement.then_block);
-    bool then_returns{always_returns_};
+    bool then_returns{statement_returns_};
 
     bool else_returns{false};
     if (conditional_statement.else_block)
     {
         Visit(*conditional_statement.else_block);
-        else_returns = always_returns_;
+        else_returns = statement_returns_;
     }
 
-    always_returns_ = then_returns && else_returns;
+    statement_returns_ = then_returns && else_returns;
 }
 
-void ReturnStatementPass::Visit(const WhileLoop& while_loop)
+void ReturnStatementPass::Visit(WhileLoop& while_loop)
 {
     while_loop.condition->Accept(*this);
     Visit(*while_loop.body);
-    always_returns_ = false;
+    statement_returns_ = false;
 }
 
-void ReturnStatementPass::Visit(const Assignment& assignment) { assignment.expression->Accept(*this); }
+void ReturnStatementPass::Visit(Assignment& assignment) { assignment.expression->Accept(*this); }
 
-void ReturnStatementPass::Visit(const BinaryOp& binary_op)
+void ReturnStatementPass::Visit(BinaryOp& binary_op)
 {
     binary_op.left->Accept(*this);
     binary_op.right->Accept(*this);
 }
 
-void ReturnStatementPass::Visit(const Variable& variable) {}
+void ReturnStatementPass::Visit(Variable& variable) {}
 
-void ReturnStatementPass::Visit(const Call& call)
+void ReturnStatementPass::Visit(Call& call)
 {
     call.function->Accept(*this);
     for (const auto& argument : *call.arguments)
@@ -80,34 +80,47 @@ void ReturnStatementPass::Visit(const Call& call)
     }
 }
 
-void ReturnStatementPass::Visit(const UnitLiteral& literal) {}
-void ReturnStatementPass::Visit(const BooleanLiteral& literal) {}
-void ReturnStatementPass::Visit(const IntegerLiteral& literal) {}
-void ReturnStatementPass::Visit(const StringLiteral& literal) {}
+void ReturnStatementPass::Visit(UnitLiteral& literal) {}
+void ReturnStatementPass::Visit(BooleanLiteral& literal) {}
+void ReturnStatementPass::Visit(IntegerLiteral& literal) {}
+void ReturnStatementPass::Visit(StringLiteral& literal) {}
 
-void ReturnStatementPass::Visit(const Function& function)
+void ReturnStatementPass::Visit(Function& function)
 {
     expected_return_value_.push(function.return_type.get());
     Visit(*function.statements);
     expected_return_value_.pop();
 
-    if (!always_returns_)
+    if (!statement_returns_)
     {
         throw SemanticError("Not all branches of function return a value.");
     }
 
-    always_returns_ = false;
+    statement_returns_ = false;
 }
 
-void ReturnStatementPass::Visit(const StatementBlock& statement_block)
+void ReturnStatementPass::Visit(StatementBlock& statement_block)
 {
-    bool returns{false};
-    for (const auto& statement : statement_block)
+    bool block_returns_{false};
+    auto first_return = statement_block.end();
+    for (auto it = statement_block.begin(); it != statement_block.end(); ++it)
     {
+        auto& statement = *it;
         statement->Accept(*this);
-        returns |= always_returns_;
+
+        if (statement_returns_ && !block_returns_)
+        {
+            block_returns_ = true;
+            first_return = it;
+        }
     }
-    always_returns_ = returns;
+
+    if (block_returns_)
+    {
+        statement_block.erase(first_return + 1, statement_block.end());
+    }
+
+    statement_returns_ = block_returns_;
 }
 
 }  // namespace l0

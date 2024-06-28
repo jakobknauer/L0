@@ -11,7 +11,7 @@
 namespace l0
 {
 
-class ReturnStatementPass : private IConstStatementVisitor, private IConstExpressionVisitor
+class ReturnStatementPass : private IStatementVisitor, private IExpressionVisitor
 {
    public:
     ReturnStatementPass(Module& module);
@@ -20,26 +20,26 @@ class ReturnStatementPass : private IConstStatementVisitor, private IConstExpres
    private:
     Module& module_;
 
-    bool always_returns_{false};
+    bool statement_returns_{false};
     std::stack<Type*> expected_return_value_{};
 
-    void Visit(const Declaration& declaration) override;
-    void Visit(const ExpressionStatement& expression_statement) override;
-    void Visit(const ReturnStatement& return_statement) override;
-    void Visit(const ConditionalStatement& conditional_statement) override;
-    void Visit(const WhileLoop& while_loop) override;
+    void Visit(Declaration& declaration) override;
+    void Visit(ExpressionStatement& expression_statement) override;
+    void Visit(ReturnStatement& return_statement) override;
+    void Visit(ConditionalStatement& conditional_statement) override;
+    void Visit(WhileLoop& while_loop) override;
 
-    void Visit(const Assignment& assignment) override;
-    void Visit(const BinaryOp& binary_op) override;
-    void Visit(const Variable& variable) override;
-    void Visit(const Call& call) override;
-    void Visit(const UnitLiteral& literal) override;
-    void Visit(const BooleanLiteral& literal) override;
-    void Visit(const IntegerLiteral& literal) override;
-    void Visit(const StringLiteral& literal) override;
-    void Visit(const Function& function) override;
+    void Visit(Assignment& assignment) override;
+    void Visit(BinaryOp& binary_op) override;
+    void Visit(Variable& variable) override;
+    void Visit(Call& call) override;
+    void Visit(UnitLiteral& literal) override;
+    void Visit(BooleanLiteral& literal) override;
+    void Visit(IntegerLiteral& literal) override;
+    void Visit(StringLiteral& literal) override;
+    void Visit(Function& function) override;
 
-    void Visit(const StatementBlock& statement_block);
+    void Visit(StatementBlock& statement_block);
 };
 
 }  // namespace l0
