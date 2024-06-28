@@ -42,16 +42,15 @@ void ReturnStatementPass::Visit(ConditionalStatement& conditional_statement)
     conditional_statement.condition->Accept(*this);
 
     Visit(*conditional_statement.then_block);
-    bool then_returns{statement_returns_};
+    conditional_statement.then_block_returns = statement_returns_;
 
-    bool else_returns{false};
     if (conditional_statement.else_block)
     {
         Visit(*conditional_statement.else_block);
-        else_returns = statement_returns_;
+        conditional_statement.else_block_returns = statement_returns_;
     }
 
-    statement_returns_ = then_returns && else_returns;
+    statement_returns_ = conditional_statement.then_block_returns && conditional_statement.else_block_returns;
 }
 
 void ReturnStatementPass::Visit(WhileLoop& while_loop)

@@ -78,6 +78,9 @@ class ConditionalStatement : public Statement
     std::unique_ptr<Expression> condition;
     std::unique_ptr<StatementBlock> then_block;
     std::unique_ptr<StatementBlock> else_block;
+
+    bool then_block_returns{false};
+    bool else_block_returns{false};
 };
 
 class WhileLoop : public Statement

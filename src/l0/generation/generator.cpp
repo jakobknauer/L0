@@ -176,11 +176,12 @@ void Generator::Visit(const ConditionalStatement& conditional_statement)
     auto condition = result_;
 
     bool else_exists{conditional_statement.else_block};
+    bool merge_needed = !conditional_statement.then_block_returns || !conditional_statement.else_block_returns;
 
     llvm::Function* llvm_function = builder_.GetInsertBlock()->getParent();
 
     llvm::BasicBlock* then_block = llvm::BasicBlock::Create(context_, "if", llvm_function);
-    llvm::BasicBlock* merge_block = llvm::BasicBlock::Create(context_, "ifcont");
+    llvm::BasicBlock* merge_block = merge_needed ? llvm::BasicBlock::Create(context_, "ifcont") : nullptr;
     llvm::BasicBlock* else_block = else_exists ? llvm::BasicBlock::Create(context_, "else") : nullptr;
 
     // if
@@ -192,7 +193,10 @@ void Generator::Visit(const ConditionalStatement& conditional_statement)
     {
         statement->Accept(*this);
     }
-    builder_.CreateBr(merge_block);
+    if (!conditional_statement.then_block_returns)
+    {
+        builder_.CreateBr(merge_block);
+    }
 
     // else
     if (else_exists)
@@ -203,12 +207,18 @@ void Generator::Visit(const ConditionalStatement& conditional_statement)
         {
             statement->Accept(*this);
         }
-        builder_.CreateBr(merge_block);
+        if (!conditional_statement.else_block_returns)
+        {
+            builder_.CreateBr(merge_block);
+        }
     }
 
     // merge
-    llvm_function->insert(llvm_function->end(), merge_block);
-    builder_.SetInsertPoint(merge_block);
+    if (merge_needed)
+    {
+        llvm_function->insert(llvm_function->end(), merge_block);
+        builder_.SetInsertPoint(merge_block);
+    }
 
     result_ = nullptr;
 }
