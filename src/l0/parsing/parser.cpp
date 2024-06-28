@@ -174,8 +174,15 @@ std::unique_ptr<Statement> Parser::ParseExpressionStatement()
 std::unique_ptr<Statement> Parser::ParseReturnStatement()
 {
     ExpectKeyword("return");
-    auto return_value = ParseExpression();
-    return std::make_unique<ReturnStatement>(std::move(return_value));
+    if (Peek().type == TokenType::Semicolon)
+    {
+        return std::make_unique<ReturnStatement>(std::make_unique<UnitLiteral>());
+    }
+    else
+    {
+        auto return_value = ParseExpression();
+        return std::make_unique<ReturnStatement>(std::move(return_value));
+    }
 }
 
 std::unique_ptr<Statement> Parser::ParseConditionalStatement()
