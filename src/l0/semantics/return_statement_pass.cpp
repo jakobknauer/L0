@@ -92,7 +92,16 @@ void ReturnStatementPass::Visit(Function& function)
 
     if (!statement_returns_)
     {
-        throw SemanticError("Not all branches of function return a value.");
+        if (*function.return_type == UnitType{})
+        {
+            auto return_statement = std::make_unique<ReturnStatement>(std::make_unique<UnitLiteral>());
+            return_statement->value->type = std::make_shared<UnitType>();
+            function.statements->push_back(std::move(return_statement));
+        }
+        else
+        {
+            throw SemanticError("Not all branches of function return a value.");
+        }
     }
 
     statement_returns_ = false;

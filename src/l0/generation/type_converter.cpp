@@ -1,5 +1,7 @@
 #include "l0/generation/type_converter.h"
 
+#include "l0/generation/generator_error.h"
+
 namespace l0
 {
 
@@ -26,9 +28,14 @@ llvm::Type* TypeConverter::Convert(const Type& type)
     {
         return llvm::StructType::getTypeByName(context_, "Unit");
     }
-
-    const auto& function_type = dynamic_cast<const FunctionType&>(type);
-    return Convert(function_type);
+    else if (dynamic_cast<const FunctionType*>(&type))
+    {
+        return Convert(dynamic_cast<const FunctionType&>(type));
+    }
+    else
+    {
+        throw GeneratorError(std::format("Cannot convert l0 type {} to llvm type.", type.ToString()));
+    }
 }
 
 llvm::FunctionType* TypeConverter::Convert(const FunctionType& type)
