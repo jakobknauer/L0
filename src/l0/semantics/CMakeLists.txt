@@ -8,6 +8,8 @@ add_library(
   module_validator.h
   resolver.cpp
   resolver.h
+  return_statement_pass.cpp
+  return_statement_pass.h
   semantic_error.cpp
   semantic_error.h
   type_annotation_converter.cpp

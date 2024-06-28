@@ -93,7 +93,7 @@ class IStatementVisitor
     virtual void Visit(const ExpressionStatement& expression_statement) = 0;
     virtual void Visit(const ReturnStatement& return_statement) = 0;
     virtual void Visit(const ConditionalStatement& conditional_statement) = 0;
-    virtual void Visit(const WhileLoop& conditional_statement) = 0;
+    virtual void Visit(const WhileLoop& while_loop) = 0;
 };
 
 }  // namespace l0
