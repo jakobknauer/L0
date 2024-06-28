@@ -102,6 +102,8 @@ void Resolver::Visit(const Call& call)
     }
 }
 
+void Resolver::Visit(const UnitLiteral& literal) {}
+
 void Resolver::Visit(const BooleanLiteral& literal) {}
 
 void Resolver::Visit(const IntegerLiteral& literal) {}

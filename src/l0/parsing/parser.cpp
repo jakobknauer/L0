@@ -174,8 +174,15 @@ std::unique_ptr<Statement> Parser::ParseExpressionStatement()
 std::unique_ptr<Statement> Parser::ParseReturnStatement()
 {
     ExpectKeyword("return");
-    auto return_value = ParseExpression();
-    return std::make_unique<ReturnStatement>(std::move(return_value));
+    if (Peek().type == TokenType::Semicolon)
+    {
+        return std::make_unique<ReturnStatement>(std::make_unique<UnitLiteral>());
+    }
+    else
+    {
+        auto return_value = ParseExpression();
+        return std::make_unique<ReturnStatement>(std::move(return_value));
+    }
 }
 
 std::unique_ptr<Statement> Parser::ParseConditionalStatement()
@@ -343,6 +350,11 @@ std::unique_ptr<Expression> Parser::ParseFactor()
                 Consume();
                 return std::make_unique<BooleanLiteral>(false);
             }
+            else if (keyword == "unit")
+            {
+                Consume();
+                return std::make_unique<UnitLiteral>();
+            }
             // Fall through intended
         }
         default:
@@ -495,9 +507,22 @@ std::unique_ptr<TypeAnnotation> Parser::ParseSimpleTypeAnnotation()
 std::unique_ptr<TypeAnnotation> Parser::ParseFunctionTypeAnnotation()
 {
     auto arguments = ParseParameterListAnnotation();
-    Expect(TokenType::Arrow);
-    auto return_value = ParseTypeAnnotation();
-    return std::make_unique<FunctionTypeAnnotation>(std::move(arguments), std::move(return_value));
+    if (ConsumeIf(TokenType::Arrow))
+    {
+        auto return_value = ParseTypeAnnotation();
+        return std::make_unique<FunctionTypeAnnotation>(std::move(arguments), std::move(return_value));
+    }
+    else if (arguments->size() == 0)
+    {
+        return std::make_unique<SimpleTypeAnnotation>("()");
+    }
+    else
+    {
+        Token token = Peek();
+        throw ParserError(std::format(
+            "Expected '->' after non-empty type list, got token '{}' of type {} instead.", token.lexeme, str(token.type)
+        ));
+    }
 }
 
 std::unique_ptr<ParameterListAnnotation> Parser::ParseParameterListAnnotation()

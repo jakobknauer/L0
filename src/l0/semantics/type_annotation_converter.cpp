@@ -7,6 +7,7 @@ namespace l0
 
 TypeAnnotationConverter::TypeAnnotationConverter()
 {
+    simple_types_.insert(std::make_pair("()", std::make_shared<UnitType>()));
     simple_types_.insert(std::make_pair("Boolean", std::make_shared<BooleanType>()));
     simple_types_.insert(std::make_pair("Integer", std::make_shared<IntegerType>()));
     simple_types_.insert(std::make_pair("String", std::make_shared<StringType>()));

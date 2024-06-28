@@ -7,6 +7,7 @@ namespace l0
 
 Typechecker::Typechecker(Module& module) : module_{module}
 {
+    simple_types_.insert(std::make_pair("Unit", std::make_unique<UnitType>()));
     simple_types_.insert(std::make_pair("Integer", std::make_unique<IntegerType>()));
     simple_types_.insert(std::make_pair("String", std::make_unique<StringType>()));
     simple_types_.insert(std::make_pair("Boolean", std::make_unique<BooleanType>()));
@@ -150,6 +151,12 @@ void Typechecker::Visit(const Call& call)
     }
 
     call.type = function->return_type;
+}
+
+void Typechecker::Visit(const UnitLiteral& literal)
+{
+    auto unit_type = simple_types_.at("Unit");
+    literal.type = unit_type;
 }
 
 void Typechecker::Visit(const BooleanLiteral& literal)

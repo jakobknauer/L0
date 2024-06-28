@@ -22,7 +22,7 @@ std::string GetLambdaName()
 }  // namespace
 
 Generator::Generator(Module& module)
-    : ast_module_{module}, type_converter_{context_}, builder_{context_}, llvm_module_{module.name, context_}
+    : ast_module_{module}, builder_{context_}, llvm_module_{module.name, context_}, type_converter_{context_}
 {
 }
 
@@ -336,6 +336,12 @@ void Generator::Visit(const Call& call)
     }
 
     result_ = builder_.CreateCall(llvm_function_type, llvm_function, arguments, "calltmp");
+}
+
+void Generator::Visit(const UnitLiteral& literal)
+{
+    auto unit_type = llvm::dyn_cast<llvm::StructType>(type_converter_.Convert(*literal.type));
+    result_ = llvm::ConstantStruct::get(unit_type, {});
 }
 
 void Generator::Visit(const BooleanLiteral& literal)

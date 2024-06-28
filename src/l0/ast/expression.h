@@ -82,6 +82,12 @@ class Call : public Expression
     std::unique_ptr<ArgumentList> arguments;
 };
 
+class UnitLiteral : public Expression
+{
+   public:
+    void Accept(IExpressionVisitor& visitor) const override;
+};
+
 class BooleanLiteral : public Expression
 {
    public:
@@ -157,6 +163,7 @@ class IExpressionVisitor
     virtual void Visit(const BinaryOp& binary_op) = 0;
     virtual void Visit(const Variable& variable) = 0;
     virtual void Visit(const Call& call) = 0;
+    virtual void Visit(const UnitLiteral& literal) = 0;
     virtual void Visit(const BooleanLiteral& literal) = 0;
     virtual void Visit(const IntegerLiteral& literal) = 0;
     virtual void Visit(const StringLiteral& literal) = 0;

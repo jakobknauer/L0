@@ -31,6 +31,8 @@ Call::Call(std::unique_ptr<Variable> function, std::unique_ptr<ArgumentList> arg
 
 void Call::Accept(IExpressionVisitor& visitor) const { visitor.Visit(*this); }
 
+void UnitLiteral::Accept(IExpressionVisitor& visitor) const { visitor.Visit(*this); }
+
 BooleanLiteral::BooleanLiteral(bool value) : value{value} {}
 
 void BooleanLiteral::Accept(IExpressionVisitor& visitor) const { visitor.Visit(*this); }

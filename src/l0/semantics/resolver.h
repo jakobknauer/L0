@@ -33,6 +33,7 @@ class Resolver : IExpressionVisitor, IStatementVisitor
     void Visit(const BinaryOp& binary_op) override;
     void Visit(const Variable& variable) override;
     void Visit(const Call& call) override;
+    void Visit(const UnitLiteral& literal) override;
     void Visit(const BooleanLiteral& literal) override;
     void Visit(const IntegerLiteral& literal) override;
     void Visit(const StringLiteral& literal) override;
