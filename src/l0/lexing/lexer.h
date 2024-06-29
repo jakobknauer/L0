@@ -40,10 +40,11 @@ class Lexer : public ILexer
     char current_{};
     std::shared_ptr<std::istream> input_;
 
-    std::unordered_map<char, TokenType> single_character_operators_{};
-    std::unordered_map<std::string, TokenType> two_character_operators_{};
-    std::unordered_set<char> operator_characters_{};
-    std::unordered_set<std::string> keywords_{};
+    std::unordered_map<char, TokenType> single_character_operators_;
+    std::unordered_map<std::string, TokenType> two_character_operators_;
+    std::unordered_set<char> operator_characters_;
+    std::unordered_set<std::string> keywords_;
+    std::unordered_map<char, std::string> escape_sequences_;
 };
 
 class LexerError
