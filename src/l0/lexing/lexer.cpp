@@ -9,26 +9,30 @@ namespace l0
 Lexer::Lexer(std::shared_ptr<std::istream> input)
     : input_{input}, keywords_{"return", "unit", "true", "false", "if", "else", "while"}
 {
-    single_character_operators_.insert(std::make_pair('(', TokenType::OpeningParen));
-    single_character_operators_.insert(std::make_pair(')', TokenType::ClosingParen));
-    single_character_operators_.insert(std::make_pair('{', TokenType::OpeningBrace));
-    single_character_operators_.insert(std::make_pair('}', TokenType::ClosingBrace));
-    single_character_operators_.insert(std::make_pair('+', TokenType::Plus));
-    single_character_operators_.insert(std::make_pair('-', TokenType::Minus));
-    single_character_operators_.insert(std::make_pair('*', TokenType::Asterisk));
-    single_character_operators_.insert(std::make_pair('/', TokenType::Slash));
-    single_character_operators_.insert(std::make_pair('!', TokenType::Bang));
-    single_character_operators_.insert(std::make_pair(',', TokenType::Comma));
-    single_character_operators_.insert(std::make_pair(':', TokenType::Colon));
-    single_character_operators_.insert(std::make_pair(';', TokenType::Semicolon));
-    single_character_operators_.insert(std::make_pair('=', TokenType::Equals));
-    single_character_operators_.insert(std::make_pair('$', TokenType::Dollar));
+    single_character_operators_ = {
+        {'(', TokenType::OpeningParen},
+        {')', TokenType::ClosingParen},
+        {'{', TokenType::OpeningBrace},
+        {'}', TokenType::ClosingBrace},
+        {'+', TokenType::Plus},
+        {'-', TokenType::Minus},
+        {'*', TokenType::Asterisk},
+        {'/', TokenType::Slash},
+        {'!', TokenType::Bang},
+        {',', TokenType::Comma},
+        {':', TokenType::Colon},
+        {';', TokenType::Semicolon},
+        {'=', TokenType::Equals},
+        {'$', TokenType::Dollar},
+    };
 
-    two_character_operators_.insert(std::make_pair("->", TokenType::Arrow));
-    two_character_operators_.insert(std::make_pair("==", TokenType::EqualsEquals));
-    two_character_operators_.insert(std::make_pair("!=", TokenType::BangEquals));
-    two_character_operators_.insert(std::make_pair("&&", TokenType::AmpersandAmpersand));
-    two_character_operators_.insert(std::make_pair("||", TokenType::PipePipe));
+    two_character_operators_ = {
+        {"->", TokenType::Arrow},
+        {"==", TokenType::EqualsEquals},
+        {"!=", TokenType::BangEquals},
+        {"&&", TokenType::AmpersandAmpersand},
+        {"||", TokenType::PipePipe}
+    };
 
     for (auto c : single_character_operators_ | std::views::keys)
     {
@@ -38,6 +42,13 @@ Lexer::Lexer(std::shared_ptr<std::istream> input)
     {
         operator_characters_.insert(s[0]);
     }
+
+    escape_sequences_ = {
+        {'\\', "\\"},
+        {'"', "\""},
+        {'n', "\n"},
+        {'t', "\t"},
+    };
 
     ReadAndSkip();
 }
@@ -168,13 +179,30 @@ Token Lexer::ReadStringLiteral()
     std::string string{};
     if (current_ != '"')
     {
-        throw LexerError("String literal must begin with '\"'.");
+        throw LexerError(std::format("String literal must begin with '\"', got {} instead.", current_));
     }
     Read();
     while (current_ != '"')
     {
-        string += current_;
-        Read();
+        if (current_ == '\\')
+        {
+            Read();
+            char escape_character{current_};
+            if (escape_sequences_.contains(escape_character))
+            {
+                string += escape_sequences_.at(escape_character);
+                Read();
+            }
+            else
+            {
+                throw LexerError(std::format("Unknown escape sequence '{}'.", current_));
+            }
+        }
+        else
+        {
+            string += current_;
+            Read();
+        }
     }
     Read();
     return Token{
