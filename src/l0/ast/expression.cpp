@@ -15,6 +15,12 @@ void Assignment::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(
 
 void Assignment::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
 
+UnaryOp::UnaryOp(std::unique_ptr<Expression> operand, Operator op) : operand{std::move(operand)}, op{op} {}
+
+void UnaryOp::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*this); }
+
+void UnaryOp::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
+
 BinaryOp::BinaryOp(std::unique_ptr<Expression> left, std::unique_ptr<Expression> right, Operator op)
     : left{std::move(left)}, right{std::move(right)}, op{op}
 {

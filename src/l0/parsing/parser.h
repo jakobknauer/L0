@@ -55,6 +55,7 @@ class Parser : public IParser
     std::unique_ptr<Expression> ParseEquality();
     std::unique_ptr<Expression> ParseSum();
     std::unique_ptr<Expression> ParseTerm();
+    std::unique_ptr<Expression> ParseUnary();
     std::unique_ptr<Expression> ParseFactor();
     std::unique_ptr<Expression> ParseFunction();
     std::unique_ptr<ArgumentList> ParseArgumentList();

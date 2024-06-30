@@ -93,6 +93,13 @@ void AstPrinter::Visit(const Assignment& assignment)
     assignment.expression->Accept(*this);
 }
 
+void AstPrinter::Visit(const UnaryOp& unary_op)
+{
+    out_ << str(unary_op.op) << "(";
+    unary_op.operand->Accept(*this);
+    out_ << ")";
+}
+
 void AstPrinter::Visit(const BinaryOp& binary_op)
 {
     out_ << "(";
@@ -158,6 +165,19 @@ void AstPrinter::Visit(const FunctionTypeAnnotation& fta)
     }
     out_ << ") -> ";
     fta.return_type->Accept(*this);
+}
+
+std::string str(UnaryOp::Operator op)
+{
+    switch (op)
+    {
+        case UnaryOp::Operator::Plus:
+            return "+";
+        case UnaryOp::Operator::Minus:
+            return "-";
+        case UnaryOp::Operator::Bang:
+            return "!";
+    }
 }
 
 std::string str(BinaryOp::Operator op)

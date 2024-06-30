@@ -62,6 +62,8 @@ void ReturnStatementPass::Visit(WhileLoop& while_loop)
 
 void ReturnStatementPass::Visit(Assignment& assignment) { assignment.expression->Accept(*this); }
 
+void ReturnStatementPass::Visit(UnaryOp& unary_op) { unary_op.operand->Accept(*this); }
+
 void ReturnStatementPass::Visit(BinaryOp& binary_op)
 {
     binary_op.left->Accept(*this);

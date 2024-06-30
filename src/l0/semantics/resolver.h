@@ -30,6 +30,7 @@ class Resolver : IConstExpressionVisitor, IConstStatementVisitor
     void Visit(const WhileLoop& while_loop) override;
 
     void Visit(const Assignment& assignment) override;
+    void Visit(const UnaryOp& unary_op) override;
     void Visit(const BinaryOp& binary_op) override;
     void Visit(const Variable& variable) override;
     void Visit(const Call& call) override;

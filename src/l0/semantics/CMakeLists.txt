@@ -1,7 +1,7 @@
 add_library(
   semantics
-  binary_op_overload_resolver.cpp
-  binary_op_overload_resolver.h
+  operator_overload_resolver.cpp
+  operator_overload_resolver.h
   global_symbol_pass.cpp
   global_symbol_pass.h
   module_validator.cpp

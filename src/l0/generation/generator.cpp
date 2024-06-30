@@ -262,6 +262,25 @@ void Generator::Visit(const Assignment& assignment)
     // leave result_ as it is :)
 }
 
+void Generator::Visit(const UnaryOp& unary_op)
+{
+    unary_op.operand->Accept(*this);
+    llvm::Value* operand = result_;
+
+    switch (unary_op.op)
+    {
+        case UnaryOp::Operator::Plus:
+            result_ = operand;
+            break;
+        case l0::UnaryOp::Operator::Minus:
+            result_ = builder_.CreateNeg(operand, "negtmp");
+            break;
+        case l0::UnaryOp::Operator::Bang:
+            result_ = builder_.CreateNot(operand, "nottmp");
+            break;
+    }
+}
+
 void Generator::Visit(const BinaryOp& binary_op)
 {
     binary_op.left->Accept(*this);
