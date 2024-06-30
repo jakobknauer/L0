@@ -30,6 +30,7 @@ class ReturnStatementPass : private IStatementVisitor, private IExpressionVisito
     void Visit(WhileLoop& while_loop) override;
 
     void Visit(Assignment& assignment) override;
+    void Visit(UnaryOp& unary_op) override;
     void Visit(BinaryOp& binary_op) override;
     void Visit(Variable& variable) override;
     void Visit(Call& call) override;

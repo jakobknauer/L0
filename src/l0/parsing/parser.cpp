@@ -291,12 +291,44 @@ std::unique_ptr<Expression> Parser::ParseSum()
 
 std::unique_ptr<Expression> Parser::ParseTerm()
 {
-    auto term = ParseFactor();
+    auto term = ParseUnary();
     while (ConsumeIf(TokenType::Asterisk))
     {
         term = std::make_unique<BinaryOp>(std::move(term), ParseFactor(), BinaryOp::Operator::Asterisk);
     }
     return term;
+}
+
+std::unique_ptr<Expression> Parser::ParseUnary()
+{
+    // TODO Refactor into using loop instead of recursion
+    // TODO Refactor into using partial map from TokenType to UnaryOp::Operator
+    Token token = Peek();
+    switch (token.type)
+    {
+        case TokenType::Plus:
+        {
+            Consume();
+            auto expression = ParseUnary();
+            return std::make_unique<UnaryOp>(std::move(expression), UnaryOp::Operator::Plus);
+        }
+        case TokenType::Minus:
+        {
+            Consume();
+            auto expression = ParseUnary();
+            return std::make_unique<UnaryOp>(std::move(expression), UnaryOp::Operator::Minus);
+        }
+        case TokenType::Bang:
+        {
+            Consume();
+            auto expression = ParseUnary();
+            return std::make_unique<UnaryOp>(std::move(expression), UnaryOp::Operator::Bang);
+        }
+        default:
+        {
+            return ParseFactor();
+        }
+    }
 }
 
 std::unique_ptr<Expression> Parser::ParseFactor()

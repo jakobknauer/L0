@@ -85,6 +85,8 @@ void Resolver::Visit(const Assignment& assignment)
     assignment.expression->Accept(*this);
 }
 
+void Resolver::Visit(const UnaryOp& unary_op) { unary_op.operand->Accept(*this); }
+
 void Resolver::Visit(const BinaryOp& binary_op)
 {
     binary_op.left->Accept(*this);

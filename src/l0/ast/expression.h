@@ -37,6 +37,25 @@ class Assignment : public Expression
     mutable std::shared_ptr<Scope> scope;
 };
 
+class UnaryOp : public Expression
+{
+   public:
+    enum class Operator
+    {
+        Plus,
+        Minus,
+        Bang,
+    };
+
+    UnaryOp(std::unique_ptr<Expression> operand, Operator op);
+
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
+
+    std::unique_ptr<Expression> operand;
+    Operator op;
+};
+
 class BinaryOp : public Expression
 {
    public:
@@ -171,6 +190,7 @@ class IConstExpressionVisitor
     virtual ~IConstExpressionVisitor() = default;
 
     virtual void Visit(const Assignment& assignment) = 0;
+    virtual void Visit(const UnaryOp& unary_op) = 0;
     virtual void Visit(const BinaryOp& binary_op) = 0;
     virtual void Visit(const Variable& variable) = 0;
     virtual void Visit(const Call& call) = 0;
@@ -187,6 +207,7 @@ class IExpressionVisitor
     virtual ~IExpressionVisitor() = default;
 
     virtual void Visit(Assignment& assignment) = 0;
+    virtual void Visit(UnaryOp& unary_op) = 0;
     virtual void Visit(BinaryOp& binary_op) = 0;
     virtual void Visit(Variable& variable) = 0;
     virtual void Visit(Call& call) = 0;
