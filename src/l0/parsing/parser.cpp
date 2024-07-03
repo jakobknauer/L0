@@ -324,6 +324,18 @@ std::unique_ptr<Expression> Parser::ParseUnary()
             auto expression = ParseUnary();
             return std::make_unique<UnaryOp>(std::move(expression), UnaryOp::Operator::Bang);
         }
+        case TokenType::Ampersand:
+        {
+            Consume();
+            auto expression = ParseUnary();
+            return std::make_unique<UnaryOp>(std::move(expression), UnaryOp::Operator::Ampersand);
+        }
+        case TokenType::Asterisk:
+        {
+            Consume();
+            auto expression = ParseUnary();
+            return std::make_unique<UnaryOp>(std::move(expression), UnaryOp::Operator::Asterisk);
+        }
         default:
         {
             return ParseFactor();

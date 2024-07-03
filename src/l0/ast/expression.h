@@ -45,6 +45,8 @@ class UnaryOp : public Expression
         Plus,
         Minus,
         Bang,
+        Ampersand,
+        Asterisk,
     };
 
     UnaryOp(std::unique_ptr<Expression> operand, Operator op);

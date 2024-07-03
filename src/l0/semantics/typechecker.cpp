@@ -110,7 +110,7 @@ void Typechecker::Visit(const UnaryOp& unary_op)
 {
     unary_op.operand->Accept(*this);
     auto operand = unary_op.operand->type;
-    unary_op.type = operator_overload_resolver_.ResolveUnaryOperator(unary_op.op, *operand);
+    unary_op.type = operator_overload_resolver_.ResolveUnaryOperator(unary_op.op, operand);
 }
 
 void Typechecker::Visit(const BinaryOp& binary_op)
@@ -121,7 +121,7 @@ void Typechecker::Visit(const BinaryOp& binary_op)
     binary_op.right->Accept(*this);
     auto rhs = binary_op.right->type;
 
-    binary_op.type = operator_overload_resolver_.ResolveBinaryOperator(binary_op.op, *lhs, *rhs);
+    binary_op.type = operator_overload_resolver_.ResolveBinaryOperator(binary_op.op, lhs, rhs);
 }
 
 void Typechecker::Visit(const Variable& variable) { variable.type = variable.scope->GetType(variable.name); }

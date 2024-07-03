@@ -31,13 +31,36 @@ OperatorOverloadResolver::OperatorOverloadResolver()
     };
 }
 
-std::shared_ptr<Type> OperatorOverloadResolver::ResolveUnaryOperator(UnaryOp::Operator op, const Type& operand) const
+std::shared_ptr<Type> OperatorOverloadResolver::ResolveUnaryOperator(
+    UnaryOp::Operator op, std::shared_ptr<Type> operand
+) const
 {
+    if (op == UnaryOp::Operator::Ampersand)
+    {
+        auto reference_type = std::make_shared<ReferenceType>();
+        reference_type->base_type = operand;
+        return reference_type;
+    }
+    if (op == UnaryOp::Operator::Asterisk)
+    {
+        auto reference_type = dynamic_cast<ReferenceType*>(operand.get());
+        if (!reference_type)
+        {
+            throw SemanticError(std::format("Cannot dereference value of type '{}'.", operand->ToString()));
+        }
+        return reference_type->base_type;
+    }
+
+    if (!unary_operator_overloads_.contains(op))
+    {
+        throw SemanticError(std::format("No known overloads of unary operator '{}'.", str(op)));
+    }
+
     auto& candidates = unary_operator_overloads_.at(op);
     auto matching_signature = std::find_if(
         candidates.cbegin(),
         candidates.cend(),
-        [&](const UnaryOpSignature& signature) { return *signature.operand == operand; }
+        [&](const UnaryOpSignature& signature) { return *signature.operand == *operand; }
     );
 
     if (matching_signature != candidates.cend())
@@ -45,20 +68,25 @@ std::shared_ptr<Type> OperatorOverloadResolver::ResolveUnaryOperator(UnaryOp::Op
         return matching_signature->result;
     }
 
-    throw SemanticError(
-        std::format("No viable overload of unary operator '{}' with operand of type '{}'.", str(op), operand.ToString())
-    );
+    throw SemanticError(std::format(
+        "No viable overload of unary operator '{}' with operand of type '{}'.", str(op), operand->ToString()
+    ));
 }
 
 std::shared_ptr<Type> OperatorOverloadResolver::ResolveBinaryOperator(
-    BinaryOp::Operator op, const Type& lhs, const Type& rhs
+    BinaryOp::Operator op, std::shared_ptr<Type> lhs, std::shared_ptr<Type> rhs
 ) const
 {
+    if (!binary_operator_overloads_.contains(op))
+    {
+        throw SemanticError(std::format("No known overloads of binary operator '{}'.", str(op)));
+    }
+
     auto& candidates = binary_operator_overloads_.at(op);
     auto matching_signature = std::find_if(
         candidates.cbegin(),
         candidates.cend(),
-        [&](const BinaryOpSignature& signature) { return *signature.lhs == lhs && *signature.rhs == rhs; }
+        [&](const BinaryOpSignature& signature) { return (*signature.lhs == *lhs) && (*signature.rhs == *rhs); }
     );
 
     if (matching_signature != candidates.cend())
@@ -69,8 +97,8 @@ std::shared_ptr<Type> OperatorOverloadResolver::ResolveBinaryOperator(
     throw SemanticError(std::format(
         "No viable overload of binary operator '{}' with left-hand side of type '{}' and right-hand side of type '{}'.",
         str(op),
-        lhs.ToString(),
-        rhs.ToString()
+        lhs->ToString(),
+        rhs->ToString()
     ));
 }
 

@@ -183,6 +183,10 @@ std::string str(UnaryOp::Operator op)
             return "-";
         case UnaryOp::Operator::Bang:
             return "!";
+        case UnaryOp::Operator::Ampersand:
+            return "&";
+        case UnaryOp::Operator::Asterisk:
+            return "*";
     }
 }
 

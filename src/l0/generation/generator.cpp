@@ -264,20 +264,44 @@ void Generator::Visit(const Assignment& assignment)
 
 void Generator::Visit(const UnaryOp& unary_op)
 {
-    unary_op.operand->Accept(*this);
-    llvm::Value* operand = result_;
-
     switch (unary_op.op)
     {
         case UnaryOp::Operator::Plus:
+        {
+            unary_op.operand->Accept(*this);
+            llvm::Value* operand = result_;
             result_ = operand;
             break;
+        }
         case l0::UnaryOp::Operator::Minus:
+        {
+            unary_op.operand->Accept(*this);
+            llvm::Value* operand = result_;
             result_ = builder_.CreateNeg(operand, "negtmp");
             break;
+        }
         case l0::UnaryOp::Operator::Bang:
+        {
+            unary_op.operand->Accept(*this);
+            llvm::Value* operand = result_;
             result_ = builder_.CreateNot(operand, "nottmp");
             break;
+        }
+        case l0::UnaryOp::Operator::Ampersand:
+        {
+            const Variable* variable = dynamic_cast<const Variable*>(unary_op.operand.get());
+            if (!variable)
+            {
+                throw GeneratorError("Operand of unary operator '&' is not a variable.");
+            }
+            result_ = variable->scope->GetLLVMValue(variable->name);
+            break;
+        }
+        case l0::UnaryOp::Operator::Asterisk:
+        {
+            unary_op.operand->Accept(*this);
+            result_ = builder_.CreateLoad(type_converter_.Convert(*unary_op.type), result_, "dereftmp");
+        }
     }
 }
 
