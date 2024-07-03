@@ -21,6 +21,17 @@ class Type
     virtual bool Equals(const Type& other) const = 0;
 };
 
+class ReferenceType : public Type
+{
+   public:
+    std::string ToString() const override;
+
+    std::shared_ptr<Type> base_type;
+
+   protected:
+    bool Equals(const Type& other) const override;
+};
+
 class UnitType : public Type
 {
    public:

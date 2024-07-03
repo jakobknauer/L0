@@ -24,6 +24,7 @@ enum class TokenType
     Asterisk,
     Slash,
     Bang,
+    Ampersand,
     EqualsEquals,
     BangEquals,
     AmpersandAmpersand,

@@ -32,6 +32,11 @@ llvm::Type* TypeConverter::Convert(const Type& type)
     {
         return Convert(dynamic_cast<const FunctionType&>(type));
     }
+    else if (dynamic_cast<const ReferenceType*>(&type))
+    {
+        auto rt = dynamic_cast<const ReferenceType*>(&type);
+        return llvm::PointerType::get(Convert(*rt->base_type), 0);
+    }
     else
     {
         throw GeneratorError(std::format("Cannot convert l0 type {} to llvm type.", type.ToString()));

@@ -29,6 +29,8 @@ std::string str(TokenType type)
             return "Slash";
         case TokenType::Bang:
             return "Bang";
+        case TokenType::Ampersand:
+            return "Ampersand";
         case TokenType::EqualsEquals:
             return "EqualsEquals";
         case TokenType::BangEquals:

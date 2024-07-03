@@ -24,6 +24,7 @@ Lexer::Lexer(std::shared_ptr<std::istream> input)
         {';', TokenType::Semicolon},
         {'=', TokenType::Equals},
         {'$', TokenType::Dollar},
+        {'&', TokenType::Ampersand},
     };
 
     two_character_operators_ = {

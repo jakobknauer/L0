@@ -23,6 +23,7 @@ class TypeAnnotationConverter : private ITypeAnnotationVisitor
     std::unordered_map<std::string, const std::shared_ptr<Type>> simple_types_;
 
     void Visit(const SimpleTypeAnnotation& sta) override;
+    void Visit(const ReferenceTypeAnnotation& rta) override;
     void Visit(const FunctionTypeAnnotation& fta) override;
 };
 

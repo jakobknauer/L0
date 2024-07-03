@@ -517,6 +517,10 @@ std::unique_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
         {
             return ParseSimpleTypeAnnotation();
         }
+        case TokenType::Ampersand:
+        {
+            return ParseReferenceTypeAnnotation();
+        }
         case TokenType::OpeningParen:
         {
             return ParseFunctionTypeAnnotation();
@@ -524,7 +528,7 @@ std::unique_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
         default:
         {
             throw ParserError(std::format(
-                "Expected identifier, or '(', got token '{}' of type {} instead.", token.lexeme, str(token.type)
+                "Expected identifier, '&', or '(', got token '{}' of type {} instead.", token.lexeme, str(token.type)
             ));
         }
     }
@@ -534,6 +538,13 @@ std::unique_ptr<TypeAnnotation> Parser::ParseSimpleTypeAnnotation()
 {
     Token token = Expect(TokenType::Identifier);
     return std::make_unique<SimpleTypeAnnotation>(std::any_cast<std::string>(token.data));
+}
+
+std::unique_ptr<TypeAnnotation> Parser::ParseReferenceTypeAnnotation()
+{
+    Expect(TokenType::Ampersand);
+    auto base_type = ParseSimpleTypeAnnotation();
+    return std::make_unique<ReferenceTypeAnnotation>(std::move(base_type));
 }
 
 std::unique_ptr<TypeAnnotation> Parser::ParseFunctionTypeAnnotation()

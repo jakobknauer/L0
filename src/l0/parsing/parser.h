@@ -63,6 +63,7 @@ class Parser : public IParser
     std::unique_ptr<ParameterDeclaration> ParseParameterDeclaration();
     std::unique_ptr<TypeAnnotation> ParseTypeAnnotation();
     std::unique_ptr<TypeAnnotation> ParseSimpleTypeAnnotation();
+    std::unique_ptr<TypeAnnotation> ParseReferenceTypeAnnotation();
     std::unique_ptr<TypeAnnotation> ParseFunctionTypeAnnotation();
     std::unique_ptr<ParameterListAnnotation> ParseParameterListAnnotation();
 };

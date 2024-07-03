@@ -8,6 +8,14 @@ namespace l0
 
 bool operator==(const Type& lhs, const Type& rhs) { return typeid(lhs) == typeid(rhs) && lhs.Equals(rhs); }
 
+std::string ReferenceType::ToString() const { return std::format("&{}", base_type->ToString()); }
+
+bool ReferenceType::Equals(const Type& other) const
+{
+    auto other_as_reference_type = dynamic_cast<const ReferenceType*>(&other);
+    return other_as_reference_type && (*base_type == *other_as_reference_type->base_type);
+}
+
 std::string UnitType::ToString() const { return "()"; }
 
 bool UnitType::Equals(const Type& other) const { return true; }

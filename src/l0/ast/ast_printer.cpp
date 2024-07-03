@@ -167,6 +167,12 @@ void AstPrinter::Visit(const FunctionTypeAnnotation& fta)
     fta.return_type->Accept(*this);
 }
 
+void AstPrinter::Visit(const ReferenceTypeAnnotation& rta)
+{
+    out_ << "&";
+    rta.base_type->Accept(*this);
+}
+
 std::string str(UnaryOp::Operator op)
 {
     switch (op)
