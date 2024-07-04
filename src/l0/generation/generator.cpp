@@ -256,9 +256,32 @@ void Generator::Visit(const WhileLoop& while_loop)
 
 void Generator::Visit(const Assignment& assignment)
 {
+    llvm::Value* target;
+    if (auto variable = dynamic_cast<Variable*>(assignment.target.get()))
+    {
+        target = variable->scope->GetLLVMValue(variable->name);
+    }
+    else if (auto unary_op = dynamic_cast<UnaryOp*>(assignment.target.get()))
+    {
+        if (unary_op->op == UnaryOp::Operator::Asterisk)
+        {
+            unary_op->operand->Accept(*this);
+            target = result_;
+        }
+        else
+        {
+            throw GeneratorError("Cannot assign to expression.");
+        }
+    }
+    else
+    {
+        throw GeneratorError("Cannot assign to expression.");
+    }
+
     assignment.expression->Accept(*this);
-    llvm::Value* variable = assignment.scope->GetLLVMValue(assignment.variable);
-    builder_.CreateStore(result_, variable);
+    auto value = result_;
+
+    builder_.CreateStore(value, target);
     // leave result_ as it is :)
 }
 

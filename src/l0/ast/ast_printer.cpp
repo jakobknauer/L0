@@ -89,7 +89,8 @@ void AstPrinter::Visit(const WhileLoop& while_loop)
 
 void AstPrinter::Visit(const Assignment& assignment)
 {
-    out_ << assignment.variable << " = ";
+    assignment.target->Accept(*this);
+    out_ << " = ";
     assignment.expression->Accept(*this);
 }
 

@@ -88,7 +88,8 @@ void Typechecker::Visit(const WhileLoop& while_loop)
 
 void Typechecker::Visit(const Assignment& assignment)
 {
-    auto declared = assignment.scope->GetType(assignment.variable);
+    assignment.target->Accept(*this);
+    auto declared = assignment.target->type;
 
     assignment.expression->Accept(*this);
     auto assigned = assignment.expression->type;
@@ -96,8 +97,7 @@ void Typechecker::Visit(const Assignment& assignment)
     if (*declared != *assigned)
     {
         throw SemanticError(std::format(
-            "Variable '{}' was declared with type {}, but is assigned value of type {}.",
-            assignment.variable,
+            "Target of assignment is of type {}, but is assigned value of type {}.",
             declared->ToString(),
             assigned->ToString()
         ));

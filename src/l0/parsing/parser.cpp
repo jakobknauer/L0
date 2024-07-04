@@ -231,14 +231,13 @@ std::unique_ptr<Expression> Parser::ParseExpression()
 
 std::unique_ptr<Expression> Parser::ParseAssignment()
 {
-    if (Peek().type == TokenType::Identifier && PeekNext().type == TokenType::Equals)
+    auto target = ParseDisjunction();
+    if (ConsumeIf(TokenType::Equals))
     {
-        Token variable = Expect(TokenType::Identifier);
-        Expect(TokenType::Equals);
-        auto expression = ParseExpression();
-        return std::make_unique<Assignment>(std::any_cast<std::string>(variable.data), std::move(expression));
+        auto value = ParseAssignment();
+        return std::make_unique<Assignment>(std::move(target), std::move(value));
     }
-    return ParseDisjunction();
+    return target;
 }
 
 std::unique_ptr<Expression> Parser::ParseDisjunction()

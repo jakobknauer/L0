@@ -26,15 +26,13 @@ class Expression
 class Assignment : public Expression
 {
    public:
-    Assignment(std::string variable, std::unique_ptr<Expression> expression);
+    Assignment(std::unique_ptr<Expression> target, std::unique_ptr<Expression> expression);
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
-    std::string variable;
+    std::unique_ptr<Expression> target;
     std::unique_ptr<Expression> expression;
-
-    mutable std::shared_ptr<Scope> scope;
 };
 
 class UnaryOp : public Expression

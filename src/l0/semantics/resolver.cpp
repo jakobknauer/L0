@@ -81,7 +81,7 @@ void Resolver::Visit(const WhileLoop& while_loop)
 
 void Resolver::Visit(const Assignment& assignment)
 {
-    assignment.scope = Resolve(assignment.variable);
+    assignment.target->Accept(*this);
     assignment.expression->Accept(*this);
 }
 

@@ -6,8 +6,8 @@
 namespace l0
 {
 
-Assignment::Assignment(std::string variable, std::unique_ptr<Expression> expression)
-    : variable{variable}, expression{std::move(expression)}
+Assignment::Assignment(std::unique_ptr<Expression> target, std::unique_ptr<Expression> expression)
+    : target{std::move(target)}, expression{std::move(expression)}
 {
 }
 
