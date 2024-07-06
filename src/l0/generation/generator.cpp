@@ -63,6 +63,11 @@ void Generator::DeclareExternals()
             ast_module_.externals->SetLLVMValue(external_symbol, global);
         }
     }
+
+    auto llvm_int_type = type_converter_.Convert(IntegerType());
+    auto llvm_ptr_type = llvm::PointerType::get(context_, 0);
+    auto int_to_ptr = llvm::FunctionType::get(llvm_ptr_type, llvm_int_type, false);
+    llvm_module_.getOrInsertFunction("malloc", int_to_ptr);
 }
 
 void Generator::DeclareGlobals()
@@ -450,6 +455,19 @@ void Generator::Visit(const Function& function)
     result_ = llvm_function;
 
     builder_.SetInsertPoint(previous_block);
+}
+
+void Generator::Visit(const Allocation& allocation)
+{
+    llvm::Type* llvm_int_type = type_converter_.Convert(IntegerType());
+    llvm::Type* llvm_ptr_type = llvm::PointerType::get(context_, 0);
+    llvm::FunctionType* int_to_ptr = llvm::FunctionType::get(llvm_ptr_type, llvm_int_type, false);
+    llvm::FunctionCallee malloc_function = llvm_module_.getOrInsertFunction("malloc", int_to_ptr);
+
+    std::vector<llvm::Value*> arguments{};
+    arguments.push_back(llvm::ConstantInt::get(llvm_int_type, 8));
+
+    result_ = builder_.CreateCall(int_to_ptr, malloc_function.getCallee(), arguments, "malloc");
 }
 
 void Generator::GenerateFunctionBody(const Function& function, llvm::Function& llvm_function)

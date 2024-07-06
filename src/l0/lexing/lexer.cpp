@@ -7,7 +7,7 @@ namespace l0
 {
 
 Lexer::Lexer(std::shared_ptr<std::istream> input)
-    : input_{input}, keywords_{"return", "unit", "true", "false", "if", "else", "while"}
+    : input_{input}, keywords_{"return", "unit", "true", "false", "if", "else", "while", "new"}
 {
     single_character_operators_ = {
         {'(', TokenType::OpeningParen},
@@ -32,7 +32,7 @@ Lexer::Lexer(std::shared_ptr<std::istream> input)
         {"==", TokenType::EqualsEquals},
         {"!=", TokenType::BangEquals},
         {"&&", TokenType::AmpersandAmpersand},
-        {"||", TokenType::PipePipe}
+        {"||", TokenType::PipePipe},
     };
 
     for (auto c : single_character_operators_ | std::views::keys)

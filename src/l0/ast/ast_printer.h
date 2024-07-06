@@ -36,6 +36,7 @@ class AstPrinter : IConstExpressionVisitor, IConstStatementVisitor, ITypeAnnotat
     void Visit(const IntegerLiteral& literal) override;
     void Visit(const StringLiteral& literal) override;
     void Visit(const Function& function) override;
+    void Visit(const Allocation& allocation) override;
 
     void Visit(const SimpleTypeAnnotation& sta) override;
     void Visit(const ReferenceTypeAnnotation& rta) override;

@@ -154,6 +154,12 @@ void AstPrinter::Visit(const Function& function)
     out_ << "}";
 }
 
+void AstPrinter::Visit(const Allocation& allocation)
+{
+    out_ << "new ";
+    allocation.annotation->Accept(*this);
+}
+
 void AstPrinter::Visit(const SimpleTypeAnnotation& sta) { out_ << sta.type; }
 
 void AstPrinter::Visit(const FunctionTypeAnnotation& fta)

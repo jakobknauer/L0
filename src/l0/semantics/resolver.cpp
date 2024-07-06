@@ -136,6 +136,11 @@ void Resolver::Visit(const Function& function)
     scopes_.pop_back();
 }
 
+void Resolver::Visit(const Allocation& allocation)
+{
+    allocation.allocated_type = converter_.Convert(*allocation.annotation);
+}
+
 std::shared_ptr<Scope> Resolver::Resolve(const std::string name)
 {
     for (auto scope : scopes_ | std::views::reverse)

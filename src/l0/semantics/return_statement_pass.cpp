@@ -113,6 +113,8 @@ void ReturnStatementPass::Visit(Function& function)
     statement_returns_ = false;
 }
 
+void ReturnStatementPass::Visit(Allocation& allocation) {}
+
 void ReturnStatementPass::Visit(StatementBlock& statement_block)
 {
     bool block_returns_{false};

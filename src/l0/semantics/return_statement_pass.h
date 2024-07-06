@@ -39,6 +39,7 @@ class ReturnStatementPass : private IStatementVisitor, private IExpressionVisito
     void Visit(IntegerLiteral& literal) override;
     void Visit(StringLiteral& literal) override;
     void Visit(Function& function) override;
+    void Visit(Allocation& allocation) override;
 
     void Visit(StatementBlock& statement_block);
 };

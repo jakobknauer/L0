@@ -39,6 +39,7 @@ class Resolver : IConstExpressionVisitor, IConstStatementVisitor
     void Visit(const IntegerLiteral& literal) override;
     void Visit(const StringLiteral& literal) override;
     void Visit(const Function& function) override;
+    void Visit(const Allocation& allocation) override;
 
     std::shared_ptr<Scope> Resolve(const std::string name);
 };

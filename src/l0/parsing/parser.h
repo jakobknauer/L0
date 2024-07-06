@@ -59,6 +59,7 @@ class Parser : public IParser
     std::unique_ptr<Expression> ParseUnary();
     std::unique_ptr<Expression> ParseFactor();
     std::unique_ptr<Expression> ParseFunction();
+    std::unique_ptr<Expression> ParseAllocation();
     std::unique_ptr<ArgumentList> ParseArgumentList();
     std::unique_ptr<ParameterDeclarationList> ParseParameterDeclarationList();
     std::unique_ptr<ParameterDeclaration> ParseParameterDeclaration();

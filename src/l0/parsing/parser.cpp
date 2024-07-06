@@ -414,6 +414,10 @@ std::unique_ptr<Expression> Parser::ParseFactor()
                 Consume();
                 return std::make_unique<UnitLiteral>();
             }
+            else if (keyword == "new")
+            {
+                return ParseAllocation();
+            }
             // Fall through intended
         }
         default:
@@ -437,6 +441,13 @@ std::unique_ptr<Expression> Parser::ParseFunction()
     auto statements = ParseStatementBlock(TokenType::ClosingBrace);
     Expect(TokenType::ClosingBrace);
     return std::make_unique<Function>(std::move(parameters), std::move(return_type), std::move(statements));
+}
+
+std::unique_ptr<Expression> Parser::ParseAllocation()
+{
+    ExpectKeyword("new");
+    auto annotation = ParseTypeAnnotation();
+    return std::make_unique<Allocation>(std::move(annotation));
 }
 
 std::unique_ptr<ArgumentList> Parser::ParseArgumentList()

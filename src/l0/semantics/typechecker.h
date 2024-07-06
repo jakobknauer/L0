@@ -40,7 +40,8 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
     void Visit(const BooleanLiteral& literal) override;
     void Visit(const IntegerLiteral& literal) override;
     void Visit(const StringLiteral& literal) override;
-    void Visit(const Function& literal) override;
+    void Visit(const Function& function) override;
+    void Visit(const Allocation& allocation) override;
 };
 
 }  // namespace l0

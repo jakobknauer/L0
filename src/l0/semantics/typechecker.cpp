@@ -203,4 +203,11 @@ void Typechecker::Visit(const Function& function)
     function.type = type;
 }
 
+void Typechecker::Visit(const Allocation& allocation)
+{
+    auto type = std::make_shared<ReferenceType>();
+    type->base_type = allocation.allocated_type;
+    allocation.type = type;
+}
+
 }  // namespace l0
