@@ -38,6 +38,7 @@ class Parser : public IParser
     std::optional<Token> ConsumeIf(std::initializer_list<TokenType> type);
     Token ConsumeAll(TokenType type);
     Token Expect(TokenType type);
+    Token Expect(std::initializer_list<TokenType> types);
     Token ExpectKeyword(std::string_view keyword);
 
     std::unique_ptr<Module> ParseModule();

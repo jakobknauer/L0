@@ -79,6 +79,22 @@ Token Parser::Expect(TokenType type)
     return token;
 }
 
+Token Parser::Expect(std::initializer_list<TokenType> types)
+{
+    if (pos_ >= tokens_.size())
+    {
+        throw ParserError(std::format("Expected token of types {}, reached end of token stream instead.", str(types)));
+    }
+    Token token = tokens_.at(pos_++);
+    if (std::ranges::find(types, token.type) != types.end())
+    {
+        return token;
+    }
+    throw ParserError(std::format(
+        "Expected token of types {}, got token '{}' of type {} instead.", str(types), token.lexeme, str(token.type)
+    ));
+}
+
 Token Parser::ExpectKeyword(std::string_view keyword)
 {
     if (pos_ >= tokens_.size())
@@ -529,6 +545,7 @@ std::unique_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
             return ParseSimpleTypeAnnotation();
         }
         case TokenType::Ampersand:
+        case TokenType::AmpersandAmpersand:
         {
             return ParseReferenceTypeAnnotation();
         }
@@ -553,9 +570,18 @@ std::unique_ptr<TypeAnnotation> Parser::ParseSimpleTypeAnnotation()
 
 std::unique_ptr<TypeAnnotation> Parser::ParseReferenceTypeAnnotation()
 {
-    Expect(TokenType::Ampersand);
-    auto base_type = ParseSimpleTypeAnnotation();
-    return std::make_unique<ReferenceTypeAnnotation>(std::move(base_type));
+    auto qualifier = Expect({TokenType::Ampersand, TokenType::AmpersandAmpersand});
+
+    auto base_type = ParseTypeAnnotation();
+    auto single_ref = std::make_unique<ReferenceTypeAnnotation>(std::move(base_type));
+
+    if (qualifier.type == TokenType::Ampersand)
+    {
+        return single_ref;
+    }
+
+    auto double_ref = std::make_unique<ReferenceTypeAnnotation>(std::move(single_ref));
+    return std::move(double_ref);
 }
 
 std::unique_ptr<TypeAnnotation> Parser::ParseFunctionTypeAnnotation()
