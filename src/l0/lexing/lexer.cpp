@@ -7,7 +7,7 @@ namespace l0
 {
 
 Lexer::Lexer(std::shared_ptr<std::istream> input)
-    : input_{input}, keywords_{"return", "unit", "true", "false", "if", "else", "while", "new"}
+    : input_{input}, keywords_{"return", "unit", "true", "false", "if", "else", "while", "new", "delete"}
 {
     single_character_operators_ = {
         {'(', TokenType::OpeningParen},

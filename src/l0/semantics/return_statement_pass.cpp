@@ -60,6 +60,12 @@ void ReturnStatementPass::Visit(WhileLoop& while_loop)
     statement_returns_ = false;
 }
 
+void ReturnStatementPass::Visit(Deallocation& deallocation)
+{
+    deallocation.reference->Accept(*this);
+    statement_returns_ = false;
+}
+
 void ReturnStatementPass::Visit(Assignment& assignment)
 {
     assignment.target->Accept(*this);

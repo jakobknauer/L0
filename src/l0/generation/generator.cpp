@@ -68,6 +68,10 @@ void Generator::DeclareExternals()
     auto llvm_ptr_type = llvm::PointerType::get(context_, 0);
     auto int_to_ptr = llvm::FunctionType::get(llvm_ptr_type, llvm_int_type, false);
     llvm_module_.getOrInsertFunction("malloc", int_to_ptr);
+
+    auto llvm_void_type = llvm::Type::getVoidTy(context_);
+    auto ptr_to_void = llvm::FunctionType::get(llvm_void_type, llvm_ptr_type, false);
+    llvm_module_.getOrInsertFunction("free", ptr_to_void);
 }
 
 void Generator::DeclareGlobals()
@@ -257,6 +261,22 @@ void Generator::Visit(const WhileLoop& while_loop)
     builder_.SetInsertPoint(afterloop);
 
     result_ = nullptr;
+}
+
+void Generator::Visit(const Deallocation& deallocation)
+{
+    deallocation.reference->Accept(*this);
+    auto operand = result_;
+
+    llvm::Type* llvm_ptr_type = llvm::PointerType::get(context_, 0);
+    auto llvm_void_type = llvm::Type::getVoidTy(context_);
+    auto ptr_to_void = llvm::FunctionType::get(llvm_void_type, llvm_ptr_type, false);
+    llvm::FunctionCallee free_function = llvm_module_.getOrInsertFunction("free", ptr_to_void);
+
+    std::vector<llvm::Value*> arguments{};
+    arguments.push_back(operand);
+
+    result_ = builder_.CreateCall(ptr_to_void, free_function.getCallee(), arguments);
 }
 
 void Generator::Visit(const Assignment& assignment)
@@ -467,7 +487,7 @@ void Generator::Visit(const Allocation& allocation)
     std::vector<llvm::Value*> arguments{};
     arguments.push_back(llvm::ConstantInt::get(llvm_int_type, 8));
 
-    result_ = builder_.CreateCall(int_to_ptr, malloc_function.getCallee(), arguments, "malloc");
+    result_ = builder_.CreateCall(int_to_ptr, malloc_function.getCallee(), arguments, "allocation");
 }
 
 void Generator::GenerateFunctionBody(const Function& function, llvm::Function& llvm_function)

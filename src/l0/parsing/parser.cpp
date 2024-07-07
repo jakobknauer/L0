@@ -166,6 +166,10 @@ std::unique_ptr<Statement> Parser::ParseStatement()
     {
         return ParseWhileLoop();
     }
+    else if (PeekIsKeyword("delete"))
+    {
+        return ParseDeallocation();
+    }
     return ParseExpressionStatement();
 }
 
@@ -232,6 +236,13 @@ std::unique_ptr<Statement> Parser::ParseWhileLoop()
     auto body = ParseStatementBlock(TokenType::ClosingBrace);
     Expect(TokenType::ClosingBrace);
     return std::make_unique<WhileLoop>(std::move(condition), std::move(body));
+}
+
+std::unique_ptr<Statement> Parser::ParseDeallocation()
+{
+    ExpectKeyword("delete");
+    auto operand = ParseExpression();
+    return std::make_unique<Deallocation>(std::move(operand));
 }
 
 std::unique_ptr<Expression> Parser::ParseExpression()

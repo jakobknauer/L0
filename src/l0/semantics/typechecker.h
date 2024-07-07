@@ -30,6 +30,7 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
     void Visit(const ReturnStatement& return_statement) override;
     void Visit(const ConditionalStatement& conditional_statement) override;
     void Visit(const WhileLoop& while_loop) override;
+    void Visit(const Deallocation& declaration) override;
 
     void Visit(const Assignment& assignment) override;
     void Visit(const UnaryOp& unary_op) override;

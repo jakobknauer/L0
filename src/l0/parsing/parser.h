@@ -49,6 +49,7 @@ class Parser : public IParser
     std::unique_ptr<Statement> ParseReturnStatement();
     std::unique_ptr<Statement> ParseConditionalStatement();
     std::unique_ptr<Statement> ParseWhileLoop();
+    std::unique_ptr<Statement> ParseDeallocation();
     std::unique_ptr<Expression> ParseExpression();
     std::unique_ptr<Expression> ParseAssignment();
     std::unique_ptr<Expression> ParseDisjunction();

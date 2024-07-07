@@ -86,6 +86,19 @@ void Typechecker::Visit(const WhileLoop& while_loop)
     }
 }
 
+void Typechecker::Visit(const Deallocation& deallocation)
+{
+    deallocation.reference->Accept(*this);
+    auto rt = dynamic_cast<ReferenceType*>(deallocation.reference->type.get());
+    if (!rt)
+    {
+        throw SemanticError(std::format(
+            "Operand of delete statement must be of reference type, but is of type '{}'.",
+            deallocation.reference->type->ToString()
+        ));
+    }
+}
+
 void Typechecker::Visit(const Assignment& assignment)
 {
     assignment.target->Accept(*this);

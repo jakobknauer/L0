@@ -28,6 +28,7 @@ class Resolver : IConstExpressionVisitor, IConstStatementVisitor
     void Visit(const ReturnStatement& return_statement) override;
     void Visit(const ConditionalStatement& conditional_statement) override;
     void Visit(const WhileLoop& while_loop) override;
+    void Visit(const Deallocation& deallocation) override;
 
     void Visit(const Assignment& assignment) override;
     void Visit(const UnaryOp& unary_op) override;

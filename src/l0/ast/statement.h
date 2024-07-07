@@ -95,6 +95,17 @@ class WhileLoop : public Statement
     std::unique_ptr<StatementBlock> body;
 };
 
+class Deallocation : public Statement
+{
+   public:
+    Deallocation(std::unique_ptr<Expression> reference);
+
+    void Accept(IConstStatementVisitor& visitor) const override;
+    void Accept(IStatementVisitor& visitor) override;
+
+    std::unique_ptr<Expression> reference;
+};
+
 class IConstStatementVisitor
 {
    public:
@@ -105,6 +116,7 @@ class IConstStatementVisitor
     virtual void Visit(const ReturnStatement& return_statement) = 0;
     virtual void Visit(const ConditionalStatement& conditional_statement) = 0;
     virtual void Visit(const WhileLoop& while_loop) = 0;
+    virtual void Visit(const Deallocation& deallocation) = 0;
 };
 
 class IStatementVisitor
@@ -117,6 +129,7 @@ class IStatementVisitor
     virtual void Visit(ReturnStatement& return_statement) = 0;
     virtual void Visit(ConditionalStatement& conditional_statement) = 0;
     virtual void Visit(WhileLoop& while_loop) = 0;
+    virtual void Visit(Deallocation& deallocation) = 0;
 };
 
 }  // namespace l0

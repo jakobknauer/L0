@@ -87,6 +87,12 @@ void AstPrinter::Visit(const WhileLoop& while_loop)
     out_ << "}";
 }
 
+void AstPrinter::Visit(const Deallocation& deallocation)
+{
+    out_ << "delete ";
+    deallocation.reference->Accept(*this);
+}
+
 void AstPrinter::Visit(const Assignment& assignment)
 {
     assignment.target->Accept(*this);

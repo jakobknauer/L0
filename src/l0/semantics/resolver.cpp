@@ -79,6 +79,8 @@ void Resolver::Visit(const WhileLoop& while_loop)
     scopes_.pop_back();
 }
 
+void Resolver::Visit(const Deallocation& deallocation) { deallocation.reference->Accept(*this); }
+
 void Resolver::Visit(const Assignment& assignment)
 {
     assignment.target->Accept(*this);
