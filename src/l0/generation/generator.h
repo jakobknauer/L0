@@ -29,6 +29,7 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     llvm::LLVMContext context_{};
     llvm::IRBuilder<> builder_;
     llvm::Module llvm_module_;
+    llvm::DataLayout data_layout_{&llvm_module_};
 
     TypeConverter type_converter_;
     llvm::Value* result_;

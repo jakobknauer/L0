@@ -63,15 +63,6 @@ void Generator::DeclareExternals()
             ast_module_.externals->SetLLVMValue(external_symbol, global);
         }
     }
-
-    auto llvm_int_type = type_converter_.Convert(IntegerType());
-    auto llvm_ptr_type = llvm::PointerType::get(context_, 0);
-    auto int_to_ptr = llvm::FunctionType::get(llvm_ptr_type, llvm_int_type, false);
-    llvm_module_.getOrInsertFunction("malloc", int_to_ptr);
-
-    auto llvm_void_type = llvm::Type::getVoidTy(context_);
-    auto ptr_to_void = llvm::FunctionType::get(llvm_void_type, llvm_ptr_type, false);
-    llvm_module_.getOrInsertFunction("free", ptr_to_void);
 }
 
 void Generator::DeclareGlobals()
@@ -484,8 +475,11 @@ void Generator::Visit(const Allocation& allocation)
     llvm::FunctionType* int_to_ptr = llvm::FunctionType::get(llvm_ptr_type, llvm_int_type, false);
     llvm::FunctionCallee malloc_function = llvm_module_.getOrInsertFunction("malloc", int_to_ptr);
 
+    llvm::Type* allocated_llvm_type = type_converter_.Convert(*allocation.allocated_type);
     std::vector<llvm::Value*> arguments{};
-    arguments.push_back(llvm::ConstantInt::get(llvm_int_type, 8));
+    arguments.push_back(
+        llvm::ConstantInt::get(llvm_int_type, data_layout_.getTypeAllocSize(allocated_llvm_type))
+    );
 
     result_ = builder_.CreateCall(int_to_ptr, malloc_function.getCallee(), arguments, "allocation");
 }
