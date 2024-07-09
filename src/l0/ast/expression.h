@@ -187,12 +187,13 @@ class Function : public Expression
 class Allocation : public Expression
 {
    public:
-    Allocation(std::unique_ptr<TypeAnnotation> annotation);
+    Allocation(std::unique_ptr<TypeAnnotation> annotation, std::unique_ptr<Expression> size);
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
     std::unique_ptr<TypeAnnotation> annotation;
+    std::unique_ptr<Expression> size;
 
     mutable std::shared_ptr<Type> allocated_type;
 };

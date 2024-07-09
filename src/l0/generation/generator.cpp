@@ -476,10 +476,19 @@ void Generator::Visit(const Allocation& allocation)
     llvm::FunctionCallee malloc_function = llvm_module_.getOrInsertFunction("malloc", int_to_ptr);
 
     llvm::Type* allocated_llvm_type = type_converter_.Convert(*allocation.allocated_type);
+    auto type_size = llvm::ConstantInt::get(llvm_int_type, data_layout_.getTypeAllocSize(allocated_llvm_type));
     std::vector<llvm::Value*> arguments{};
-    arguments.push_back(
-        llvm::ConstantInt::get(llvm_int_type, data_layout_.getTypeAllocSize(allocated_llvm_type))
-    );
+    if (allocation.size)
+    {
+        allocation.size->Accept(*this);
+        auto size = result_;
+        auto total_size = builder_.CreateMul(type_size, size);
+        arguments.push_back(total_size);
+    }
+    else
+    {
+        arguments.push_back(type_size);
+    }
 
     result_ = builder_.CreateCall(int_to_ptr, malloc_function.getCallee(), arguments, "allocation");
 }

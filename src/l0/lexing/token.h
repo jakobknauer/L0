@@ -33,6 +33,8 @@ enum class TokenType
 
     OpeningParen,
     ClosingParen,
+    OpeningBracket,
+    ClosingBracket,
     OpeningBrace,
     ClosingBrace,
     Comma,

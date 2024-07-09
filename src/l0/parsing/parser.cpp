@@ -457,8 +457,16 @@ std::unique_ptr<Expression> Parser::ParseFunction()
 std::unique_ptr<Expression> Parser::ParseAllocation()
 {
     ExpectKeyword("new");
+
+    std::unique_ptr<Expression> size;
+    if (ConsumeIf(TokenType::OpeningBracket))
+    {
+        size = ParseExpression();
+        Expect(TokenType::ClosingBracket);
+    }
+
     auto annotation = ParseTypeAnnotation();
-    return std::make_unique<Allocation>(std::move(annotation));
+    return std::make_unique<Allocation>(std::move(annotation), std::move(size));
 }
 
 std::unique_ptr<ArgumentList> Parser::ParseArgumentList()

@@ -43,6 +43,10 @@ std::string str(TokenType type)
             return "OpeningParen";
         case TokenType::ClosingParen:
             return "ClosingParen";
+        case TokenType::OpeningBracket:
+            return "OpeningBracket";
+        case TokenType::ClosingBracket:
+            return "ClosingBracket";
         case TokenType::OpeningBrace:
             return "OpeningBrace";
         case TokenType::ClosingBrace:

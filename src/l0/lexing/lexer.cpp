@@ -12,6 +12,8 @@ Lexer::Lexer(std::shared_ptr<std::istream> input)
     single_character_operators_ = {
         {'(', TokenType::OpeningParen},
         {')', TokenType::ClosingParen},
+        {'[', TokenType::OpeningBracket},
+        {']', TokenType::ClosingBracket},
         {'{', TokenType::OpeningBrace},
         {'}', TokenType::ClosingBrace},
         {'+', TokenType::Plus},

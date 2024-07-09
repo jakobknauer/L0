@@ -140,6 +140,10 @@ void Resolver::Visit(const Function& function)
 
 void Resolver::Visit(const Allocation& allocation)
 {
+    if(allocation.size)
+    {
+        allocation.size->Accept(*this);
+    }
     allocation.allocated_type = converter_.Convert(*allocation.annotation);
 }
 

@@ -218,6 +218,17 @@ void Typechecker::Visit(const Function& function)
 
 void Typechecker::Visit(const Allocation& allocation)
 {
+    if (allocation.size)
+    {
+        allocation.size->Accept(*this);
+        auto integer_type = simple_types_.at("Integer");
+        if (*allocation.size->type != *integer_type)
+        {
+            throw SemanticError(
+                std::format("Allocation size must be of type Integer, but is of type {}.", allocation.type->ToString())
+            );
+        }
+    }
     auto type = std::make_shared<ReferenceType>();
     type->base_type = allocation.allocated_type;
     allocation.type = type;

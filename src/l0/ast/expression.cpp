@@ -87,7 +87,10 @@ void Function::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*t
 
 void Function::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
 
-Allocation::Allocation(std::unique_ptr<TypeAnnotation> annotation) : annotation{std::move(annotation)} {}
+Allocation::Allocation(std::unique_ptr<TypeAnnotation> annotation, std::unique_ptr<Expression> size)
+    : annotation{std::move(annotation)}, size{std::move(size)}
+{
+}
 
 void Allocation::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*this); }
 

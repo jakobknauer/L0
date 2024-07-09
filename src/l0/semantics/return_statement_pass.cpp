@@ -119,7 +119,13 @@ void ReturnStatementPass::Visit(Function& function)
     statement_returns_ = false;
 }
 
-void ReturnStatementPass::Visit(Allocation& allocation) {}
+void ReturnStatementPass::Visit(Allocation& allocation)
+{
+    if (allocation.size)
+    {
+        allocation.size->Accept(*this);
+    }
+}
 
 void ReturnStatementPass::Visit(StatementBlock& statement_block)
 {

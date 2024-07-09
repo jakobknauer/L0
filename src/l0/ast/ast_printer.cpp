@@ -162,7 +162,14 @@ void AstPrinter::Visit(const Function& function)
 
 void AstPrinter::Visit(const Allocation& allocation)
 {
-    out_ << "new ";
+    out_ << "new";
+    if(allocation.size)
+    {
+        out_ << "[";
+        allocation.size->Accept(*this);
+        out_ << "]";
+    }
+    out_ << " ";
     allocation.annotation->Accept(*this);
 }
 
