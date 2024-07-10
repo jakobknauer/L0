@@ -77,6 +77,15 @@ std::shared_ptr<Type> OperatorOverloadResolver::ResolveBinaryOperator(
     BinaryOp::Operator op, std::shared_ptr<Type> lhs, std::shared_ptr<Type> rhs
 ) const
 {
+    if (op == BinaryOp::Operator::Plus)
+    {
+        auto reference_type = dynamic_cast<ReferenceType*>(lhs.get());
+        if (reference_type && *rhs == IntegerType{})
+        {
+            return lhs;
+        }
+    }
+
     if (!binary_operator_overloads_.contains(op))
     {
         throw SemanticError(std::format("No known overloads of binary operator '{}'.", str(op)));

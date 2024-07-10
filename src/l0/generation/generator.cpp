@@ -355,8 +355,22 @@ void Generator::Visit(const BinaryOp& binary_op)
     switch (binary_op.op)
     {
         case BinaryOp::Operator::Plus:
-            result_ = builder_.CreateAdd(left, right, "addtmp");
+        {
+            if (auto reference_type = dynamic_cast<ReferenceType*>(binary_op.left->type.get()))
+            {
+                auto llvm_type = type_converter_.Convert(*binary_op.type);
+                std::vector<llvm::Value*> indices = {
+                    // llvm::ConstantInt::get(llvm::Type::getInt64Ty(context_), 0),
+                    right,
+                };
+                result_ = builder_.CreateGEP(llvm_type, left, indices, "geptmp");
+            }
+            else
+            {
+                result_ = builder_.CreateAdd(left, right, "addtmp");
+            }
             break;
+        }
         case BinaryOp::Operator::Minus:
             result_ = builder_.CreateSub(left, right, "subtmp");
             break;
