@@ -10,11 +10,16 @@
 namespace l0
 {
 
+class IConstTypeVisitor;
+
 class Type
 {
    public:
     virtual ~Type() = default;
+
     virtual std::string ToString() const = 0;
+
+    virtual void Accept(IConstTypeVisitor& visitor) const = 0;
 
    protected:
     friend bool operator==(const Type& lhs, const Type& rhs);
@@ -28,6 +33,8 @@ class ReferenceType : public Type
 
     std::shared_ptr<Type> base_type;
 
+    void Accept(IConstTypeVisitor& visitor) const override;
+
    protected:
     bool Equals(const Type& other) const override;
 };
@@ -36,6 +43,8 @@ class UnitType : public Type
 {
    public:
     std::string ToString() const override;
+
+    void Accept(IConstTypeVisitor& visitor) const override;
 
    protected:
     bool Equals(const Type& other) const override;
@@ -46,6 +55,8 @@ class BooleanType : public Type
    public:
     std::string ToString() const override;
 
+    void Accept(IConstTypeVisitor& visitor) const override;
+
    protected:
     bool Equals(const Type& other) const override;
 };
@@ -55,6 +66,8 @@ class IntegerType : public Type
    public:
     std::string ToString() const override;
 
+    void Accept(IConstTypeVisitor& visitor) const override;
+
    protected:
     bool Equals(const Type& other) const override;
 };
@@ -63,6 +76,8 @@ class StringType : public Type
 {
    public:
     std::string ToString() const override;
+
+    void Accept(IConstTypeVisitor& visitor) const override;
 
    protected:
     bool Equals(const Type& other) const override;
@@ -75,6 +90,8 @@ class FunctionType : public Type
    public:
     std::string ToString() const override;
 
+    void Accept(IConstTypeVisitor& visitor) const override;
+
     std::unique_ptr<ParameterList> parameters = std::make_unique<ParameterList>();
     std::shared_ptr<Type> return_type;
 
@@ -82,6 +99,19 @@ class FunctionType : public Type
     bool Equals(const Type& other) const override;
 };
 
-}
+class IConstTypeVisitor
+{
+   public:
+    ~IConstTypeVisitor() = default;
+
+    virtual void Visit(const ReferenceType& reference_type) = 0;
+    virtual void Visit(const UnitType& unit_type) = 0;
+    virtual void Visit(const BooleanType& boolean_type) = 0;
+    virtual void Visit(const IntegerType& integer_type) = 0;
+    virtual void Visit(const StringType& string_type) = 0;
+    virtual void Visit(const FunctionType& function_type) = 0;
+};
+
+}  // namespace l0
 
 #endif

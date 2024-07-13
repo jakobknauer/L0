@@ -1,7 +1,5 @@
 #include "l0/generation/type_converter.h"
 
-#include "l0/generation/generator_error.h"
-
 namespace l0
 {
 
@@ -12,47 +10,14 @@ TypeConverter::TypeConverter(llvm::LLVMContext& context) : context_{context}
 
 llvm::Type* TypeConverter::Convert(const Type& type)
 {
-    if (dynamic_cast<const StringType*>(&type))
-    {
-        return llvm::PointerType::get(llvm::Type::getInt8Ty(context_), 0);
-    }
-    else if (dynamic_cast<const IntegerType*>(&type))
-    {
-        return llvm::IntegerType::getInt64Ty(context_);
-    }
-    else if (dynamic_cast<const BooleanType*>(&type))
-    {
-        return llvm::IntegerType::getInt1Ty(context_);
-    }
-    else if (dynamic_cast<const UnitType*>(&type))
-    {
-        return llvm::StructType::getTypeByName(context_, "Unit");
-    }
-    else if (auto ft = dynamic_cast<const FunctionType*>(&type))
-    {
-        return Convert(*ft);
-    }
-    else if (auto rt = dynamic_cast<const ReferenceType*>(&type))
-    {
-        return llvm::PointerType::get(Convert(*rt->base_type), 0);
-    }
-    else
-    {
-        throw GeneratorError(std::format("Cannot convert l0 type {} to llvm type.", type.ToString()));
-    }
+    type.Accept(*this);
+    return result_;
 }
 
 llvm::FunctionType* TypeConverter::Convert(const FunctionType& type)
 {
-    std::vector<llvm::Type*> params;
-    for (const auto& param : *type.parameters)
-    {
-        params.push_back(Convert(*param));
-    }
-
-    auto return_type = Convert(*type.return_type);
-
-    return llvm::FunctionType::get(return_type, params, false);
+    type.Accept(*this);
+    return llvm::dyn_cast<llvm::FunctionType>(result_);
 }
 
 llvm::FunctionType* TypeConverter::GetDeclarationType(const FunctionType& type)
@@ -60,7 +25,7 @@ llvm::FunctionType* TypeConverter::GetDeclarationType(const FunctionType& type)
     std::vector<llvm::Type*> params;
     for (const auto& param : *type.parameters)
     {
-        if (dynamic_cast<const FunctionType*>(param.get()))
+        if (dynamic_pointer_cast<FunctionType>(param))
         {
             params.push_back(llvm::PointerType::getUnqual(context_));
         }
@@ -81,6 +46,38 @@ llvm::FunctionType* TypeConverter::GetDeclarationType(const FunctionType& type)
     }
 
     return llvm::FunctionType::get(return_type, params, false);
+}
+
+void TypeConverter::Visit(const ReferenceType& reference_type)
+{
+    reference_type.base_type->Accept(*this);
+    result_ = llvm::PointerType::get(result_, 0);
+}
+
+void TypeConverter::Visit(const UnitType& unit_type) { result_ = llvm::StructType::getTypeByName(context_, "Unit"); }
+
+void TypeConverter::Visit(const BooleanType& boolean_type) { result_ = llvm::IntegerType::getInt1Ty(context_); }
+
+void TypeConverter::Visit(const IntegerType& integer_type) { result_ = llvm::IntegerType::getInt64Ty(context_); }
+
+void TypeConverter::Visit(const StringType& string_type)
+{
+    result_ = llvm::PointerType::get(llvm::Type::getInt8Ty(context_), 0);
+}
+
+void TypeConverter::Visit(const FunctionType& function_type)
+{
+    std::vector<llvm::Type*> params;
+    for (const auto& param : *function_type.parameters)
+    {
+        param->Accept(*this);
+        params.push_back(result_);
+    }
+
+    function_type.return_type->Accept(*this);
+    auto return_type = result_;
+
+    result_ = llvm::FunctionType::get(return_type, params, false);
 }
 
 }  // namespace l0
