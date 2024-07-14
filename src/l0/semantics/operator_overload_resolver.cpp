@@ -43,12 +43,14 @@ std::shared_ptr<Type> OperatorOverloadResolver::ResolveUnaryOperator(
     }
     if (op == UnaryOp::Operator::Asterisk)
     {
-        auto reference_type = dynamic_pointer_cast<ReferenceType>(operand);
-        if (!reference_type)
+        if (auto reference_type = dynamic_pointer_cast<ReferenceType>(operand))
+        {
+            return reference_type->base_type;
+        }
+        else
         {
             throw SemanticError(std::format("Cannot dereference value of type '{}'.", operand->ToString()));
         }
-        return reference_type->base_type;
     }
 
     if (!unary_operator_overloads_.contains(op))

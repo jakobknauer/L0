@@ -33,6 +33,8 @@ class Assignment : public Expression
 
     std::shared_ptr<Expression> target;
     std::shared_ptr<Expression> expression;
+
+    std::shared_ptr<Expression> target_address;
 };
 
 class UnaryOp : public Expression

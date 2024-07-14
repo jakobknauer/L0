@@ -1,11 +1,13 @@
 add_library(
   semantics
-  operator_overload_resolver.cpp
-  operator_overload_resolver.h
   global_symbol_pass.cpp
   global_symbol_pass.h
   module_validator.cpp
   module_validator.h
+  operator_overload_resolver.cpp
+  operator_overload_resolver.h
+  reference_pass.cpp
+  reference_pass.h
   resolver.cpp
   resolver.h
   return_statement_pass.cpp
