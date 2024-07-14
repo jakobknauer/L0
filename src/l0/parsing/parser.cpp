@@ -79,6 +79,22 @@ Token Parser::Expect(TokenType type)
     return token;
 }
 
+Token Parser::Expect(std::initializer_list<TokenType> types)
+{
+    if (pos_ >= tokens_.size())
+    {
+        throw ParserError(std::format("Expected token of types {}, reached end of token stream instead.", str(types)));
+    }
+    Token token = tokens_.at(pos_++);
+    if (std::ranges::find(types, token.type) != types.end())
+    {
+        return token;
+    }
+    throw ParserError(std::format(
+        "Expected token of types {}, got token '{}' of type {} instead.", str(types), token.lexeme, str(token.type)
+    ));
+}
+
 Token Parser::ExpectKeyword(std::string_view keyword)
 {
     if (pos_ >= tokens_.size())
@@ -150,6 +166,10 @@ std::unique_ptr<Statement> Parser::ParseStatement()
     {
         return ParseWhileLoop();
     }
+    else if (PeekIsKeyword("delete"))
+    {
+        return ParseDeallocation();
+    }
     return ParseExpressionStatement();
 }
 
@@ -218,6 +238,13 @@ std::unique_ptr<Statement> Parser::ParseWhileLoop()
     return std::make_unique<WhileLoop>(std::move(condition), std::move(body));
 }
 
+std::unique_ptr<Statement> Parser::ParseDeallocation()
+{
+    ExpectKeyword("delete");
+    auto operand = ParseExpression();
+    return std::make_unique<Deallocation>(std::move(operand));
+}
+
 std::unique_ptr<Expression> Parser::ParseExpression()
 {
     if (ConsumeIf(TokenType::OpeningParen))
@@ -231,14 +258,13 @@ std::unique_ptr<Expression> Parser::ParseExpression()
 
 std::unique_ptr<Expression> Parser::ParseAssignment()
 {
-    if (Peek().type == TokenType::Identifier && PeekNext().type == TokenType::Equals)
+    auto target = ParseDisjunction();
+    if (ConsumeIf(TokenType::Equals))
     {
-        Token variable = Expect(TokenType::Identifier);
-        Expect(TokenType::Equals);
-        auto expression = ParseExpression();
-        return std::make_unique<Assignment>(std::any_cast<std::string>(variable.data), std::move(expression));
+        auto value = ParseAssignment();
+        return std::make_unique<Assignment>(std::move(target), std::move(value));
     }
-    return ParseDisjunction();
+    return target;
 }
 
 std::unique_ptr<Expression> Parser::ParseDisjunction()
@@ -324,6 +350,18 @@ std::unique_ptr<Expression> Parser::ParseUnary()
             auto expression = ParseUnary();
             return std::make_unique<UnaryOp>(std::move(expression), UnaryOp::Operator::Bang);
         }
+        case TokenType::Ampersand:
+        {
+            Consume();
+            auto expression = ParseUnary();
+            return std::make_unique<UnaryOp>(std::move(expression), UnaryOp::Operator::Ampersand);
+        }
+        case TokenType::Asterisk:
+        {
+            Consume();
+            auto expression = ParseUnary();
+            return std::make_unique<UnaryOp>(std::move(expression), UnaryOp::Operator::Asterisk);
+        }
         default:
         {
             return ParseFactor();
@@ -387,6 +425,10 @@ std::unique_ptr<Expression> Parser::ParseFactor()
                 Consume();
                 return std::make_unique<UnitLiteral>();
             }
+            else if (keyword == "new")
+            {
+                return ParseAllocation();
+            }
             // Fall through intended
         }
         default:
@@ -410,6 +452,21 @@ std::unique_ptr<Expression> Parser::ParseFunction()
     auto statements = ParseStatementBlock(TokenType::ClosingBrace);
     Expect(TokenType::ClosingBrace);
     return std::make_unique<Function>(std::move(parameters), std::move(return_type), std::move(statements));
+}
+
+std::unique_ptr<Expression> Parser::ParseAllocation()
+{
+    ExpectKeyword("new");
+
+    std::unique_ptr<Expression> size;
+    if (ConsumeIf(TokenType::OpeningBracket))
+    {
+        size = ParseExpression();
+        Expect(TokenType::ClosingBracket);
+    }
+
+    auto annotation = ParseTypeAnnotation();
+    return std::make_unique<Allocation>(std::move(annotation), std::move(size));
 }
 
 std::unique_ptr<ArgumentList> Parser::ParseArgumentList()
@@ -517,6 +574,11 @@ std::unique_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
         {
             return ParseSimpleTypeAnnotation();
         }
+        case TokenType::Ampersand:
+        case TokenType::AmpersandAmpersand:
+        {
+            return ParseReferenceTypeAnnotation();
+        }
         case TokenType::OpeningParen:
         {
             return ParseFunctionTypeAnnotation();
@@ -524,7 +586,7 @@ std::unique_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
         default:
         {
             throw ParserError(std::format(
-                "Expected identifier, or '(', got token '{}' of type {} instead.", token.lexeme, str(token.type)
+                "Expected identifier, '&', or '(', got token '{}' of type {} instead.", token.lexeme, str(token.type)
             ));
         }
     }
@@ -534,6 +596,22 @@ std::unique_ptr<TypeAnnotation> Parser::ParseSimpleTypeAnnotation()
 {
     Token token = Expect(TokenType::Identifier);
     return std::make_unique<SimpleTypeAnnotation>(std::any_cast<std::string>(token.data));
+}
+
+std::unique_ptr<TypeAnnotation> Parser::ParseReferenceTypeAnnotation()
+{
+    auto qualifier = Expect({TokenType::Ampersand, TokenType::AmpersandAmpersand});
+
+    auto base_type = ParseTypeAnnotation();
+    auto single_ref = std::make_unique<ReferenceTypeAnnotation>(std::move(base_type));
+
+    if (qualifier.type == TokenType::Ampersand)
+    {
+        return single_ref;
+    }
+
+    auto double_ref = std::make_unique<ReferenceTypeAnnotation>(std::move(single_ref));
+    return std::move(double_ref);
 }
 
 std::unique_ptr<TypeAnnotation> Parser::ParseFunctionTypeAnnotation()

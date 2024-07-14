@@ -32,6 +32,14 @@ void TypeAnnotationConverter::Visit(const SimpleTypeAnnotation& sta)
     }
 }
 
+void TypeAnnotationConverter::Visit(const ReferenceTypeAnnotation& rta)
+{
+    rta.base_type->Accept(*this);
+    auto reference_type = std::make_shared<ReferenceType>();
+    reference_type->base_type = result_;
+    result_ = reference_type;
+}
+
 void TypeAnnotationConverter::Visit(const FunctionTypeAnnotation& fta)
 {
     auto type = std::make_shared<FunctionType>();

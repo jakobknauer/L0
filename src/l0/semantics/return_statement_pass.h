@@ -28,6 +28,7 @@ class ReturnStatementPass : private IStatementVisitor, private IExpressionVisito
     void Visit(ReturnStatement& return_statement) override;
     void Visit(ConditionalStatement& conditional_statement) override;
     void Visit(WhileLoop& while_loop) override;
+    void Visit(Deallocation& deallocation) override;
 
     void Visit(Assignment& assignment) override;
     void Visit(UnaryOp& unary_op) override;
@@ -39,6 +40,7 @@ class ReturnStatementPass : private IStatementVisitor, private IExpressionVisito
     void Visit(IntegerLiteral& literal) override;
     void Visit(StringLiteral& literal) override;
     void Visit(Function& function) override;
+    void Visit(Allocation& allocation) override;
 
     void Visit(StatementBlock& statement_block);
 };

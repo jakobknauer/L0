@@ -69,27 +69,27 @@ void Generator::DeclareGlobals()
 {
     for (const auto& statement : *ast_module_.statements)
     {
-        auto* declaration = dynamic_cast<Declaration*>(statement.get());
-        const Type& type = *declaration->scope->GetType(declaration->variable);
+        auto declaration = dynamic_cast<Declaration*>(statement.get());
+        auto type = declaration->scope->GetType(declaration->variable);
 
-        if (auto ft = dynamic_cast<const FunctionType*>(&type))
+        if (auto ft = dynamic_pointer_cast<FunctionType>(type))
         {
             auto llvm_type = type_converter_.GetDeclarationType(*ft);
             llvm::FunctionCallee function_callee = llvm_module_.getOrInsertFunction(declaration->variable, llvm_type);
 
             declaration->scope->SetLLVMValue(declaration->variable, function_callee.getCallee());
         }
-        else if (dynamic_cast<const StringType*>(&type))
+        else if (dynamic_pointer_cast<StringType>(type))
         {
             auto literal = dynamic_cast<StringLiteral*>(declaration->initializer.get());
             auto global = builder_.CreateGlobalStringPtr(literal->value, declaration->variable, 0, &llvm_module_);
 
             declaration->scope->SetLLVMValue(declaration->variable, global);
         }
-        else if (dynamic_cast<const IntegerType*>(&type))
+        else if (dynamic_pointer_cast<IntegerType>(type))
         {
             auto literal = dynamic_cast<IntegerLiteral*>(declaration->initializer.get());
-            auto llvm_type = type_converter_.Convert(type);
+            auto llvm_type = type_converter_.Convert(*type);
 
             llvm_module_.getOrInsertGlobal(declaration->variable, llvm_type);
             auto global = llvm_module_.getNamedGlobal(declaration->variable);
@@ -103,7 +103,7 @@ void Generator::DeclareGlobals()
         else
         {
             throw GeneratorError(
-                std::format("Unexpected type for global variable '{}': '{}'.", declaration->variable, type.ToString())
+                std::format("Unexpected type for global variable '{}': '{}'.", declaration->variable, type->ToString())
             );
         }
     }
@@ -114,9 +114,9 @@ void Generator::DefineGlobals()
     for (const auto& statement : *ast_module_.statements)
     {
         auto* declaration = dynamic_cast<Declaration*>(statement.get());
-        const Type& type = *declaration->scope->GetType(declaration->variable);
+        auto type = declaration->scope->GetType(declaration->variable);
 
-        auto function_type = dynamic_cast<const FunctionType*>(&type);
+        auto function_type = dynamic_pointer_cast<FunctionType>(type);
         if (!function_type)
         {
             continue;
@@ -141,8 +141,8 @@ void Generator::Visit(const Declaration& declaration)
     declaration.initializer->Accept(*this);
     llvm::Value* initializer = result_;
 
-    const Type& type = *declaration.scope->GetType(declaration.variable);
-    llvm::Type* llvm_type = type_converter_.Convert(type);
+    auto type = declaration.scope->GetType(declaration.variable);
+    llvm::Type* llvm_type = type_converter_.Convert(*type);
 
     if (llvm::isa<llvm::FunctionType>(llvm_type))
     {
@@ -226,7 +226,6 @@ void Generator::Visit(const ConditionalStatement& conditional_statement)
 void Generator::Visit(const WhileLoop& while_loop)
 {
     llvm::Function* llvm_function = builder_.GetInsertBlock()->getParent();
-    // llvm::BasicBlock* preheader = builder_.GetInsertBlock();
     llvm::BasicBlock* header = llvm::BasicBlock::Create(context_, "loopheader", llvm_function);
     llvm::BasicBlock* body = llvm::BasicBlock::Create(context_, "loopbody");
     llvm::BasicBlock* afterloop = llvm::BasicBlock::Create(context_, "afterloop");
@@ -254,30 +253,91 @@ void Generator::Visit(const WhileLoop& while_loop)
     result_ = nullptr;
 }
 
+void Generator::Visit(const Deallocation& deallocation)
+{
+    llvm::Type* llvm_ptr_type = llvm::PointerType::get(context_, 0);
+    llvm::Type* llvm_void_type = llvm::Type::getVoidTy(context_);
+    llvm::FunctionType* ptr_to_void = llvm::FunctionType::get(llvm_void_type, llvm_ptr_type, false);
+    llvm::FunctionCallee free_function = llvm_module_.getOrInsertFunction("free", ptr_to_void);
+
+    deallocation.reference->Accept(*this);
+    llvm::Value* operand = result_;
+    std::vector<llvm::Value*> arguments{operand};
+
+    result_ = builder_.CreateCall(ptr_to_void, free_function.getCallee(), arguments);
+}
+
 void Generator::Visit(const Assignment& assignment)
 {
+    llvm::Value* target;
+    if (auto variable = dynamic_cast<Variable*>(assignment.target.get()))
+    {
+        target = variable->scope->GetLLVMValue(variable->name);
+    }
+    else if (auto unary_op = dynamic_cast<UnaryOp*>(assignment.target.get()))
+    {
+        if (unary_op->op == UnaryOp::Operator::Asterisk)
+        {
+            unary_op->operand->Accept(*this);
+            target = result_;
+        }
+        else
+        {
+            throw GeneratorError("Can only assign to variables or dereferenced pointers.");
+        }
+    }
+    else
+    {
+        throw GeneratorError("Can only assign to variables or dereferenced pointers.");
+    }
+
     assignment.expression->Accept(*this);
-    llvm::Value* variable = assignment.scope->GetLLVMValue(assignment.variable);
-    builder_.CreateStore(result_, variable);
+    auto value = result_;
+
+    builder_.CreateStore(value, target);
     // leave result_ as it is :)
 }
 
 void Generator::Visit(const UnaryOp& unary_op)
 {
-    unary_op.operand->Accept(*this);
-    llvm::Value* operand = result_;
-
     switch (unary_op.op)
     {
         case UnaryOp::Operator::Plus:
+        {
+            unary_op.operand->Accept(*this);
+            llvm::Value* operand = result_;
             result_ = operand;
             break;
+        }
         case l0::UnaryOp::Operator::Minus:
+        {
+            unary_op.operand->Accept(*this);
+            llvm::Value* operand = result_;
             result_ = builder_.CreateNeg(operand, "negtmp");
             break;
+        }
         case l0::UnaryOp::Operator::Bang:
+        {
+            unary_op.operand->Accept(*this);
+            llvm::Value* operand = result_;
             result_ = builder_.CreateNot(operand, "nottmp");
             break;
+        }
+        case l0::UnaryOp::Operator::Ampersand:
+        {
+            const Variable* variable = dynamic_cast<const Variable*>(unary_op.operand.get());
+            if (!variable)
+            {
+                throw GeneratorError("Operand of unary operator '&' is not a variable.");
+            }
+            result_ = variable->scope->GetLLVMValue(variable->name);
+            break;
+        }
+        case l0::UnaryOp::Operator::Asterisk:
+        {
+            unary_op.operand->Accept(*this);
+            result_ = builder_.CreateLoad(type_converter_.Convert(*unary_op.type), result_, "dereftmp");
+        }
     }
 }
 
@@ -292,26 +352,49 @@ void Generator::Visit(const BinaryOp& binary_op)
     switch (binary_op.op)
     {
         case BinaryOp::Operator::Plus:
-            result_ = builder_.CreateAdd(left, right, "addtmp");
+        {
+            if (auto reference_type = dynamic_pointer_cast<ReferenceType>(binary_op.left->type))
+            {
+                auto llvm_type = type_converter_.Convert(*binary_op.type);
+                std::vector<llvm::Value*> indices = {right};
+                result_ = builder_.CreateGEP(llvm_type, left, indices, "geptmp");
+            }
+            else
+            {
+                result_ = builder_.CreateAdd(left, right, "addtmp");
+            }
             break;
+        }
         case BinaryOp::Operator::Minus:
+        {
             result_ = builder_.CreateSub(left, right, "subtmp");
             break;
+        }
         case BinaryOp::Operator::Asterisk:
+        {
             result_ = builder_.CreateMul(left, right, "multmp");
             break;
+        }
         case BinaryOp::Operator::AmpersandAmpersand:
+        {
             result_ = builder_.CreateLogicalAnd(left, right, "andtmp");
             break;
+        }
         case BinaryOp::Operator::PipePipe:
+        {
             result_ = builder_.CreateLogicalOr(left, right, "ortmp");
             break;
+        }
         case BinaryOp::Operator::EqualsEquals:
+        {
             result_ = builder_.CreateICmpEQ(left, right, "eqtmp");
             break;
+        }
         case BinaryOp::Operator::BangEquals:
+        {
             result_ = builder_.CreateICmpNE(left, right, "netmp");
             break;
+        }
     }
 }
 
@@ -354,7 +437,7 @@ void Generator::Visit(const Call& call)
     call.function->Accept(*this);
     llvm::Value* llvm_function = result_;
 
-    FunctionType* function_type = dynamic_cast<FunctionType*>(call.function->type.get());
+    auto function_type = dynamic_pointer_cast<FunctionType>(call.function->type);
     llvm::FunctionType* llvm_function_type = type_converter_.GetDeclarationType(*function_type);
 
     std::vector<llvm::Value*> arguments{};
@@ -403,6 +486,31 @@ void Generator::Visit(const Function& function)
     result_ = llvm_function;
 
     builder_.SetInsertPoint(previous_block);
+}
+
+void Generator::Visit(const Allocation& allocation)
+{
+    llvm::Type* llvm_int_type = type_converter_.Convert(IntegerType());
+    llvm::Type* llvm_ptr_type = llvm::PointerType::get(context_, 0);
+    llvm::FunctionType* int_to_ptr = llvm::FunctionType::get(llvm_ptr_type, llvm_int_type, false);
+    llvm::FunctionCallee malloc_function = llvm_module_.getOrInsertFunction("malloc", int_to_ptr);
+
+    llvm::Value* size_to_allocate;
+    llvm::Type* allocated_llvm_type = type_converter_.Convert(*allocation.allocated_type);
+    llvm::Value* type_size = llvm::ConstantInt::get(llvm_int_type, data_layout_.getTypeAllocSize(allocated_llvm_type));
+    if (allocation.size)
+    {
+        allocation.size->Accept(*this);
+        auto array_size = result_;
+        size_to_allocate = builder_.CreateMul(type_size, array_size);
+    }
+    else
+    {
+        size_to_allocate = type_size;
+    }
+    std::vector<llvm::Value*> arguments{size_to_allocate};
+
+    result_ = builder_.CreateCall(int_to_ptr, malloc_function.getCallee(), arguments, "allocation");
 }
 
 void Generator::GenerateFunctionBody(const Function& function, llvm::Function& llvm_function)

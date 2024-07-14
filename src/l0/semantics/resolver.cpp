@@ -79,9 +79,11 @@ void Resolver::Visit(const WhileLoop& while_loop)
     scopes_.pop_back();
 }
 
+void Resolver::Visit(const Deallocation& deallocation) { deallocation.reference->Accept(*this); }
+
 void Resolver::Visit(const Assignment& assignment)
 {
-    assignment.scope = Resolve(assignment.variable);
+    assignment.target->Accept(*this);
     assignment.expression->Accept(*this);
 }
 
@@ -134,6 +136,15 @@ void Resolver::Visit(const Function& function)
 
     local_ = restore_local;
     scopes_.pop_back();
+}
+
+void Resolver::Visit(const Allocation& allocation)
+{
+    if(allocation.size)
+    {
+        allocation.size->Accept(*this);
+    }
+    allocation.allocated_type = converter_.Convert(*allocation.annotation);
 }
 
 std::shared_ptr<Scope> Resolver::Resolve(const std::string name)

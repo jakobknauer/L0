@@ -29,6 +29,8 @@ std::string str(TokenType type)
             return "Slash";
         case TokenType::Bang:
             return "Bang";
+        case TokenType::Ampersand:
+            return "Ampersand";
         case TokenType::EqualsEquals:
             return "EqualsEquals";
         case TokenType::BangEquals:
@@ -41,6 +43,10 @@ std::string str(TokenType type)
             return "OpeningParen";
         case TokenType::ClosingParen:
             return "ClosingParen";
+        case TokenType::OpeningBracket:
+            return "OpeningBracket";
+        case TokenType::ClosingBracket:
+            return "ClosingBracket";
         case TokenType::OpeningBrace:
             return "OpeningBrace";
         case TokenType::ClosingBrace:

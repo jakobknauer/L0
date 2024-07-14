@@ -3,6 +3,7 @@
 
 #include <any>
 #include <cstdint>
+#include <sstream>
 #include <string>
 
 namespace l0
@@ -24,6 +25,7 @@ enum class TokenType
     Asterisk,
     Slash,
     Bang,
+    Ampersand,
     EqualsEquals,
     BangEquals,
     AmpersandAmpersand,
@@ -31,6 +33,8 @@ enum class TokenType
 
     OpeningParen,
     ClosingParen,
+    OpeningBracket,
+    ClosingBracket,
     OpeningBrace,
     ClosingBrace,
     Comma,
@@ -42,6 +46,18 @@ enum class TokenType
 };
 
 std::string str(TokenType type);
+
+std::string str(const auto& types)
+{
+    std::stringstream ss{};
+    ss << "{";
+    for (auto type : types)
+    {
+        ss << str(type) << ",";
+    }
+    ss << "}";
+    return ss.str();
+}
 
 struct Token
 {

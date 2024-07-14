@@ -87,9 +87,16 @@ void AstPrinter::Visit(const WhileLoop& while_loop)
     out_ << "}";
 }
 
+void AstPrinter::Visit(const Deallocation& deallocation)
+{
+    out_ << "delete ";
+    deallocation.reference->Accept(*this);
+}
+
 void AstPrinter::Visit(const Assignment& assignment)
 {
-    out_ << assignment.variable << " = ";
+    assignment.target->Accept(*this);
+    out_ << " = ";
     assignment.expression->Accept(*this);
 }
 
@@ -153,6 +160,19 @@ void AstPrinter::Visit(const Function& function)
     out_ << "}";
 }
 
+void AstPrinter::Visit(const Allocation& allocation)
+{
+    out_ << "new";
+    if(allocation.size)
+    {
+        out_ << "[";
+        allocation.size->Accept(*this);
+        out_ << "]";
+    }
+    out_ << " ";
+    allocation.annotation->Accept(*this);
+}
+
 void AstPrinter::Visit(const SimpleTypeAnnotation& sta) { out_ << sta.type; }
 
 void AstPrinter::Visit(const FunctionTypeAnnotation& fta)
@@ -167,6 +187,12 @@ void AstPrinter::Visit(const FunctionTypeAnnotation& fta)
     fta.return_type->Accept(*this);
 }
 
+void AstPrinter::Visit(const ReferenceTypeAnnotation& rta)
+{
+    out_ << "&";
+    rta.base_type->Accept(*this);
+}
+
 std::string str(UnaryOp::Operator op)
 {
     switch (op)
@@ -177,6 +203,10 @@ std::string str(UnaryOp::Operator op)
             return "-";
         case UnaryOp::Operator::Bang:
             return "!";
+        case UnaryOp::Operator::Ampersand:
+            return "&";
+        case UnaryOp::Operator::Asterisk:
+            return "*";
     }
 }
 

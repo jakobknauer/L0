@@ -15,8 +15,10 @@ class OperatorOverloadResolver
 {
    public:
     OperatorOverloadResolver();
-    std::shared_ptr<Type> ResolveUnaryOperator(UnaryOp::Operator op, const Type& operand) const;
-    std::shared_ptr<Type> ResolveBinaryOperator(BinaryOp::Operator op, const Type& lhs, const Type& rhs) const;
+    std::shared_ptr<Type> ResolveUnaryOperator(UnaryOp::Operator op, std::shared_ptr<Type> operand) const;
+    std::shared_ptr<Type> ResolveBinaryOperator(
+        BinaryOp::Operator op, std::shared_ptr<Type> lhs, std::shared_ptr<Type> rhs
+    ) const;
 
    private:
     struct UnaryOpSignature

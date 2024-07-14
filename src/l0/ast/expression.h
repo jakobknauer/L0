@@ -26,15 +26,13 @@ class Expression
 class Assignment : public Expression
 {
    public:
-    Assignment(std::string variable, std::unique_ptr<Expression> expression);
+    Assignment(std::unique_ptr<Expression> target, std::unique_ptr<Expression> expression);
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
-    std::string variable;
+    std::unique_ptr<Expression> target;
     std::unique_ptr<Expression> expression;
-
-    mutable std::shared_ptr<Scope> scope;
 };
 
 class UnaryOp : public Expression
@@ -45,6 +43,8 @@ class UnaryOp : public Expression
         Plus,
         Minus,
         Bang,
+        Ampersand,
+        Asterisk,
     };
 
     UnaryOp(std::unique_ptr<Expression> operand, Operator op);
@@ -184,6 +184,20 @@ class Function : public Expression
     mutable std::shared_ptr<Scope> locals = std::make_shared<Scope>();
 };
 
+class Allocation : public Expression
+{
+   public:
+    Allocation(std::unique_ptr<TypeAnnotation> annotation, std::unique_ptr<Expression> size);
+
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
+
+    std::unique_ptr<TypeAnnotation> annotation;
+    std::unique_ptr<Expression> size;
+
+    mutable std::shared_ptr<Type> allocated_type;
+};
+
 class IConstExpressionVisitor
 {
    public:
@@ -199,6 +213,7 @@ class IConstExpressionVisitor
     virtual void Visit(const IntegerLiteral& literal) = 0;
     virtual void Visit(const StringLiteral& literal) = 0;
     virtual void Visit(const Function& function) = 0;
+    virtual void Visit(const Allocation& allocation) = 0;
 };
 
 class IExpressionVisitor
@@ -216,6 +231,7 @@ class IExpressionVisitor
     virtual void Visit(IntegerLiteral& literal) = 0;
     virtual void Visit(StringLiteral& literal) = 0;
     virtual void Visit(Function& function) = 0;
+    virtual void Visit(Allocation& allocation) = 0;
 };
 
 }  // namespace l0

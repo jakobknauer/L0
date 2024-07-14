@@ -8,19 +8,37 @@ namespace l0
 
 bool operator==(const Type& lhs, const Type& rhs) { return typeid(lhs) == typeid(rhs) && lhs.Equals(rhs); }
 
+std::string ReferenceType::ToString() const { return std::format("&{}", base_type->ToString()); }
+
+void ReferenceType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
+
+bool ReferenceType::Equals(const Type& other) const
+{
+    auto other_as_reference_type = dynamic_cast<const ReferenceType*>(&other);
+    return other_as_reference_type && (*base_type == *other_as_reference_type->base_type);
+}
+
 std::string UnitType::ToString() const { return "()"; }
+
+void UnitType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
 
 bool UnitType::Equals(const Type& other) const { return true; }
 
 std::string BooleanType::ToString() const { return "Boolean"; }
 
+void BooleanType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
+
 bool BooleanType::Equals(const Type& other) const { return true; }
 
 std::string IntegerType::ToString() const { return "Integer"; }
 
+void IntegerType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
+
 bool IntegerType::Equals(const Type& other) const { return true; }
 
 std::string StringType::ToString() const { return "String"; }
+
+void StringType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
 
 bool StringType::Equals(const Type& other) const { return true; }
 
@@ -35,6 +53,8 @@ std::string FunctionType::ToString() const
     ss << ") -> " << this->return_type->ToString();
     return ss.str();
 }
+
+void FunctionType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
 
 bool FunctionType::Equals(const Type& other) const
 {

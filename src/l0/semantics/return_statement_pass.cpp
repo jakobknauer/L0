@@ -60,7 +60,17 @@ void ReturnStatementPass::Visit(WhileLoop& while_loop)
     statement_returns_ = false;
 }
 
-void ReturnStatementPass::Visit(Assignment& assignment) { assignment.expression->Accept(*this); }
+void ReturnStatementPass::Visit(Deallocation& deallocation)
+{
+    deallocation.reference->Accept(*this);
+    statement_returns_ = false;
+}
+
+void ReturnStatementPass::Visit(Assignment& assignment)
+{
+    assignment.target->Accept(*this);
+    assignment.expression->Accept(*this);
+}
 
 void ReturnStatementPass::Visit(UnaryOp& unary_op) { unary_op.operand->Accept(*this); }
 
@@ -107,6 +117,14 @@ void ReturnStatementPass::Visit(Function& function)
     }
 
     statement_returns_ = false;
+}
+
+void ReturnStatementPass::Visit(Allocation& allocation)
+{
+    if (allocation.size)
+    {
+        allocation.size->Accept(*this);
+    }
 }
 
 void ReturnStatementPass::Visit(StatementBlock& statement_block)

@@ -29,6 +29,7 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     llvm::LLVMContext context_{};
     llvm::IRBuilder<> builder_;
     llvm::Module llvm_module_;
+    llvm::DataLayout data_layout_{&llvm_module_};
 
     TypeConverter type_converter_;
     llvm::Value* result_;
@@ -42,6 +43,7 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     void Visit(const ReturnStatement& return_statement) override;
     void Visit(const ConditionalStatement& conditional_statement) override;
     void Visit(const WhileLoop& while_loop) override;
+    void Visit(const Deallocation& deallocation) override;
 
     void Visit(const Assignment& assignment) override;
     void Visit(const UnaryOp& unary_op) override;
@@ -53,6 +55,7 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     void Visit(const IntegerLiteral& literal) override;
     void Visit(const StringLiteral& literal) override;
     void Visit(const Function& function) override;
+    void Visit(const Allocation& allocation) override;
 
     void GenerateFunctionBody(const Function& function, llvm::Function& llvm_function);
 };

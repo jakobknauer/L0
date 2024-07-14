@@ -6,8 +6,8 @@
 namespace l0
 {
 
-Assignment::Assignment(std::string variable, std::unique_ptr<Expression> expression)
-    : variable{variable}, expression{std::move(expression)}
+Assignment::Assignment(std::unique_ptr<Expression> target, std::unique_ptr<Expression> expression)
+    : target{std::move(target)}, expression{std::move(expression)}
 {
 }
 
@@ -86,5 +86,14 @@ Function::Function(
 void Function::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*this); }
 
 void Function::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
+
+Allocation::Allocation(std::unique_ptr<TypeAnnotation> annotation, std::unique_ptr<Expression> size)
+    : annotation{std::move(annotation)}, size{std::move(size)}
+{
+}
+
+void Allocation::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*this); }
+
+void Allocation::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
 
 }  // namespace l0

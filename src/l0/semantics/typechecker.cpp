@@ -86,9 +86,23 @@ void Typechecker::Visit(const WhileLoop& while_loop)
     }
 }
 
+void Typechecker::Visit(const Deallocation& deallocation)
+{
+    deallocation.reference->Accept(*this);
+    auto rt = dynamic_cast<ReferenceType*>(deallocation.reference->type.get());
+    if (!rt)
+    {
+        throw SemanticError(std::format(
+            "Operand of delete statement must be of reference type, but is of type '{}'.",
+            deallocation.reference->type->ToString()
+        ));
+    }
+}
+
 void Typechecker::Visit(const Assignment& assignment)
 {
-    auto declared = assignment.scope->GetType(assignment.variable);
+    assignment.target->Accept(*this);
+    auto declared = assignment.target->type;
 
     assignment.expression->Accept(*this);
     auto assigned = assignment.expression->type;
@@ -96,8 +110,7 @@ void Typechecker::Visit(const Assignment& assignment)
     if (*declared != *assigned)
     {
         throw SemanticError(std::format(
-            "Variable '{}' was declared with type {}, but is assigned value of type {}.",
-            assignment.variable,
+            "Target of assignment is of type {}, but is assigned value of type {}.",
             declared->ToString(),
             assigned->ToString()
         ));
@@ -110,7 +123,7 @@ void Typechecker::Visit(const UnaryOp& unary_op)
 {
     unary_op.operand->Accept(*this);
     auto operand = unary_op.operand->type;
-    unary_op.type = operator_overload_resolver_.ResolveUnaryOperator(unary_op.op, *operand);
+    unary_op.type = operator_overload_resolver_.ResolveUnaryOperator(unary_op.op, operand);
 }
 
 void Typechecker::Visit(const BinaryOp& binary_op)
@@ -121,7 +134,7 @@ void Typechecker::Visit(const BinaryOp& binary_op)
     binary_op.right->Accept(*this);
     auto rhs = binary_op.right->type;
 
-    binary_op.type = operator_overload_resolver_.ResolveBinaryOperator(binary_op.op, *lhs, *rhs);
+    binary_op.type = operator_overload_resolver_.ResolveBinaryOperator(binary_op.op, lhs, rhs);
 }
 
 void Typechecker::Visit(const Variable& variable) { variable.type = variable.scope->GetType(variable.name); }
@@ -201,6 +214,24 @@ void Typechecker::Visit(const Function& function)
     type->return_type = function.return_type;
 
     function.type = type;
+}
+
+void Typechecker::Visit(const Allocation& allocation)
+{
+    if (allocation.size)
+    {
+        allocation.size->Accept(*this);
+        auto integer_type = simple_types_.at("Integer");
+        if (*allocation.size->type != *integer_type)
+        {
+            throw SemanticError(
+                std::format("Allocation size must be of type Integer, but is of type {}.", allocation.type->ToString())
+            );
+        }
+    }
+    auto type = std::make_shared<ReferenceType>();
+    type->base_type = allocation.allocated_type;
+    allocation.type = type;
 }
 
 }  // namespace l0

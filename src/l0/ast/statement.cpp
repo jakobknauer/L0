@@ -48,4 +48,10 @@ void WhileLoop::Accept(IConstStatementVisitor& visitor) const { visitor.Visit(*t
 
 void WhileLoop::Accept(IStatementVisitor& visitor) { visitor.Visit(*this); }
 
+Deallocation::Deallocation(std::unique_ptr<Expression> reference) : reference{std::move(reference)} {}
+
+void Deallocation::Accept(IConstStatementVisitor& visitor) const { visitor.Visit(*this); }
+
+void Deallocation::Accept(IStatementVisitor& visitor) { visitor.Visit(*this); }
+
 }  // namespace l0

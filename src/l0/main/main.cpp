@@ -133,4 +133,6 @@ int main(int argc, char* argv[])
         std::println("Generator error occured: {}", ge.GetMessage());
         return -1;
     }
+
+    std::println("Leaving.");
 }

@@ -28,6 +28,16 @@ class SimpleTypeAnnotation : public TypeAnnotation
     std::string type;
 };
 
+class ReferenceTypeAnnotation : public TypeAnnotation
+{
+   public:
+    ReferenceTypeAnnotation(std::unique_ptr<TypeAnnotation> base_type);
+
+    void Accept(ITypeAnnotationVisitor& visitor) const override;
+
+    std::unique_ptr<TypeAnnotation> base_type;
+};
+
 using ParameterListAnnotation = std::vector<std::unique_ptr<TypeAnnotation>>;
 
 class FunctionTypeAnnotation : public TypeAnnotation
@@ -49,6 +59,7 @@ class ITypeAnnotationVisitor
     virtual ~ITypeAnnotationVisitor() = default;
 
     virtual void Visit(const SimpleTypeAnnotation& sta) = 0;
+    virtual void Visit(const ReferenceTypeAnnotation& rta) = 0;
     virtual void Visit(const FunctionTypeAnnotation& fta) = 0;
 };
 

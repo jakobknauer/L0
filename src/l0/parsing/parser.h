@@ -38,6 +38,7 @@ class Parser : public IParser
     std::optional<Token> ConsumeIf(std::initializer_list<TokenType> type);
     Token ConsumeAll(TokenType type);
     Token Expect(TokenType type);
+    Token Expect(std::initializer_list<TokenType> types);
     Token ExpectKeyword(std::string_view keyword);
 
     std::unique_ptr<Module> ParseModule();
@@ -48,6 +49,7 @@ class Parser : public IParser
     std::unique_ptr<Statement> ParseReturnStatement();
     std::unique_ptr<Statement> ParseConditionalStatement();
     std::unique_ptr<Statement> ParseWhileLoop();
+    std::unique_ptr<Statement> ParseDeallocation();
     std::unique_ptr<Expression> ParseExpression();
     std::unique_ptr<Expression> ParseAssignment();
     std::unique_ptr<Expression> ParseDisjunction();
@@ -58,11 +60,13 @@ class Parser : public IParser
     std::unique_ptr<Expression> ParseUnary();
     std::unique_ptr<Expression> ParseFactor();
     std::unique_ptr<Expression> ParseFunction();
+    std::unique_ptr<Expression> ParseAllocation();
     std::unique_ptr<ArgumentList> ParseArgumentList();
     std::unique_ptr<ParameterDeclarationList> ParseParameterDeclarationList();
     std::unique_ptr<ParameterDeclaration> ParseParameterDeclaration();
     std::unique_ptr<TypeAnnotation> ParseTypeAnnotation();
     std::unique_ptr<TypeAnnotation> ParseSimpleTypeAnnotation();
+    std::unique_ptr<TypeAnnotation> ParseReferenceTypeAnnotation();
     std::unique_ptr<TypeAnnotation> ParseFunctionTypeAnnotation();
     std::unique_ptr<ParameterListAnnotation> ParseParameterListAnnotation();
 };
