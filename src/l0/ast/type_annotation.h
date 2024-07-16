@@ -31,26 +31,26 @@ class SimpleTypeAnnotation : public TypeAnnotation
 class ReferenceTypeAnnotation : public TypeAnnotation
 {
    public:
-    ReferenceTypeAnnotation(std::unique_ptr<TypeAnnotation> base_type);
+    ReferenceTypeAnnotation(std::shared_ptr<TypeAnnotation> base_type);
 
     void Accept(ITypeAnnotationVisitor& visitor) const override;
 
-    std::unique_ptr<TypeAnnotation> base_type;
+    std::shared_ptr<TypeAnnotation> base_type;
 };
 
-using ParameterListAnnotation = std::vector<std::unique_ptr<TypeAnnotation>>;
+using ParameterListAnnotation = std::vector<std::shared_ptr<TypeAnnotation>>;
 
 class FunctionTypeAnnotation : public TypeAnnotation
 {
    public:
     FunctionTypeAnnotation(
-        std::unique_ptr<ParameterListAnnotation> parameters, std::unique_ptr<TypeAnnotation> return_type
+        std::shared_ptr<ParameterListAnnotation> parameters, std::shared_ptr<TypeAnnotation> return_type
     );
 
     void Accept(ITypeAnnotationVisitor& visitor) const override;
 
-    std::unique_ptr<ParameterListAnnotation> parameters;
-    std::unique_ptr<TypeAnnotation> return_type;
+    std::shared_ptr<ParameterListAnnotation> parameters;
+    std::shared_ptr<TypeAnnotation> return_type;
 };
 
 class ITypeAnnotationVisitor

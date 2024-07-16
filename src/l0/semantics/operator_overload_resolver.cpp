@@ -43,7 +43,7 @@ std::shared_ptr<Type> OperatorOverloadResolver::ResolveUnaryOperator(
     }
     if (op == UnaryOp::Operator::Asterisk)
     {
-        auto reference_type = dynamic_cast<ReferenceType*>(operand.get());
+        auto reference_type = dynamic_pointer_cast<ReferenceType>(operand);
         if (!reference_type)
         {
             throw SemanticError(std::format("Cannot dereference value of type '{}'.", operand->ToString()));
@@ -79,7 +79,7 @@ std::shared_ptr<Type> OperatorOverloadResolver::ResolveBinaryOperator(
 {
     if (op == BinaryOp::Operator::Plus)
     {
-        auto reference_type = dynamic_cast<ReferenceType*>(lhs.get());
+        auto reference_type = dynamic_pointer_cast<ReferenceType>(lhs);
         if (reference_type && *rhs == IntegerType{})
         {
             return lhs;

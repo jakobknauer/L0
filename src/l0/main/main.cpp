@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
     }
 
     std::println("Syntactical analysis...");
-    std::unique_ptr<Module> module;
+    std::shared_ptr<Module> module;
     try
     {
         module = Parser{tokens}.Parse();

@@ -36,7 +36,7 @@ llvm::FunctionType* TypeConverter::GetDeclarationType(const FunctionType& type)
     }
 
     llvm::Type* return_type;
-    if (dynamic_cast<const FunctionType*>(type.return_type.get()))
+    if (dynamic_pointer_cast<FunctionType>(type.return_type))
     {
         return_type = llvm::PointerType::getUnqual(context_);
     }

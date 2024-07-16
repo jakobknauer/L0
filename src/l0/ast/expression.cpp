@@ -6,8 +6,8 @@
 namespace l0
 {
 
-Assignment::Assignment(std::unique_ptr<Expression> target, std::unique_ptr<Expression> expression)
-    : target{std::move(target)}, expression{std::move(expression)}
+Assignment::Assignment(std::shared_ptr<Expression> target, std::shared_ptr<Expression> expression)
+    : target{target}, expression{expression}
 {
 }
 
@@ -15,14 +15,14 @@ void Assignment::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(
 
 void Assignment::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
 
-UnaryOp::UnaryOp(std::unique_ptr<Expression> operand, Operator op) : operand{std::move(operand)}, op{op} {}
+UnaryOp::UnaryOp(std::shared_ptr<Expression> operand, Operator op) : operand{operand}, op{op} {}
 
 void UnaryOp::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*this); }
 
 void UnaryOp::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
 
-BinaryOp::BinaryOp(std::unique_ptr<Expression> left, std::unique_ptr<Expression> right, Operator op)
-    : left{std::move(left)}, right{std::move(right)}, op{op}
+BinaryOp::BinaryOp(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right, Operator op)
+    : left{left}, right{right}, op{op}
 {
 }
 
@@ -36,8 +36,8 @@ void Variable::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*t
 
 void Variable::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
 
-Call::Call(std::unique_ptr<Variable> function, std::unique_ptr<ArgumentList> arguments)
-    : function{std::move(function)}, arguments{std::move(arguments)}
+Call::Call(std::shared_ptr<Variable> function, std::shared_ptr<ArgumentList> arguments)
+    : function{function}, arguments{arguments}
 {
 }
 
@@ -67,19 +67,19 @@ void StringLiteral::Accept(IConstExpressionVisitor& visitor) const { visitor.Vis
 
 void StringLiteral::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
 
-ParameterDeclaration::ParameterDeclaration(std::string name, std::unique_ptr<TypeAnnotation> annotation)
-    : name{name}, annotation{std::move(annotation)}
+ParameterDeclaration::ParameterDeclaration(std::string name, std::shared_ptr<TypeAnnotation> annotation)
+    : name{name}, annotation{annotation}
 {
 }
 
 Function::Function(
-    std::unique_ptr<ParameterDeclarationList> parameters,
-    std::unique_ptr<TypeAnnotation> return_type_annotation,
-    std::unique_ptr<StatementBlock> statements
+    std::shared_ptr<ParameterDeclarationList> parameters,
+    std::shared_ptr<TypeAnnotation> return_type_annotation,
+    std::shared_ptr<StatementBlock> statements
 )
-    : parameters{std::move(parameters)},
-      return_type_annotation{std::move(return_type_annotation)},
-      statements{std::move(statements)}
+    : parameters{parameters},
+      return_type_annotation{return_type_annotation},
+      statements{statements}
 {
 }
 
@@ -87,8 +87,8 @@ void Function::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*t
 
 void Function::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
 
-Allocation::Allocation(std::unique_ptr<TypeAnnotation> annotation, std::unique_ptr<Expression> size)
-    : annotation{std::move(annotation)}, size{std::move(size)}
+Allocation::Allocation(std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Expression> size)
+    : annotation{annotation}, size{size}
 {
 }
 

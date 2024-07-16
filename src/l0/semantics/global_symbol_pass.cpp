@@ -13,7 +13,7 @@ void GlobalSymbolPass::Run()
 
     for (auto& statement : *module_.statements)
     {
-        auto declaration = dynamic_cast<Declaration*>(statement.get());
+        auto declaration = dynamic_pointer_cast<Declaration>(statement);
 
         if (module_.globals->IsDeclared(declaration->variable))
         {

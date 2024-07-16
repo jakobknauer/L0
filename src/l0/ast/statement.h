@@ -22,21 +22,21 @@ class Statement
     virtual void Accept(IStatementVisitor& visitor) = 0;
 };
 
-using StatementBlock = std::vector<std::unique_ptr<Statement>>;
+using StatementBlock = std::vector<std::shared_ptr<Statement>>;
 
 class Declaration : public Statement
 {
    public:
     Declaration(
-        std::string variable, std::unique_ptr<TypeAnnotation> annotation, std::unique_ptr<Expression> initializer
+        std::string variable, std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Expression> initializer
     );
 
     void Accept(IConstStatementVisitor& visitor) const override;
     void Accept(IStatementVisitor& visitor) override;
 
     std::string variable;
-    std::unique_ptr<TypeAnnotation> annotation;
-    std::unique_ptr<Expression> initializer;
+    std::shared_ptr<TypeAnnotation> annotation;
+    std::shared_ptr<Expression> initializer;
 
     mutable std::shared_ptr<Scope> scope;
 };
@@ -44,40 +44,40 @@ class Declaration : public Statement
 class ExpressionStatement : public Statement
 {
    public:
-    ExpressionStatement(std::unique_ptr<Expression> expression);
+    ExpressionStatement(std::shared_ptr<Expression> expression);
 
     void Accept(IConstStatementVisitor& visitor) const override;
     void Accept(IStatementVisitor& visitor) override;
 
-    std::unique_ptr<Expression> expression;
+    std::shared_ptr<Expression> expression;
 };
 
 class ReturnStatement : public Statement
 {
    public:
-    ReturnStatement(std::unique_ptr<Expression> value);
+    ReturnStatement(std::shared_ptr<Expression> value);
 
     void Accept(IConstStatementVisitor& visitor) const override;
     void Accept(IStatementVisitor& visitor) override;
 
-    std::unique_ptr<Expression> value;
+    std::shared_ptr<Expression> value;
 };
 
 class ConditionalStatement : public Statement
 {
    public:
     ConditionalStatement(
-        std::unique_ptr<Expression> condition,
-        std::unique_ptr<StatementBlock> then_block,
-        std::unique_ptr<StatementBlock> else_block = nullptr
+        std::shared_ptr<Expression> condition,
+        std::shared_ptr<StatementBlock> then_block,
+        std::shared_ptr<StatementBlock> else_block = nullptr
     );
 
     void Accept(IConstStatementVisitor& visitor) const override;
     void Accept(IStatementVisitor& visitor) override;
 
-    std::unique_ptr<Expression> condition;
-    std::unique_ptr<StatementBlock> then_block;
-    std::unique_ptr<StatementBlock> else_block;
+    std::shared_ptr<Expression> condition;
+    std::shared_ptr<StatementBlock> then_block;
+    std::shared_ptr<StatementBlock> else_block;
 
     bool then_block_returns{false};
     bool else_block_returns{false};
@@ -86,24 +86,24 @@ class ConditionalStatement : public Statement
 class WhileLoop : public Statement
 {
    public:
-    WhileLoop(std::unique_ptr<Expression> condition, std::unique_ptr<StatementBlock> body);
+    WhileLoop(std::shared_ptr<Expression> condition, std::shared_ptr<StatementBlock> body);
 
     void Accept(IConstStatementVisitor& visitor) const override;
     void Accept(IStatementVisitor& visitor) override;
 
-    std::unique_ptr<Expression> condition;
-    std::unique_ptr<StatementBlock> body;
+    std::shared_ptr<Expression> condition;
+    std::shared_ptr<StatementBlock> body;
 };
 
 class Deallocation : public Statement
 {
    public:
-    Deallocation(std::unique_ptr<Expression> reference);
+    Deallocation(std::shared_ptr<Expression> reference);
 
     void Accept(IConstStatementVisitor& visitor) const override;
     void Accept(IStatementVisitor& visitor) override;
 
-    std::unique_ptr<Expression> reference;
+    std::shared_ptr<Expression> reference;
 };
 
 class IConstStatementVisitor

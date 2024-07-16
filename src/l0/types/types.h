@@ -92,7 +92,7 @@ class FunctionType : public Type
 
     void Accept(IConstTypeVisitor& visitor) const override;
 
-    std::unique_ptr<ParameterList> parameters = std::make_unique<ParameterList>();
+    std::shared_ptr<ParameterList> parameters = std::make_unique<ParameterList>();
     std::shared_ptr<Type> return_type;
 
    protected:

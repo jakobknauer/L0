@@ -12,7 +12,7 @@ namespace l0
 class Module
 {
    public:
-    std::unique_ptr<StatementBlock> statements{};
+    std::shared_ptr<StatementBlock> statements{};
     std::string name{};
     std::shared_ptr<Scope> globals = std::make_shared<Scope>();
     std::shared_ptr<Scope> externals = std::make_shared<Scope>();
