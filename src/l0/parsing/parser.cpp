@@ -7,7 +7,7 @@ namespace l0
 
 Parser::Parser(const std::vector<Token>& tokens) : tokens_{tokens} {}
 
-std::unique_ptr<Module> Parser::Parse() { return ParseModule(); }
+std::shared_ptr<Module> Parser::Parse() { return ParseModule(); }
 
 Token Parser::Peek()
 {
@@ -129,26 +129,26 @@ Token Parser::ConsumeAll(TokenType type)
     return Peek();
 }
 
-std::unique_ptr<Module> Parser::ParseModule()
+std::shared_ptr<Module> Parser::ParseModule()
 {
-    auto module = std::make_unique<Module>();
+    auto module = std::make_shared<Module>();
     module->statements = ParseStatementBlock(TokenType::EndOfFile);
     return module;
 }
 
-std::unique_ptr<StatementBlock> Parser::ParseStatementBlock(TokenType delimiter)
+std::shared_ptr<StatementBlock> Parser::ParseStatementBlock(TokenType delimiter)
 {
-    auto block = std::make_unique<StatementBlock>();
+    auto block = std::make_shared<StatementBlock>();
     while (ConsumeAll(TokenType::Semicolon).type != delimiter)
     {
         auto statement = ParseStatement();
         Expect(TokenType::Semicolon);
-        block->push_back(std::move(statement));
+        block->push_back(statement);
     }
     return block;
 }
 
-std::unique_ptr<Statement> Parser::ParseStatement()
+std::shared_ptr<Statement> Parser::ParseStatement()
 {
     if (Peek().type == TokenType::Identifier && PeekNext().type == TokenType::Colon)
     {
@@ -173,39 +173,37 @@ std::unique_ptr<Statement> Parser::ParseStatement()
     return ParseExpressionStatement();
 }
 
-std::unique_ptr<Statement> Parser::ParseDeclaration()
+std::shared_ptr<Statement> Parser::ParseDeclaration()
 {
     auto identifier = Expect(TokenType::Identifier);
     Expect(TokenType::Colon);
     auto annotation = ParseTypeAnnotation();
     Expect(TokenType::Equals);
     auto initializer = ParseExpression();
-    return std::make_unique<Declaration>(
-        std::any_cast<std::string>(identifier.data), std::move(annotation), std::move(initializer)
-    );
+    return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), annotation, initializer);
 }
 
-std::unique_ptr<Statement> Parser::ParseExpressionStatement()
+std::shared_ptr<Statement> Parser::ParseExpressionStatement()
 {
     auto expression = ParseExpression();
-    return std::make_unique<ExpressionStatement>(std::move(expression));
+    return std::make_shared<ExpressionStatement>(expression);
 }
 
-std::unique_ptr<Statement> Parser::ParseReturnStatement()
+std::shared_ptr<Statement> Parser::ParseReturnStatement()
 {
     ExpectKeyword("return");
     if (Peek().type == TokenType::Semicolon)
     {
-        return std::make_unique<ReturnStatement>(std::make_unique<UnitLiteral>());
+        return std::make_shared<ReturnStatement>(std::make_shared<UnitLiteral>());
     }
     else
     {
         auto return_value = ParseExpression();
-        return std::make_unique<ReturnStatement>(std::move(return_value));
+        return std::make_shared<ReturnStatement>(return_value);
     }
 }
 
-std::unique_ptr<Statement> Parser::ParseConditionalStatement()
+std::shared_ptr<Statement> Parser::ParseConditionalStatement()
 {
     ExpectKeyword("if");
     auto condition = ParseExpression();
@@ -216,7 +214,7 @@ std::unique_ptr<Statement> Parser::ParseConditionalStatement()
 
     if (!PeekIsKeyword("else"))
     {
-        return std::make_unique<ConditionalStatement>(std::move(condition), std::move(if_block));
+        return std::make_shared<ConditionalStatement>(condition, if_block);
     }
 
     Consume();
@@ -224,10 +222,10 @@ std::unique_ptr<Statement> Parser::ParseConditionalStatement()
     Expect(TokenType::OpeningBrace);
     auto else_block = ParseStatementBlock(TokenType::ClosingBrace);
     Expect(TokenType::ClosingBrace);
-    return std::make_unique<ConditionalStatement>(std::move(condition), std::move(if_block), std::move(else_block));
+    return std::make_shared<ConditionalStatement>(condition, if_block, else_block);
 }
 
-std::unique_ptr<Statement> Parser::ParseWhileLoop()
+std::shared_ptr<Statement> Parser::ParseWhileLoop()
 {
     ExpectKeyword("while");
     auto condition = ParseExpression();
@@ -235,17 +233,17 @@ std::unique_ptr<Statement> Parser::ParseWhileLoop()
     Expect(TokenType::OpeningBrace);
     auto body = ParseStatementBlock(TokenType::ClosingBrace);
     Expect(TokenType::ClosingBrace);
-    return std::make_unique<WhileLoop>(std::move(condition), std::move(body));
+    return std::make_shared<WhileLoop>(condition, body);
 }
 
-std::unique_ptr<Statement> Parser::ParseDeallocation()
+std::shared_ptr<Statement> Parser::ParseDeallocation()
 {
     ExpectKeyword("delete");
     auto operand = ParseExpression();
-    return std::make_unique<Deallocation>(std::move(operand));
+    return std::make_shared<Deallocation>(operand);
 }
 
-std::unique_ptr<Expression> Parser::ParseExpression()
+std::shared_ptr<Expression> Parser::ParseExpression()
 {
     if (ConsumeIf(TokenType::OpeningParen))
     {
@@ -256,40 +254,38 @@ std::unique_ptr<Expression> Parser::ParseExpression()
     return ParseAssignment();
 }
 
-std::unique_ptr<Expression> Parser::ParseAssignment()
+std::shared_ptr<Expression> Parser::ParseAssignment()
 {
     auto target = ParseDisjunction();
     if (ConsumeIf(TokenType::Equals))
     {
         auto value = ParseAssignment();
-        return std::make_unique<Assignment>(std::move(target), std::move(value));
+        return std::make_shared<Assignment>(target, value);
     }
     return target;
 }
 
-std::unique_ptr<Expression> Parser::ParseDisjunction()
+std::shared_ptr<Expression> Parser::ParseDisjunction()
 {
     auto expression = ParseConjunction();
     while (ConsumeIf(TokenType::PipePipe))
     {
-        expression =
-            std::make_unique<BinaryOp>(std::move(expression), ParseConjunction(), BinaryOp::Operator::PipePipe);
+        expression = std::make_shared<BinaryOp>(expression, ParseConjunction(), BinaryOp::Operator::PipePipe);
     }
     return expression;
 }
 
-std::unique_ptr<Expression> Parser::ParseConjunction()
+std::shared_ptr<Expression> Parser::ParseConjunction()
 {
     auto expression = ParseEquality();
     while (ConsumeIf(TokenType::AmpersandAmpersand))
     {
-        expression =
-            std::make_unique<BinaryOp>(std::move(expression), ParseEquality(), BinaryOp::Operator::AmpersandAmpersand);
+        expression = std::make_shared<BinaryOp>(expression, ParseEquality(), BinaryOp::Operator::AmpersandAmpersand);
     }
     return expression;
 }
 
-std::unique_ptr<Expression> Parser::ParseEquality()
+std::shared_ptr<Expression> Parser::ParseEquality()
 {
     auto expression = ParseSum();
     std::optional<Token> token;
@@ -297,12 +293,12 @@ std::unique_ptr<Expression> Parser::ParseEquality()
     {
         BinaryOp::Operator op = (token.value().type == TokenType::EqualsEquals) ? BinaryOp::Operator::EqualsEquals
                                                                                 : BinaryOp::Operator::BangEquals;
-        expression = std::make_unique<BinaryOp>(std::move(expression), ParseSum(), op);
+        expression = std::make_shared<BinaryOp>(expression, ParseSum(), op);
     }
     return expression;
 }
 
-std::unique_ptr<Expression> Parser::ParseSum()
+std::shared_ptr<Expression> Parser::ParseSum()
 {
     auto expression = ParseTerm();
     std::optional<Token> token;
@@ -310,22 +306,22 @@ std::unique_ptr<Expression> Parser::ParseSum()
     {
         BinaryOp::Operator op =
             (token.value().type == TokenType::Plus) ? BinaryOp::Operator::Plus : BinaryOp::Operator::Minus;
-        expression = std::make_unique<BinaryOp>(std::move(expression), ParseTerm(), op);
+        expression = std::make_shared<BinaryOp>(expression, ParseTerm(), op);
     }
     return expression;
 }
 
-std::unique_ptr<Expression> Parser::ParseTerm()
+std::shared_ptr<Expression> Parser::ParseTerm()
 {
     auto term = ParseUnary();
     while (ConsumeIf(TokenType::Asterisk))
     {
-        term = std::make_unique<BinaryOp>(std::move(term), ParseFactor(), BinaryOp::Operator::Asterisk);
+        term = std::make_shared<BinaryOp>(term, ParseFactor(), BinaryOp::Operator::Asterisk);
     }
     return term;
 }
 
-std::unique_ptr<Expression> Parser::ParseUnary()
+std::shared_ptr<Expression> Parser::ParseUnary()
 {
     // TODO Refactor into using loop instead of recursion
     // TODO Refactor into using partial map from TokenType to UnaryOp::Operator
@@ -336,31 +332,31 @@ std::unique_ptr<Expression> Parser::ParseUnary()
         {
             Consume();
             auto expression = ParseUnary();
-            return std::make_unique<UnaryOp>(std::move(expression), UnaryOp::Operator::Plus);
+            return std::make_shared<UnaryOp>(expression, UnaryOp::Operator::Plus);
         }
         case TokenType::Minus:
         {
             Consume();
             auto expression = ParseUnary();
-            return std::make_unique<UnaryOp>(std::move(expression), UnaryOp::Operator::Minus);
+            return std::make_shared<UnaryOp>(expression, UnaryOp::Operator::Minus);
         }
         case TokenType::Bang:
         {
             Consume();
             auto expression = ParseUnary();
-            return std::make_unique<UnaryOp>(std::move(expression), UnaryOp::Operator::Bang);
+            return std::make_shared<UnaryOp>(expression, UnaryOp::Operator::Bang);
         }
         case TokenType::Ampersand:
         {
             Consume();
             auto expression = ParseUnary();
-            return std::make_unique<UnaryOp>(std::move(expression), UnaryOp::Operator::Ampersand);
+            return std::make_shared<UnaryOp>(expression, UnaryOp::Operator::Ampersand);
         }
         case TokenType::Asterisk:
         {
             Consume();
             auto expression = ParseUnary();
-            return std::make_unique<UnaryOp>(std::move(expression), UnaryOp::Operator::Asterisk);
+            return std::make_shared<UnaryOp>(expression, UnaryOp::Operator::Asterisk);
         }
         default:
         {
@@ -369,7 +365,7 @@ std::unique_ptr<Expression> Parser::ParseUnary()
     }
 }
 
-std::unique_ptr<Expression> Parser::ParseFactor()
+std::shared_ptr<Expression> Parser::ParseFactor()
 {
     Token token = Peek();
 
@@ -382,11 +378,11 @@ std::unique_ptr<Expression> Parser::ParseFactor()
         case TokenType::Identifier:
         {
             Consume();
-            auto variable = std::make_unique<Variable>(std::any_cast<std::string>(token.data));
+            auto variable = std::make_shared<Variable>(std::any_cast<std::string>(token.data));
             if (Peek().type == TokenType::OpeningParen)
             {
                 auto arguments = ParseArgumentList();
-                return std::make_unique<Call>(std::move(variable), std::move(arguments));
+                return std::make_shared<Call>(variable, arguments);
             }
             else
             {
@@ -396,12 +392,12 @@ std::unique_ptr<Expression> Parser::ParseFactor()
         case TokenType::IntegerLiteral:
         {
             Consume();
-            return std::make_unique<IntegerLiteral>(std::any_cast<std::int64_t>(token.data));
+            return std::make_shared<IntegerLiteral>(std::any_cast<std::int64_t>(token.data));
         }
         case TokenType::StringLiteral:
         {
             Consume();
-            return std::make_unique<StringLiteral>(std::any_cast<std::string>(token.data));
+            return std::make_shared<StringLiteral>(std::any_cast<std::string>(token.data));
         }
         case TokenType::Dollar:
         {
@@ -413,17 +409,17 @@ std::unique_ptr<Expression> Parser::ParseFactor()
             if (keyword == "true")
             {
                 Consume();
-                return std::make_unique<BooleanLiteral>(true);
+                return std::make_shared<BooleanLiteral>(true);
             }
             else if (keyword == "false")
             {
                 Consume();
-                return std::make_unique<BooleanLiteral>(false);
+                return std::make_shared<BooleanLiteral>(false);
             }
             else if (keyword == "unit")
             {
                 Consume();
-                return std::make_unique<UnitLiteral>();
+                return std::make_shared<UnitLiteral>();
             }
             else if (keyword == "new")
             {
@@ -442,7 +438,7 @@ std::unique_ptr<Expression> Parser::ParseFactor()
     }
 }
 
-std::unique_ptr<Expression> Parser::ParseFunction()
+std::shared_ptr<Expression> Parser::ParseFunction()
 {
     Expect(TokenType::Dollar);
     auto parameters = ParseParameterDeclarationList();
@@ -451,14 +447,14 @@ std::unique_ptr<Expression> Parser::ParseFunction()
     Expect(TokenType::OpeningBrace);
     auto statements = ParseStatementBlock(TokenType::ClosingBrace);
     Expect(TokenType::ClosingBrace);
-    return std::make_unique<Function>(std::move(parameters), std::move(return_type), std::move(statements));
+    return std::make_shared<Function>(parameters, return_type, statements);
 }
 
-std::unique_ptr<Expression> Parser::ParseAllocation()
+std::shared_ptr<Expression> Parser::ParseAllocation()
 {
     ExpectKeyword("new");
 
-    std::unique_ptr<Expression> size;
+    std::shared_ptr<Expression> size;
     if (ConsumeIf(TokenType::OpeningBracket))
     {
         size = ParseExpression();
@@ -466,12 +462,12 @@ std::unique_ptr<Expression> Parser::ParseAllocation()
     }
 
     auto annotation = ParseTypeAnnotation();
-    return std::make_unique<Allocation>(std::move(annotation), std::move(size));
+    return std::make_shared<Allocation>(annotation, size);
 }
 
-std::unique_ptr<ArgumentList> Parser::ParseArgumentList()
+std::shared_ptr<ArgumentList> Parser::ParseArgumentList()
 {
-    auto arguments = std::make_unique<ArgumentList>();
+    auto arguments = std::make_shared<ArgumentList>();
 
     Expect(TokenType::OpeningParen);
     if (ConsumeIf(TokenType::ClosingParen))
@@ -482,7 +478,7 @@ std::unique_ptr<ArgumentList> Parser::ParseArgumentList()
     do
     {
         auto argument = ParseExpression();
-        arguments->push_back(std::move(argument));
+        arguments->push_back(argument);
 
         Token next = Consume();
         switch (next.type)
@@ -514,9 +510,9 @@ std::unique_ptr<ArgumentList> Parser::ParseArgumentList()
     return arguments;
 }
 
-std::unique_ptr<ParameterDeclarationList> Parser::ParseParameterDeclarationList()
+std::shared_ptr<ParameterDeclarationList> Parser::ParseParameterDeclarationList()
 {
-    auto parameters = std::make_unique<ParameterDeclarationList>();
+    auto parameters = std::make_shared<ParameterDeclarationList>();
 
     Expect(TokenType::OpeningParen);
     if (ConsumeIf(TokenType::ClosingParen))
@@ -527,7 +523,7 @@ std::unique_ptr<ParameterDeclarationList> Parser::ParseParameterDeclarationList(
     do
     {
         auto parameter = ParseParameterDeclaration();
-        parameters->push_back(std::move(parameter));
+        parameters->push_back(parameter);
 
         Token next = Consume();
         switch (next.type)
@@ -557,15 +553,15 @@ std::unique_ptr<ParameterDeclarationList> Parser::ParseParameterDeclarationList(
     } while (true);
 }
 
-std::unique_ptr<ParameterDeclaration> Parser::ParseParameterDeclaration()
+std::shared_ptr<ParameterDeclaration> Parser::ParseParameterDeclaration()
 {
     Token name = Expect(TokenType::Identifier);
     Expect(TokenType::Colon);
     auto annotation = ParseTypeAnnotation();
-    return std::make_unique<ParameterDeclaration>(std::any_cast<std::string>(name.data), std::move(annotation));
+    return std::make_shared<ParameterDeclaration>(std::any_cast<std::string>(name.data), annotation);
 }
 
-std::unique_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
+std::shared_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
 {
     Token token = Peek();
     switch (token.type)
@@ -592,39 +588,39 @@ std::unique_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
     }
 }
 
-std::unique_ptr<TypeAnnotation> Parser::ParseSimpleTypeAnnotation()
+std::shared_ptr<TypeAnnotation> Parser::ParseSimpleTypeAnnotation()
 {
     Token token = Expect(TokenType::Identifier);
-    return std::make_unique<SimpleTypeAnnotation>(std::any_cast<std::string>(token.data));
+    return std::make_shared<SimpleTypeAnnotation>(std::any_cast<std::string>(token.data));
 }
 
-std::unique_ptr<TypeAnnotation> Parser::ParseReferenceTypeAnnotation()
+std::shared_ptr<TypeAnnotation> Parser::ParseReferenceTypeAnnotation()
 {
     auto qualifier = Expect({TokenType::Ampersand, TokenType::AmpersandAmpersand});
 
     auto base_type = ParseTypeAnnotation();
-    auto single_ref = std::make_unique<ReferenceTypeAnnotation>(std::move(base_type));
+    auto single_ref = std::make_shared<ReferenceTypeAnnotation>(base_type);
 
     if (qualifier.type == TokenType::Ampersand)
     {
         return single_ref;
     }
 
-    auto double_ref = std::make_unique<ReferenceTypeAnnotation>(std::move(single_ref));
-    return std::move(double_ref);
+    auto double_ref = std::make_shared<ReferenceTypeAnnotation>(single_ref);
+    return double_ref;
 }
 
-std::unique_ptr<TypeAnnotation> Parser::ParseFunctionTypeAnnotation()
+std::shared_ptr<TypeAnnotation> Parser::ParseFunctionTypeAnnotation()
 {
     auto arguments = ParseParameterListAnnotation();
     if (ConsumeIf(TokenType::Arrow))
     {
         auto return_value = ParseTypeAnnotation();
-        return std::make_unique<FunctionTypeAnnotation>(std::move(arguments), std::move(return_value));
+        return std::make_shared<FunctionTypeAnnotation>(arguments, return_value);
     }
     else if (arguments->size() == 0)
     {
-        return std::make_unique<SimpleTypeAnnotation>("()");
+        return std::make_shared<SimpleTypeAnnotation>("()");
     }
     else
     {
@@ -635,9 +631,9 @@ std::unique_ptr<TypeAnnotation> Parser::ParseFunctionTypeAnnotation()
     }
 }
 
-std::unique_ptr<ParameterListAnnotation> Parser::ParseParameterListAnnotation()
+std::shared_ptr<ParameterListAnnotation> Parser::ParseParameterListAnnotation()
 {
-    auto parameters = std::make_unique<ParameterListAnnotation>();
+    auto parameters = std::make_shared<ParameterListAnnotation>();
 
     Expect(TokenType::OpeningParen);
     if (ConsumeIf(TokenType::ClosingParen))
@@ -648,7 +644,7 @@ std::unique_ptr<ParameterListAnnotation> Parser::ParseParameterListAnnotation()
     do
     {
         auto parameter = ParseTypeAnnotation();
-        parameters->push_back(std::move(parameter));
+        parameters->push_back(parameter);
 
         Token next = Consume();
         switch (next.type)

@@ -47,9 +47,9 @@ void Generator::DeclareExternals()
 {
     for (const std::string& external_symbol : ast_module_.externals->GetVariables())
     {
-        const Type& type = *ast_module_.externals->GetType(external_symbol);
+        auto type = ast_module_.externals->GetType(external_symbol);
 
-        if (auto function_type = dynamic_cast<const FunctionType*>(&type))
+        if (auto function_type = dynamic_pointer_cast<FunctionType>(type))
         {
             auto llvm_type = type_converter_.Convert(*function_type);
             llvm::FunctionCallee function_callee = llvm_module_.getOrInsertFunction(external_symbol, llvm_type);
@@ -57,7 +57,7 @@ void Generator::DeclareExternals()
         }
         else
         {
-            auto llvm_type = type_converter_.Convert(type);
+            auto llvm_type = type_converter_.Convert(*type);
             llvm_module_.getOrInsertGlobal(external_symbol, llvm_type);
             auto global = llvm_module_.getNamedGlobal(external_symbol);
             ast_module_.externals->SetLLVMValue(external_symbol, global);
@@ -69,7 +69,7 @@ void Generator::DeclareGlobals()
 {
     for (const auto& statement : *ast_module_.statements)
     {
-        auto declaration = dynamic_cast<Declaration*>(statement.get());
+        auto declaration = dynamic_pointer_cast<Declaration>(statement);
         auto type = declaration->scope->GetType(declaration->variable);
 
         if (auto ft = dynamic_pointer_cast<FunctionType>(type))
@@ -81,14 +81,14 @@ void Generator::DeclareGlobals()
         }
         else if (dynamic_pointer_cast<StringType>(type))
         {
-            auto literal = dynamic_cast<StringLiteral*>(declaration->initializer.get());
+            auto literal = dynamic_pointer_cast<StringLiteral>(declaration->initializer);
             auto global = builder_.CreateGlobalStringPtr(literal->value, declaration->variable, 0, &llvm_module_);
 
             declaration->scope->SetLLVMValue(declaration->variable, global);
         }
         else if (dynamic_pointer_cast<IntegerType>(type))
         {
-            auto literal = dynamic_cast<IntegerLiteral*>(declaration->initializer.get());
+            auto literal = dynamic_pointer_cast<IntegerLiteral>(declaration->initializer);
             auto llvm_type = type_converter_.Convert(*type);
 
             llvm_module_.getOrInsertGlobal(declaration->variable, llvm_type);
@@ -113,7 +113,7 @@ void Generator::DefineGlobals()
 {
     for (const auto& statement : *ast_module_.statements)
     {
-        auto* declaration = dynamic_cast<Declaration*>(statement.get());
+        auto declaration = dynamic_pointer_cast<Declaration>(statement);
         auto type = declaration->scope->GetType(declaration->variable);
 
         auto function_type = dynamic_pointer_cast<FunctionType>(type);
@@ -122,7 +122,7 @@ void Generator::DefineGlobals()
             continue;
         }
 
-        Function& function = dynamic_cast<Function&>(*declaration->initializer);
+        auto function = dynamic_pointer_cast<Function>(declaration->initializer);
         llvm::Type* llvm_type = type_converter_.Convert(*function_type);
 
         llvm::FunctionCallee callee = llvm_module_.getOrInsertFunction(declaration->variable, llvm_type);
@@ -132,7 +132,7 @@ void Generator::DefineGlobals()
             llvm::BasicBlock::Create(context_, "entry", llvm::dyn_cast<llvm::Function>(callee.getCallee()));
         builder_.SetInsertPoint(block);
 
-        GenerateFunctionBody(function, *llvm_function);
+        GenerateFunctionBody(*function, *llvm_function);
     }
 }
 
@@ -270,11 +270,11 @@ void Generator::Visit(const Deallocation& deallocation)
 void Generator::Visit(const Assignment& assignment)
 {
     llvm::Value* target;
-    if (auto variable = dynamic_cast<Variable*>(assignment.target.get()))
+    if (auto variable = dynamic_pointer_cast<Variable>(assignment.target))
     {
         target = variable->scope->GetLLVMValue(variable->name);
     }
-    else if (auto unary_op = dynamic_cast<UnaryOp*>(assignment.target.get()))
+    else if (auto unary_op = dynamic_pointer_cast<UnaryOp>(assignment.target))
     {
         if (unary_op->op == UnaryOp::Operator::Asterisk)
         {
@@ -325,7 +325,7 @@ void Generator::Visit(const UnaryOp& unary_op)
         }
         case l0::UnaryOp::Operator::Ampersand:
         {
-            const Variable* variable = dynamic_cast<const Variable*>(unary_op.operand.get());
+            auto variable = dynamic_pointer_cast<Variable>(unary_op.operand);
             if (!variable)
             {
                 throw GeneratorError("Operand of unary operator '&' is not a variable.");
@@ -474,7 +474,7 @@ void Generator::Visit(const Function& function)
 {
     llvm::BasicBlock* previous_block = builder_.GetInsertBlock();
 
-    auto llvm_type = type_converter_.GetDeclarationType(dynamic_cast<FunctionType&>(*function.type));
+    auto llvm_type = type_converter_.GetDeclarationType(*dynamic_pointer_cast<FunctionType>(function.type));
     llvm::FunctionCallee callee = llvm_module_.getOrInsertFunction(GetLambdaName(), llvm_type);
     llvm::Function* llvm_function = llvm::dyn_cast<llvm::Function>(callee.getCallee());
 

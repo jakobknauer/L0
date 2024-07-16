@@ -17,14 +17,14 @@ class IParser
 {
    public:
     virtual ~IParser() = default;
-    virtual std::unique_ptr<Module> Parse() = 0;
+    virtual std::shared_ptr<Module> Parse() = 0;
 };
 
 class Parser : public IParser
 {
    public:
     Parser(const std::vector<Token>& tokens);
-    virtual std::unique_ptr<Module> Parse() override;
+    virtual std::shared_ptr<Module> Parse() override;
 
    private:
     const std::vector<Token>& tokens_;
@@ -41,34 +41,34 @@ class Parser : public IParser
     Token Expect(std::initializer_list<TokenType> types);
     Token ExpectKeyword(std::string_view keyword);
 
-    std::unique_ptr<Module> ParseModule();
-    std::unique_ptr<StatementBlock> ParseStatementBlock(TokenType delimiter);
-    std::unique_ptr<Statement> ParseStatement();
-    std::unique_ptr<Statement> ParseDeclaration();
-    std::unique_ptr<Statement> ParseExpressionStatement();
-    std::unique_ptr<Statement> ParseReturnStatement();
-    std::unique_ptr<Statement> ParseConditionalStatement();
-    std::unique_ptr<Statement> ParseWhileLoop();
-    std::unique_ptr<Statement> ParseDeallocation();
-    std::unique_ptr<Expression> ParseExpression();
-    std::unique_ptr<Expression> ParseAssignment();
-    std::unique_ptr<Expression> ParseDisjunction();
-    std::unique_ptr<Expression> ParseConjunction();
-    std::unique_ptr<Expression> ParseEquality();
-    std::unique_ptr<Expression> ParseSum();
-    std::unique_ptr<Expression> ParseTerm();
-    std::unique_ptr<Expression> ParseUnary();
-    std::unique_ptr<Expression> ParseFactor();
-    std::unique_ptr<Expression> ParseFunction();
-    std::unique_ptr<Expression> ParseAllocation();
-    std::unique_ptr<ArgumentList> ParseArgumentList();
-    std::unique_ptr<ParameterDeclarationList> ParseParameterDeclarationList();
-    std::unique_ptr<ParameterDeclaration> ParseParameterDeclaration();
-    std::unique_ptr<TypeAnnotation> ParseTypeAnnotation();
-    std::unique_ptr<TypeAnnotation> ParseSimpleTypeAnnotation();
-    std::unique_ptr<TypeAnnotation> ParseReferenceTypeAnnotation();
-    std::unique_ptr<TypeAnnotation> ParseFunctionTypeAnnotation();
-    std::unique_ptr<ParameterListAnnotation> ParseParameterListAnnotation();
+    std::shared_ptr<Module> ParseModule();
+    std::shared_ptr<StatementBlock> ParseStatementBlock(TokenType delimiter);
+    std::shared_ptr<Statement> ParseStatement();
+    std::shared_ptr<Statement> ParseDeclaration();
+    std::shared_ptr<Statement> ParseExpressionStatement();
+    std::shared_ptr<Statement> ParseReturnStatement();
+    std::shared_ptr<Statement> ParseConditionalStatement();
+    std::shared_ptr<Statement> ParseWhileLoop();
+    std::shared_ptr<Statement> ParseDeallocation();
+    std::shared_ptr<Expression> ParseExpression();
+    std::shared_ptr<Expression> ParseAssignment();
+    std::shared_ptr<Expression> ParseDisjunction();
+    std::shared_ptr<Expression> ParseConjunction();
+    std::shared_ptr<Expression> ParseEquality();
+    std::shared_ptr<Expression> ParseSum();
+    std::shared_ptr<Expression> ParseTerm();
+    std::shared_ptr<Expression> ParseUnary();
+    std::shared_ptr<Expression> ParseFactor();
+    std::shared_ptr<Expression> ParseFunction();
+    std::shared_ptr<Expression> ParseAllocation();
+    std::shared_ptr<ArgumentList> ParseArgumentList();
+    std::shared_ptr<ParameterDeclarationList> ParseParameterDeclarationList();
+    std::shared_ptr<ParameterDeclaration> ParseParameterDeclaration();
+    std::shared_ptr<TypeAnnotation> ParseTypeAnnotation();
+    std::shared_ptr<TypeAnnotation> ParseSimpleTypeAnnotation();
+    std::shared_ptr<TypeAnnotation> ParseReferenceTypeAnnotation();
+    std::shared_ptr<TypeAnnotation> ParseFunctionTypeAnnotation();
+    std::shared_ptr<ParameterListAnnotation> ParseParameterListAnnotation();
 };
 
 class ParserError

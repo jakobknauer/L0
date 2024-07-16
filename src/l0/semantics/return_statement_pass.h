@@ -21,7 +21,7 @@ class ReturnStatementPass : private IStatementVisitor, private IExpressionVisito
     Module& module_;
 
     bool statement_returns_{false};
-    std::stack<Type*> expected_return_value_{};
+    std::stack<std::shared_ptr<Type>> expected_return_value_{};
 
     void Visit(Declaration& declaration) override;
     void Visit(ExpressionStatement& expression_statement) override;

@@ -7,17 +7,14 @@ SimpleTypeAnnotation::SimpleTypeAnnotation(std::string type) : type{type} {}
 
 void SimpleTypeAnnotation::Accept(ITypeAnnotationVisitor& visitor) const { visitor.Visit(*this); }
 
-ReferenceTypeAnnotation::ReferenceTypeAnnotation(std::unique_ptr<TypeAnnotation> base_type)
-    : base_type{std::move(base_type)}
-{
-}
+ReferenceTypeAnnotation::ReferenceTypeAnnotation(std::shared_ptr<TypeAnnotation> base_type) : base_type{base_type} {}
 
 void ReferenceTypeAnnotation::Accept(ITypeAnnotationVisitor& visitor) const { visitor.Visit(*this); }
 
 FunctionTypeAnnotation::FunctionTypeAnnotation(
-    std::unique_ptr<ParameterListAnnotation> parameters, std::unique_ptr<TypeAnnotation> return_type
+    std::shared_ptr<ParameterListAnnotation> parameters, std::shared_ptr<TypeAnnotation> return_type
 )
-    : parameters{std::move(parameters)}, return_type{std::move(return_type)}
+    : parameters{parameters}, return_type{return_type}
 {
 }
 

@@ -47,7 +47,7 @@ void TypeAnnotationConverter::Visit(const FunctionTypeAnnotation& fta)
     fta.return_type->Accept(*this);
     type->return_type = result_;
 
-    type->parameters = std::make_unique<ParameterList>();
+    type->parameters = std::make_shared<ParameterList>();
     for (auto& parameter : *fta.parameters)
     {
         parameter->Accept(*this);

@@ -4,9 +4,9 @@ namespace l0
 {
 
 Declaration::Declaration(
-    std::string variable, std::unique_ptr<TypeAnnotation> annotation, std::unique_ptr<Expression> initializer
+    std::string variable, std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Expression> initializer
 )
-    : variable{variable}, annotation{std::move(annotation)}, initializer{std::move(initializer)}
+    : variable{variable}, annotation{annotation}, initializer{initializer}
 {
 }
 
@@ -14,24 +14,24 @@ void Declaration::Accept(IConstStatementVisitor& visitor) const { visitor.Visit(
 
 void Declaration::Accept(IStatementVisitor& visitor) { visitor.Visit(*this); }
 
-ExpressionStatement::ExpressionStatement(std::unique_ptr<Expression> expression) : expression{std::move(expression)} {}
+ExpressionStatement::ExpressionStatement(std::shared_ptr<Expression> expression) : expression{expression} {}
 
 void ExpressionStatement::Accept(IConstStatementVisitor& visitor) const { visitor.Visit(*this); }
 
 void ExpressionStatement::Accept(IStatementVisitor& visitor) { visitor.Visit(*this); }
 
-ReturnStatement::ReturnStatement(std::unique_ptr<Expression> value) : value{std::move(value)} {}
+ReturnStatement::ReturnStatement(std::shared_ptr<Expression> value) : value{value} {}
 
 void ReturnStatement::Accept(IConstStatementVisitor& visitor) const { visitor.Visit(*this); }
 
 void ReturnStatement::Accept(IStatementVisitor& visitor) { visitor.Visit(*this); }
 
 ConditionalStatement::ConditionalStatement(
-    std::unique_ptr<Expression> condition,
-    std::unique_ptr<StatementBlock> if_block,
-    std::unique_ptr<StatementBlock> else_block
+    std::shared_ptr<Expression> condition,
+    std::shared_ptr<StatementBlock> if_block,
+    std::shared_ptr<StatementBlock> else_block
 )
-    : condition{std::move(condition)}, then_block{std::move(if_block)}, else_block{std::move(else_block)}
+    : condition{condition}, then_block{if_block}, else_block{else_block}
 {
 }
 
@@ -39,8 +39,8 @@ void ConditionalStatement::Accept(IConstStatementVisitor& visitor) const { visit
 
 void ConditionalStatement::Accept(IStatementVisitor& visitor) { visitor.Visit(*this); }
 
-WhileLoop::WhileLoop(std::unique_ptr<Expression> condition, std::unique_ptr<StatementBlock> body)
-    : condition{std::move(condition)}, body{std::move(body)}
+WhileLoop::WhileLoop(std::shared_ptr<Expression> condition, std::shared_ptr<StatementBlock> body)
+    : condition{condition}, body{body}
 {
 }
 
@@ -48,7 +48,7 @@ void WhileLoop::Accept(IConstStatementVisitor& visitor) const { visitor.Visit(*t
 
 void WhileLoop::Accept(IStatementVisitor& visitor) { visitor.Visit(*this); }
 
-Deallocation::Deallocation(std::unique_ptr<Expression> reference) : reference{std::move(reference)} {}
+Deallocation::Deallocation(std::shared_ptr<Expression> reference) : reference{reference} {}
 
 void Deallocation::Accept(IConstStatementVisitor& visitor) const { visitor.Visit(*this); }
 

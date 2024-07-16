@@ -98,7 +98,7 @@ void ReturnStatementPass::Visit(StringLiteral& literal) {}
 
 void ReturnStatementPass::Visit(Function& function)
 {
-    expected_return_value_.push(function.return_type.get());
+    expected_return_value_.push(function.return_type);
     Visit(*function.statements);
     expected_return_value_.pop();
 
@@ -106,9 +106,9 @@ void ReturnStatementPass::Visit(Function& function)
     {
         if (*function.return_type == UnitType{})
         {
-            auto return_statement = std::make_unique<ReturnStatement>(std::make_unique<UnitLiteral>());
+            auto return_statement = std::make_shared<ReturnStatement>(std::make_shared<UnitLiteral>());
             return_statement->value->type = std::make_shared<UnitType>();
-            function.statements->push_back(std::move(return_statement));
+            function.statements->push_back(return_statement);
         }
         else
         {

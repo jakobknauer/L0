@@ -7,10 +7,10 @@ namespace l0
 
 Typechecker::Typechecker(Module& module) : module_{module}
 {
-    simple_types_.insert(std::make_pair("Unit", std::make_unique<UnitType>()));
-    simple_types_.insert(std::make_pair("Integer", std::make_unique<IntegerType>()));
-    simple_types_.insert(std::make_pair("String", std::make_unique<StringType>()));
-    simple_types_.insert(std::make_pair("Boolean", std::make_unique<BooleanType>()));
+    simple_types_.insert(std::make_pair("Unit", std::make_shared<UnitType>()));
+    simple_types_.insert(std::make_pair("Integer", std::make_shared<IntegerType>()));
+    simple_types_.insert(std::make_pair("String", std::make_shared<StringType>()));
+    simple_types_.insert(std::make_pair("Boolean", std::make_shared<BooleanType>()));
 }
 
 void Typechecker::Check()
@@ -89,8 +89,8 @@ void Typechecker::Visit(const WhileLoop& while_loop)
 void Typechecker::Visit(const Deallocation& deallocation)
 {
     deallocation.reference->Accept(*this);
-    auto rt = dynamic_cast<ReferenceType*>(deallocation.reference->type.get());
-    if (!rt)
+    auto reference_type = dynamic_pointer_cast<ReferenceType>(deallocation.reference->type);
+    if (!reference_type)
     {
         throw SemanticError(std::format(
             "Operand of delete statement must be of reference type, but is of type '{}'.",
@@ -142,23 +142,23 @@ void Typechecker::Visit(const Variable& variable) { variable.type = variable.sco
 void Typechecker::Visit(const Call& call)
 {
     call.function->Accept(*this);
-    auto function = dynamic_cast<FunctionType*>(call.function->type.get());
+    auto function_type = dynamic_pointer_cast<FunctionType>(call.function->type);
 
-    if (!function)
+    if (!function_type)
     {
         throw SemanticError(std::format("Cannot call value of non-function type {}.", call.function->type->ToString()));
     }
 
-    if (call.arguments->size() != function->parameters->size())
+    if (call.arguments->size() != function_type->parameters->size())
     {
         throw SemanticError(std::format(
-            "Expected {} arguments to function call, got {}.", function->parameters->size(), call.arguments->size()
+            "Expected {} arguments to function call, got {}.", function_type->parameters->size(), call.arguments->size()
         ));
     }
 
     for (auto i = 0zu; i < call.arguments->size(); ++i)
     {
-        auto expected = function->parameters->at(i);
+        auto expected = function_type->parameters->at(i);
         call.arguments->at(i)->Accept(*this);
         auto actual = call.arguments->at(i)->type;
 
@@ -170,7 +170,7 @@ void Typechecker::Visit(const Call& call)
         }
     }
 
-    call.type = function->return_type;
+    call.type = function_type->return_type;
 }
 
 void Typechecker::Visit(const UnitLiteral& literal)

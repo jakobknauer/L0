@@ -26,13 +26,13 @@ class Expression
 class Assignment : public Expression
 {
    public:
-    Assignment(std::unique_ptr<Expression> target, std::unique_ptr<Expression> expression);
+    Assignment(std::shared_ptr<Expression> target, std::shared_ptr<Expression> expression);
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
-    std::unique_ptr<Expression> target;
-    std::unique_ptr<Expression> expression;
+    std::shared_ptr<Expression> target;
+    std::shared_ptr<Expression> expression;
 };
 
 class UnaryOp : public Expression
@@ -47,12 +47,12 @@ class UnaryOp : public Expression
         Asterisk,
     };
 
-    UnaryOp(std::unique_ptr<Expression> operand, Operator op);
+    UnaryOp(std::shared_ptr<Expression> operand, Operator op);
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
-    std::unique_ptr<Expression> operand;
+    std::shared_ptr<Expression> operand;
     Operator op;
 };
 
@@ -70,13 +70,13 @@ class BinaryOp : public Expression
         BangEquals,
     };
 
-    BinaryOp(std::unique_ptr<Expression> left, std::unique_ptr<Expression> right, Operator op);
+    BinaryOp(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right, Operator op);
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
-    std::unique_ptr<Expression> left;
-    std::unique_ptr<Expression> right;
+    std::shared_ptr<Expression> left;
+    std::shared_ptr<Expression> right;
     Operator op;
 };
 
@@ -93,18 +93,18 @@ class Variable : public Expression
     mutable std::shared_ptr<Scope> scope;
 };
 
-using ArgumentList = std::vector<std::unique_ptr<Expression>>;
+using ArgumentList = std::vector<std::shared_ptr<Expression>>;
 
 class Call : public Expression
 {
    public:
-    Call(std::unique_ptr<Variable> function, std::unique_ptr<ArgumentList> arguments);
+    Call(std::shared_ptr<Variable> function, std::shared_ptr<ArgumentList> arguments);
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
-    std::unique_ptr<Variable> function;
-    std::unique_ptr<ArgumentList> arguments;
+    std::shared_ptr<Variable> function;
+    std::shared_ptr<ArgumentList> arguments;
 };
 
 class UnitLiteral : public Expression
@@ -149,36 +149,36 @@ class StringLiteral : public Expression
 
 class TypeAnnotation;
 class Statement;
-using StatementBlock = std::vector<std::unique_ptr<Statement>>;
+using StatementBlock = std::vector<std::shared_ptr<Statement>>;
 
 class ParameterDeclaration
 {
    public:
-    ParameterDeclaration(std::string name, std::unique_ptr<TypeAnnotation> annotation);
+    ParameterDeclaration(std::string name, std::shared_ptr<TypeAnnotation> annotation);
 
     std::string name;
-    std::unique_ptr<TypeAnnotation> annotation;
+    std::shared_ptr<TypeAnnotation> annotation;
 
     mutable std::shared_ptr<Type> type;
 };
 
-using ParameterDeclarationList = std::vector<std::unique_ptr<ParameterDeclaration>>;
+using ParameterDeclarationList = std::vector<std::shared_ptr<ParameterDeclaration>>;
 
 class Function : public Expression
 {
    public:
     Function(
-        std::unique_ptr<ParameterDeclarationList> parameters,
-        std::unique_ptr<TypeAnnotation> return_type_annotation,
-        std::unique_ptr<StatementBlock> statements
+        std::shared_ptr<ParameterDeclarationList> parameters,
+        std::shared_ptr<TypeAnnotation> return_type_annotation,
+        std::shared_ptr<StatementBlock> statements
     );
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
-    std::unique_ptr<ParameterDeclarationList> parameters;
-    std::unique_ptr<TypeAnnotation> return_type_annotation;
-    std::unique_ptr<StatementBlock> statements;
+    std::shared_ptr<ParameterDeclarationList> parameters;
+    std::shared_ptr<TypeAnnotation> return_type_annotation;
+    std::shared_ptr<StatementBlock> statements;
 
     mutable std::shared_ptr<Type> return_type;
     mutable std::shared_ptr<Scope> locals = std::make_shared<Scope>();
@@ -187,13 +187,13 @@ class Function : public Expression
 class Allocation : public Expression
 {
    public:
-    Allocation(std::unique_ptr<TypeAnnotation> annotation, std::unique_ptr<Expression> size);
+    Allocation(std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Expression> size);
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
-    std::unique_ptr<TypeAnnotation> annotation;
-    std::unique_ptr<Expression> size;
+    std::shared_ptr<TypeAnnotation> annotation;
+    std::shared_ptr<Expression> size;
 
     mutable std::shared_ptr<Type> allocated_type;
 };
