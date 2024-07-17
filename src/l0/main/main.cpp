@@ -11,10 +11,11 @@
 #include "l0/parsing/parser.h"
 #include "l0/semantics/global_symbol_pass.h"
 #include "l0/semantics/module_validator.h"
+#include "l0/semantics/reference_pass.h"
 #include "l0/semantics/resolver.h"
+#include "l0/semantics/return_statement_pass.h"
 #include "l0/semantics/semantic_error.h"
 #include "l0/semantics/typechecker.h"
-#include "l0/semantics/return_statement_pass.h"
 
 int main(int argc, char* argv[])
 {
@@ -112,6 +113,17 @@ int main(int argc, char* argv[])
     try
     {
         ReturnStatementPass{*module}.Run();
+    }
+    catch (const SemanticError& err)
+    {
+        std::println("Semantic error occured: {}", err.GetMessage());
+        return -1;
+    }
+
+    std::println("Reference pass...");
+    try
+    {
+        ReferencePass{*module}.Run();
     }
     catch (const SemanticError& err)
     {

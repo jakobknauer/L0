@@ -258,6 +258,7 @@ void Generator::Visit(const Deallocation& deallocation)
     llvm::Type* llvm_ptr_type = llvm::PointerType::get(context_, 0);
     llvm::Type* llvm_void_type = llvm::Type::getVoidTy(context_);
     llvm::FunctionType* ptr_to_void = llvm::FunctionType::get(llvm_void_type, llvm_ptr_type, false);
+
     llvm::FunctionCallee free_function = llvm_module_.getOrInsertFunction("free", ptr_to_void);
 
     deallocation.reference->Accept(*this);
@@ -269,27 +270,9 @@ void Generator::Visit(const Deallocation& deallocation)
 
 void Generator::Visit(const Assignment& assignment)
 {
-    llvm::Value* target;
-    if (auto variable = dynamic_pointer_cast<Variable>(assignment.target))
-    {
-        target = variable->scope->GetLLVMValue(variable->name);
-    }
-    else if (auto unary_op = dynamic_pointer_cast<UnaryOp>(assignment.target))
-    {
-        if (unary_op->op == UnaryOp::Operator::Asterisk)
-        {
-            unary_op->operand->Accept(*this);
-            target = result_;
-        }
-        else
-        {
-            throw GeneratorError("Can only assign to variables or dereferenced pointers.");
-        }
-    }
-    else
-    {
-        throw GeneratorError("Can only assign to variables or dereferenced pointers.");
-    }
+    // ReferencePass sets target_address
+    assignment.target_address->Accept(*this);
+    auto target = result_;
 
     assignment.expression->Accept(*this);
     auto value = result_;
@@ -325,18 +308,26 @@ void Generator::Visit(const UnaryOp& unary_op)
         }
         case l0::UnaryOp::Operator::Ampersand:
         {
-            auto variable = dynamic_pointer_cast<Variable>(unary_op.operand);
-            if (!variable)
+            // ReferencePass guarentees that the operand is an lvalue
+            if (auto variable = dynamic_pointer_cast<Variable>(unary_op.operand))
             {
-                throw GeneratorError("Operand of unary operator '&' is not a variable.");
+                result_ = variable->scope->GetLLVMValue(variable->name);
+                break;
             }
-            result_ = variable->scope->GetLLVMValue(variable->name);
+
+            auto dereference = dynamic_pointer_cast<UnaryOp>(unary_op.operand);
+            assert(dereference && (dereference->op == UnaryOp::Operator::Asterisk));
+
+            dereference->operand->Accept(*this);
+            // Leave result as is
             break;
         }
         case l0::UnaryOp::Operator::Asterisk:
         {
             unary_op.operand->Accept(*this);
-            result_ = builder_.CreateLoad(type_converter_.Convert(*unary_op.type), result_, "dereftmp");
+            auto address = result_;
+            auto llvm_type = type_converter_.Convert(*unary_op.type);
+            result_ = builder_.CreateLoad(llvm_type, address, "dereftmp");
         }
     }
 }
@@ -355,7 +346,7 @@ void Generator::Visit(const BinaryOp& binary_op)
         {
             if (auto reference_type = dynamic_pointer_cast<ReferenceType>(binary_op.left->type))
             {
-                auto llvm_type = type_converter_.Convert(*binary_op.type);
+                auto llvm_type = type_converter_.Convert(*reference_type->base_type);
                 std::vector<llvm::Value*> indices = {right};
                 result_ = builder_.CreateGEP(llvm_type, left, indices, "geptmp");
             }
@@ -493,6 +484,7 @@ void Generator::Visit(const Allocation& allocation)
     llvm::Type* llvm_int_type = type_converter_.Convert(IntegerType());
     llvm::Type* llvm_ptr_type = llvm::PointerType::get(context_, 0);
     llvm::FunctionType* int_to_ptr = llvm::FunctionType::get(llvm_ptr_type, llvm_int_type, false);
+
     llvm::FunctionCallee malloc_function = llvm_module_.getOrInsertFunction("malloc", int_to_ptr);
 
     llvm::Value* size_to_allocate;

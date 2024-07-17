@@ -1,0 +1,53 @@
+#ifndef L0_SEMANTICS_REFERENCE_PASS
+#define L0_SEMANTICS_REFERENCE_PASS
+
+#include "l0/ast/expression.h"
+#include "l0/ast/module.h"
+#include "l0/ast/statement.h"
+
+namespace l0
+{
+
+/// @brief Handles aspects reference semantics that go beyond the type system.
+///
+/// This consists of asserting the following two properties pertaining lvalues:
+///     1) The left side of an assignment must be an lvalue.
+///     2) The operand of the unary '&' operator must be an lvalue.
+///
+/// The follow expressions are lvalues:
+///     - Variables
+///     - Dereferenced references
+///
+/// In case 1), we also set the target_address field of the Assignment expression.
+class ReferencePass : private IStatementVisitor, private IExpressionVisitor
+{
+   public:
+    ReferencePass(Module& module);
+    void Run();
+
+   private:
+    void Visit(Declaration& declaration) override;
+    void Visit(ExpressionStatement& expression_statement) override;
+    void Visit(ReturnStatement& return_statement) override;
+    void Visit(ConditionalStatement& conditional_statement) override;
+    void Visit(WhileLoop& while_loop) override;
+    void Visit(Deallocation& deallocation) override;
+
+    void Visit(Assignment& assignment) override;
+    void Visit(UnaryOp& unary_op) override;
+    void Visit(BinaryOp& binary_op) override;
+    void Visit(Variable& variable) override;
+    void Visit(Call& call) override;
+    void Visit(UnitLiteral& literal) override;
+    void Visit(BooleanLiteral& literal) override;
+    void Visit(IntegerLiteral& literal) override;
+    void Visit(StringLiteral& literal) override;
+    void Visit(Function& function) override;
+    void Visit(Allocation& allocation) override;
+
+    Module& module_;
+};
+
+}  // namespace l0
+
+#endif
