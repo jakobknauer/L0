@@ -20,10 +20,10 @@ void ModuleValidator::Check() const
         }
 
         auto initializer = declaration->initializer;
-        bool initializer_is_literal = !dynamic_pointer_cast<IntegerLiteral>(initializer) &&
-                                      !dynamic_pointer_cast<StringLiteral>(initializer) &&
-                                      !dynamic_pointer_cast<Function>(initializer);
-        if (initializer_is_literal)
+        bool initializer_is_literal = dynamic_pointer_cast<IntegerLiteral>(initializer) ||
+                                      dynamic_pointer_cast<StringLiteral>(initializer) ||
+                                      dynamic_pointer_cast<Function>(initializer);
+        if (!initializer_is_literal)
         {
             throw SemanticError(
                 std::format("Initializer of global variable must be a literal or function.", declaration->variable)

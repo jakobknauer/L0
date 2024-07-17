@@ -160,8 +160,6 @@ class ParameterDeclaration
 
     std::string name;
     std::shared_ptr<TypeAnnotation> annotation;
-
-    mutable std::shared_ptr<Type> type;
 };
 
 using ParameterDeclarationList = std::vector<std::shared_ptr<ParameterDeclaration>>;
@@ -182,7 +180,6 @@ class Function : public Expression
     std::shared_ptr<TypeAnnotation> return_type_annotation;
     std::shared_ptr<StatementBlock> statements;
 
-    mutable std::shared_ptr<Type> return_type;
     mutable std::shared_ptr<Scope> locals = std::make_shared<Scope>();
 };
 

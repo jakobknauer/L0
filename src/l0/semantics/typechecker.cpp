@@ -23,19 +23,28 @@ void Typechecker::Check()
 
 void Typechecker::Visit(const Declaration& declaration)
 {
-    auto declared = declaration.scope->GetType(declaration.variable);
     declaration.initializer->Accept(*this);
-    auto init = declaration.initializer->type;
 
-    if (*declared != *init)
+    if (declaration.scope->IsTypeSet(declaration.variable))
     {
-        throw SemanticError(std::format(
-            "Variable '{}' is declared with type {}, but is initialized with value of type {}.",
-            declaration.variable,
-            declared->ToString(),
-            init->ToString()
-        ));
+        return;
     }
+
+    auto initializer_type = declaration.initializer->type;
+    if (declaration.annotation)
+    {
+        auto annotated_type = converter_.Convert(*declaration.annotation);
+        if (*annotated_type != *initializer_type)
+        {
+            throw SemanticError(std::format(
+                "Variable '{}' is declared with type {}, but is initialized with value of type {}.",
+                declaration.variable,
+                annotated_type->ToString(),
+                initializer_type->ToString()
+            ));
+        }
+    }
+    declaration.scope->SetType(declaration.variable, initializer_type);
 }
 
 void Typechecker::Visit(const ExpressionStatement& expression_statement)
@@ -199,19 +208,19 @@ void Typechecker::Visit(const StringLiteral& literal)
 
 void Typechecker::Visit(const Function& function)
 {
-    // TODO check return statements etc.
+    auto type = std::make_shared<FunctionType>();
+    for (const auto& param_decl : *function.parameters)
+    {
+        auto param_type = converter_.Convert(*param_decl->annotation);
+        function.locals->SetType(param_decl->name, param_type);
+        type->parameters->push_back(param_type);
+    }
+    type->return_type = converter_.Convert(*function.return_type_annotation);
+
     for (const auto& statement : *function.statements)
     {
         statement->Accept(*this);
     }
-
-    auto type = std::make_shared<FunctionType>();
-
-    for (const auto& param_decl : *function.parameters)
-    {
-        type->parameters->push_back(param_decl->type);
-    }
-    type->return_type = function.return_type;
 
     function.type = type;
 }
@@ -229,6 +238,8 @@ void Typechecker::Visit(const Allocation& allocation)
             );
         }
     }
+
+    allocation.allocated_type = converter_.Convert(*allocation.annotation);
     auto type = std::make_shared<ReferenceType>();
     type->base_type = allocation.allocated_type;
     allocation.type = type;

@@ -45,6 +45,7 @@ class Parser : public IParser
     std::shared_ptr<StatementBlock> ParseStatementBlock(TokenType delimiter);
     std::shared_ptr<Statement> ParseStatement();
     std::shared_ptr<Statement> ParseDeclaration();
+    std::shared_ptr<Statement> ParseUnannotatedDeclaration();
     std::shared_ptr<Statement> ParseExpressionStatement();
     std::shared_ptr<Statement> ParseReturnStatement();
     std::shared_ptr<Statement> ParseConditionalStatement();

@@ -8,6 +8,7 @@
 #include "l0/ast/module.h"
 #include "l0/ast/statement.h"
 #include "l0/semantics/operator_overload_resolver.h"
+#include "l0/semantics/type_annotation_converter.h"
 #include "l0/types/types.h"
 
 namespace l0
@@ -23,6 +24,7 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
    private:
     Module& module_;
     std::unordered_map<std::string, const std::shared_ptr<Type>> simple_types_{};
+    TypeAnnotationConverter converter_{};
     detail::OperatorOverloadResolver operator_overload_resolver_{};
 
     void Visit(const Declaration& declaration) override;

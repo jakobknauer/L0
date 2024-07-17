@@ -23,6 +23,7 @@ void Resolver::Check()
 void Resolver::Visit(const Declaration& declaration)
 {
     declaration.initializer->Accept(*this);
+
     if (local_)
     {
         auto scope = scopes_.back();
@@ -30,8 +31,7 @@ void Resolver::Visit(const Declaration& declaration)
         {
             throw SemanticError(std::format("Duplicate declaration of local variable '{}'.", declaration.variable));
         }
-        auto type = converter_.Convert(*declaration.annotation);
-        scopes_.back()->Declare(declaration.variable, type);
+        scope->Declare(declaration.variable);
         declaration.scope = scope;
     }
 }
@@ -116,35 +116,28 @@ void Resolver::Visit(const StringLiteral& literal) {}
 
 void Resolver::Visit(const Function& function)
 {
-    scopes_.push_back(function.locals);
-    bool restore_local = local_;
-    local_ = true;
-
     for (const auto& param_decl : *function.parameters)
     {
-        auto type = converter_.Convert(*param_decl->annotation);
-        param_decl->type = type;
-        scopes_.back()->Declare(param_decl->name, type);
+        function.locals->Declare(param_decl->name);
     }
 
+    bool restore_local = local_;
+    local_ = true;
+    scopes_.push_back(function.locals);
     for (const auto& statement : *function.statements)
     {
         statement->Accept(*this);
     }
-
-    function.return_type = converter_.Convert(*function.return_type_annotation);
-
-    local_ = restore_local;
     scopes_.pop_back();
+    local_ = restore_local;
 }
 
 void Resolver::Visit(const Allocation& allocation)
 {
-    if(allocation.size)
+    if (allocation.size)
     {
         allocation.size->Accept(*this);
     }
-    allocation.allocated_type = converter_.Convert(*allocation.annotation);
 }
 
 std::shared_ptr<Scope> Resolver::Resolve(const std::string name)

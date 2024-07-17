@@ -6,3 +6,4 @@ The following semantic passes are being done:
 - Resolver: Creates local scopes, resolves uses of variables on function level, checks for duplicate declarations of local variables.
 - TypeChecker: Checks if declared match actual types. Also operator overload resolution is done here (for + and * at this time)
 - ReturnStatementPass: Checks existence and types of return statements in all branches of functions, removes unreachable statements after return statements, and generates return statements for functions that return Unit, if not existing
+- ReferencePass: Checks specifics of reference arithmetic not covered by the type system

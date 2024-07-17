@@ -154,6 +154,10 @@ std::shared_ptr<Statement> Parser::ParseStatement()
     {
         return ParseDeclaration();
     }
+    else if (Peek().type == TokenType::Identifier && PeekNext().type == TokenType::ColonEquals)
+    {
+        return ParseUnannotatedDeclaration();
+    }
     else if (PeekIsKeyword("return"))
     {
         return ParseReturnStatement();
@@ -181,6 +185,14 @@ std::shared_ptr<Statement> Parser::ParseDeclaration()
     Expect(TokenType::Equals);
     auto initializer = ParseExpression();
     return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), annotation, initializer);
+}
+
+std::shared_ptr<Statement> Parser::ParseUnannotatedDeclaration()
+{
+    auto identifier = Expect(TokenType::Identifier);
+    Expect(TokenType::ColonEquals);
+    auto initializer = ParseExpression();
+    return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), initializer);
 }
 
 std::shared_ptr<Statement> Parser::ParseExpressionStatement()
