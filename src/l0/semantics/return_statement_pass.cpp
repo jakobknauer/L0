@@ -98,13 +98,19 @@ void ReturnStatementPass::Visit(StringLiteral& literal) {}
 
 void ReturnStatementPass::Visit(Function& function)
 {
-    expected_return_value_.push(function.return_type);
+    auto function_type = std::dynamic_pointer_cast<FunctionType>(function.type);
+    if (!function_type)
+    {
+        throw SemanticError("Type of function must by function type.");
+    }
+
+    expected_return_value_.push(function_type->return_type);
     Visit(*function.statements);
     expected_return_value_.pop();
 
     if (!statement_returns_)
     {
-        if (*function.return_type == UnitType{})
+        if (*function_type->return_type == UnitType{})
         {
             auto return_statement = std::make_shared<ReturnStatement>(std::make_shared<UnitLiteral>());
             return_statement->value->type = std::make_shared<UnitType>();

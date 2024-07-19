@@ -18,10 +18,14 @@ class Scope
     void Declare(const std::string& name);
     void Declare(const std::string& name, std::shared_ptr<Type> type);
     bool IsDeclared(const std::string& name) const;
+
     void SetType(const std::string& name, std::shared_ptr<Type> type);
+    bool IsTypeSet(const std::string& name) const;
     std::shared_ptr<Type> GetType(const std::string& name);
+
     void SetLLVMValue(const std::string& name, llvm::Value* llvm_value);
     llvm::Value* GetLLVMValue(const std::string& name);
+
     void Clear();
     const std::unordered_set<std::string>& GetVariables() const;
 

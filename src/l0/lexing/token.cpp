@@ -63,6 +63,8 @@ std::string str(TokenType type)
             return "Arrow";
         case l0::TokenType::Dollar:
             return "Dollar";
+        case l0::TokenType::ColonEquals:
+            return "ColonEquals";
     }
 }
 

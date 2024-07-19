@@ -5,7 +5,6 @@
 #include "l0/ast/module.h"
 #include "l0/ast/scope.h"
 #include "l0/ast/statement.h"
-#include "l0/semantics/type_annotation_converter.h"
 
 namespace l0
 {
@@ -21,7 +20,6 @@ class Resolver : IConstExpressionVisitor, IConstStatementVisitor
     const Module& module_;
     std::vector<std::shared_ptr<Scope>> scopes_{};
     bool local_{false};
-    TypeAnnotationConverter converter_{};
 
     void Visit(const Declaration& statement) override;
     void Visit(const ExpressionStatement& statement_statement) override;

@@ -23,9 +23,15 @@ void AstPrinter::Print(Expression& expression) { expression.Accept(*this); }
 
 void AstPrinter::Visit(const Declaration& declaration)
 {
-    out_ << declaration.variable << ": ";
-    declaration.annotation->Accept(*this);
-    out_ << " = ";
+    out_ << declaration.variable;
+    out_ << " :";
+    if (declaration.annotation)
+    {
+        out_ << " ";
+        declaration.annotation->Accept(*this);
+        out_ << " ";
+    }
+    out_ << "= ";
     declaration.initializer->Accept(*this);
 }
 
@@ -163,7 +169,7 @@ void AstPrinter::Visit(const Function& function)
 void AstPrinter::Visit(const Allocation& allocation)
 {
     out_ << "new";
-    if(allocation.size)
+    if (allocation.size)
     {
         out_ << "[";
         allocation.size->Accept(*this);

@@ -35,6 +35,7 @@ Lexer::Lexer(std::shared_ptr<std::istream> input)
         {"!=", TokenType::BangEquals},
         {"&&", TokenType::AmpersandAmpersand},
         {"||", TokenType::PipePipe},
+        {":=", TokenType::ColonEquals},
     };
 
     for (auto c : single_character_operators_ | std::views::keys)

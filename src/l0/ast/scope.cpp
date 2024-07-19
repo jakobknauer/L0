@@ -28,13 +28,15 @@ void Scope::SetType(const std::string& name, std::shared_ptr<Type> type)
         throw ScopeError(std::format("Cannot set type of undeclared variable '{}'.", name));
     }
 
-    if (types_.contains(name))
+    if (IsTypeSet(name))
     {
         throw ScopeError(std::format("Type of variable '{}' was set before.", name));
     }
 
     types_.insert(std::make_pair(name, type));
 }
+
+bool Scope::IsTypeSet(const std::string& name) const { return types_.contains(name); }
 
 std::shared_ptr<Type> Scope::GetType(const std::string& name)
 {

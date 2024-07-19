@@ -27,6 +27,7 @@ using StatementBlock = std::vector<std::shared_ptr<Statement>>;
 class Declaration : public Statement
 {
    public:
+    Declaration(std::string variable, std::shared_ptr<Expression> initializer);
     Declaration(
         std::string variable, std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Expression> initializer
     );

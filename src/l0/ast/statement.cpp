@@ -3,6 +3,11 @@
 namespace l0
 {
 
+Declaration::Declaration(std::string variable, std::shared_ptr<Expression> initializer)
+    : Declaration{variable, nullptr, initializer}
+{
+}
+
 Declaration::Declaration(
     std::string variable, std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Expression> initializer
 )
