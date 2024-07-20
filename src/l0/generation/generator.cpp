@@ -3,7 +3,9 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/TargetSelect.h>
 
+#include <algorithm>
 #include <format>
+#include <string>
 
 #include "l0/generation/generator_error.h"
 
@@ -18,6 +20,8 @@ std::string GetLambdaName()
     static int i = 0;
     return std::format("__lambda{}", i++);
 }
+
+constexpr std::string kAllocationBlockName{"allocas"};
 
 }  // namespace
 
@@ -128,10 +132,6 @@ void Generator::DefineGlobals()
         llvm::FunctionCallee callee = llvm_module_.getOrInsertFunction(declaration->variable, llvm_type);
         llvm::Function* llvm_function = llvm::dyn_cast<llvm::Function>(callee.getCallee());
 
-        llvm::BasicBlock* block =
-            llvm::BasicBlock::Create(context_, "entry", llvm::dyn_cast<llvm::Function>(callee.getCallee()));
-        builder_.SetInsertPoint(block);
-
         GenerateFunctionBody(*function, *llvm_function);
     }
 }
@@ -149,9 +149,31 @@ void Generator::Visit(const Declaration& declaration)
         llvm_type = llvm::PointerType::getUnqual(context_);
     }
 
+    llvm::Function* llvm_function = builder_.GetInsertBlock()->getParent();
+    auto previous_block = builder_.GetInsertBlock();
+
+    auto alloca_block = std::find_if(
+        llvm_function->begin(),
+        llvm_function->end(),
+        [](const llvm::BasicBlock& block) { return block.getName() == kAllocationBlockName; }
+    );
+    if (alloca_block == llvm_function->end())
+    {
+        throw GeneratorError(std::format(
+            "Function '{}' does not have '{}' block. This should never happen.",
+            llvm_function->getName().str(),
+            kAllocationBlockName
+        ));
+    }
+
+    builder_.SetInsertPoint(&*alloca_block);
     llvm::AllocaInst* alloca = builder_.CreateAlloca(llvm_type, nullptr, declaration.variable);
+
     declaration.scope->SetLLVMValue(declaration.variable, alloca);
+
+    builder_.SetInsertPoint(previous_block);
     builder_.CreateStore(initializer, alloca);
+
     result_ = nullptr;
 }
 
@@ -469,9 +491,6 @@ void Generator::Visit(const Function& function)
     llvm::FunctionCallee callee = llvm_module_.getOrInsertFunction(GetLambdaName(), llvm_type);
     llvm::Function* llvm_function = llvm::dyn_cast<llvm::Function>(callee.getCallee());
 
-    llvm::BasicBlock* block = llvm::BasicBlock::Create(context_, "entry", dyn_cast<llvm::Function>(callee.getCallee()));
-    builder_.SetInsertPoint(block);
-
     GenerateFunctionBody(function, *llvm_function);
 
     result_ = llvm_function;
@@ -507,6 +526,9 @@ void Generator::Visit(const Allocation& allocation)
 
 void Generator::GenerateFunctionBody(const Function& function, llvm::Function& llvm_function)
 {
+    llvm::BasicBlock* allocas_block = llvm::BasicBlock::Create(context_, kAllocationBlockName, &llvm_function);
+    llvm::BasicBlock* entry_block = llvm::BasicBlock::Create(context_, "entry", &llvm_function);
+
     for (std::size_t i = 0; i < function.parameters->size(); ++i)
     {
         ParameterDeclaration& param = *function.parameters->at(i);
@@ -515,10 +537,14 @@ void Generator::GenerateFunctionBody(const Function& function, llvm::Function& l
         function.locals->SetLLVMValue(param.name, llvm_param);
     }
 
+    builder_.SetInsertPoint(entry_block);
     for (const auto& statement : *function.statements)
     {
         statement->Accept(*this);
     }
+
+    builder_.SetInsertPoint(allocas_block);
+    builder_.CreateBr(entry_block);
 
     llvm::verifyFunction(llvm_function);
 }
