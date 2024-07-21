@@ -6,6 +6,14 @@
 namespace l0
 {
 
+namespace
+{
+
+bool IsValidFirstIdentifierCharacter(char c) { return std::isalpha(c) || c == '_'; }
+bool IsValidIdentifierCharacter(char c) { return std::isalpha(c) || std::isdigit(c) || c == '_'; }
+
+}  // namespace
+
 Lexer::Lexer(std::shared_ptr<std::istream> input)
     : input_{input}, keywords_{"return", "unit", "true", "false", "if", "else", "while", "new", "delete"}
 {
@@ -128,7 +136,7 @@ Token Lexer::Next()
         return token;
     }
 
-    if (std::isalpha(current_))
+    if (IsValidFirstIdentifierCharacter(current_))
     {
         return ReadIdentifierOrKeyword();
     }
@@ -148,15 +156,22 @@ Token Lexer::Next()
 
 Token Lexer::ReadIdentifierOrKeyword()
 {
+    if (!IsValidFirstIdentifierCharacter(current_))
+    {
+        throw LexerError(std::format("Invalid first character of identifier: '{}'.", current_));
+    }
+
     std::string lexeme{};
-    while (std::isalpha(current_))
+    while (IsValidIdentifierCharacter(current_))
     {
         lexeme.append(std::string{current_});
         Read();
     }
     Skip();
+
+    bool is_keyword{keywords_.contains(lexeme)};
     return Token{
-        .type = keywords_.contains(lexeme) ? TokenType::Keyword : TokenType::Identifier,
+        .type = is_keyword ? TokenType::Keyword : TokenType::Identifier,
         .lexeme = lexeme,
         .data = lexeme,
     };
