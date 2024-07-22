@@ -63,6 +63,26 @@ std::optional<Token> Parser::ConsumeIf(std::initializer_list<TokenType> types)
     return std::nullopt;
 }
 
+std::optional<std::string> Parser::ConsumeIfKeyword(std::initializer_list<std::string> keywords)
+{
+    if (pos_ >= tokens_.size())
+    {
+        return std::nullopt;
+    }
+    const Token& token = tokens_.at(pos_);
+    if (token.type != TokenType::Keyword)
+    {
+        return std::nullopt;
+    }
+    std::string keyword = std::any_cast<std::string>(token.data);
+    if (std::ranges::find(keywords, keyword) != keywords.end())
+    {
+        ++pos_;
+        return keyword;
+    }
+    return std::nullopt;
+}
+
 Token Parser::Expect(TokenType type)
 {
     if (pos_ >= tokens_.size())
@@ -473,7 +493,7 @@ std::shared_ptr<Expression> Parser::ParseAllocation()
         Expect(TokenType::ClosingBracket);
     }
 
-    auto annotation = ParseTypeAnnotation();
+    auto annotation = ParseUnqualifiedTypeAnnotation();
     return std::make_shared<Allocation>(annotation, size);
 }
 
@@ -575,6 +595,21 @@ std::shared_ptr<ParameterDeclaration> Parser::ParseParameterDeclaration()
 
 std::shared_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
 {
+    auto qualifier = ConsumeIfKeyword({"mut", "const"});
+    auto type_annotation = ParseUnqualifiedTypeAnnotation();
+    if (qualifier == "mut")
+    {
+        type_annotation->mutability = TypeAnnotationQualifier::Mutable;
+    }
+    else if (qualifier == "const")
+    {
+        type_annotation->mutability = TypeAnnotationQualifier::Constant;
+    }
+    return type_annotation;
+}
+
+std::shared_ptr<TypeAnnotation> Parser::ParseUnqualifiedTypeAnnotation()
+{
     Token token = Peek();
     switch (token.type)
     {
@@ -594,7 +629,7 @@ std::shared_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
         default:
         {
             throw ParserError(std::format(
-                "Expected identifier, '&', or '(', got token '{}' of type {} instead.", token.lexeme, str(token.type)
+                "Expected identifier, '&', '(', got token '{}' of type {} instead.", token.lexeme, str(token.type)
             ));
         }
     }
