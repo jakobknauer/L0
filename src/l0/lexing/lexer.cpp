@@ -91,6 +91,14 @@ char Lexer::Skip()
     {
         current_ = input_->get();
     }
+    if (current_ == '#')
+    {
+        while (current_ != '\n')
+        {
+            current_ = input_->get();
+        }
+        return Skip();
+    }
     return current_;
 }
 
