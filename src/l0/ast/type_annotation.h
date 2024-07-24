@@ -13,8 +13,8 @@ class ITypeAnnotationVisitor;
 enum class TypeAnnotationQualifier
 {
     None,
-    Mutable,
     Constant,
+    Mutable,
 };
 
 class TypeAnnotation

@@ -500,7 +500,7 @@ void Generator::Visit(const Function& function)
 
 void Generator::Visit(const Allocation& allocation)
 {
-    llvm::Type* llvm_int_type = type_converter_.Convert(IntegerType());
+    llvm::Type* llvm_int_type = type_converter_.Convert(IntegerType{TypeQualifier::Constant});
     llvm::Type* llvm_ptr_type = llvm::PointerType::get(context_, 0);
     llvm::FunctionType* int_to_ptr = llvm::FunctionType::get(llvm_ptr_type, llvm_int_type, false);
 

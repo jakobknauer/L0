@@ -5,26 +5,43 @@
 namespace l0
 {
 
-TypeAnnotationConverter::TypeAnnotationConverter()
-{
-    simple_types_.insert(std::make_pair("()", std::make_shared<UnitType>()));
-    simple_types_.insert(std::make_pair("Boolean", std::make_shared<BooleanType>()));
-    simple_types_.insert(std::make_pair("Integer", std::make_shared<IntegerType>()));
-    simple_types_.insert(std::make_pair("String", std::make_shared<StringType>()));
-}
-
 std::shared_ptr<Type> TypeAnnotationConverter::Convert(const TypeAnnotation& annotation)
 {
     annotation.Accept(*this);
     return result_;
 }
 
+TypeQualifier TypeAnnotationConverter::Convert(TypeAnnotationQualifier qualifier)
+{
+    switch (qualifier)
+    {
+        case TypeAnnotationQualifier::None:
+        case TypeAnnotationQualifier::Constant:
+            return TypeQualifier::Constant;
+        case l0::TypeAnnotationQualifier::Mutable:
+            return TypeQualifier::Mutable;
+    }
+}
+
 void TypeAnnotationConverter::Visit(const SimpleTypeAnnotation& sta)
 {
-    auto it = simple_types_.find(sta.type);
-    if (it != simple_types_.end())
+    auto mutability = Convert(sta.mutability);
+
+    if (sta.type == "()")
     {
-        result_ = simple_types_.at(sta.type);
+        result_ = std::make_shared<UnitType>(mutability);
+    }
+    else if (sta.type == "Boolean")
+    {
+        result_ = std::make_shared<BooleanType>(mutability);
+    }
+    else if (sta.type == "Integer")
+    {
+        result_ = std::make_shared<IntegerType>(mutability);
+    }
+    else if (sta.type == "String")
+    {
+        result_ = std::make_shared<StringType>(mutability);
     }
     else
     {
@@ -35,26 +52,26 @@ void TypeAnnotationConverter::Visit(const SimpleTypeAnnotation& sta)
 void TypeAnnotationConverter::Visit(const ReferenceTypeAnnotation& rta)
 {
     rta.base_type->Accept(*this);
-    auto reference_type = std::make_shared<ReferenceType>();
-    reference_type->base_type = result_;
+    auto base_type = result_;
+    auto mutability = Convert(rta.mutability);
+    auto reference_type = std::make_shared<ReferenceType>(base_type, mutability);
     result_ = reference_type;
 }
 
 void TypeAnnotationConverter::Visit(const FunctionTypeAnnotation& fta)
 {
-    auto type = std::make_shared<FunctionType>();
-
     fta.return_type->Accept(*this);
-    type->return_type = result_;
+    auto return_type = result_;
 
-    type->parameters = std::make_shared<ParameterList>();
+    auto parameters = std::make_shared<std::vector<std::shared_ptr<Type>>>();
     for (auto& parameter : *fta.parameters)
     {
         parameter->Accept(*this);
-        type->parameters->push_back(result_);
+        parameters->push_back(result_);
     }
 
-    result_ = type;
+    auto mutability = Convert(fta.mutability);
+    result_ = std::make_shared<FunctionType>(parameters, return_type, mutability);
 }
 
 }  // namespace l0

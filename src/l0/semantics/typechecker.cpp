@@ -7,10 +7,10 @@ namespace l0
 
 Typechecker::Typechecker(Module& module) : module_{module}
 {
-    simple_types_.insert(std::make_pair("Unit", std::make_shared<UnitType>()));
-    simple_types_.insert(std::make_pair("Integer", std::make_shared<IntegerType>()));
-    simple_types_.insert(std::make_pair("String", std::make_shared<StringType>()));
-    simple_types_.insert(std::make_pair("Boolean", std::make_shared<BooleanType>()));
+    simple_types_.insert(std::make_pair("Unit", std::make_shared<UnitType>(TypeQualifier::Constant)));
+    simple_types_.insert(std::make_pair("Integer", std::make_shared<IntegerType>(TypeQualifier::Constant)));
+    simple_types_.insert(std::make_pair("String", std::make_shared<StringType>(TypeQualifier::Constant)));
+    simple_types_.insert(std::make_pair("Boolean", std::make_shared<BooleanType>(TypeQualifier::Constant)));
 }
 
 void Typechecker::Check()
@@ -208,21 +208,20 @@ void Typechecker::Visit(const StringLiteral& literal)
 
 void Typechecker::Visit(const Function& function)
 {
-    auto type = std::make_shared<FunctionType>();
+    auto parameters = std::make_shared<std::vector<std::shared_ptr<Type>>>();
     for (const auto& param_decl : *function.parameters)
     {
         auto param_type = converter_.Convert(*param_decl->annotation);
         function.locals->SetType(param_decl->name, param_type);
-        type->parameters->push_back(param_type);
+        parameters->push_back(param_type);
     }
-    type->return_type = converter_.Convert(*function.return_type_annotation);
+    auto return_type = converter_.Convert(*function.return_type_annotation);
+    function.type = std::make_shared<FunctionType>(parameters, return_type, TypeQualifier::Constant);
 
     for (const auto& statement : *function.statements)
     {
         statement->Accept(*this);
     }
-
-    function.type = type;
 }
 
 void Typechecker::Visit(const Allocation& allocation)
@@ -240,9 +239,7 @@ void Typechecker::Visit(const Allocation& allocation)
     }
 
     allocation.allocated_type = converter_.Convert(*allocation.annotation);
-    auto type = std::make_shared<ReferenceType>();
-    type->base_type = allocation.allocated_type;
-    allocation.type = type;
+    allocation.type = std::make_shared<ReferenceType>(allocation.allocated_type, TypeQualifier::Constant);
 }
 
 }  // namespace l0

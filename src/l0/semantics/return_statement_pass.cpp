@@ -110,10 +110,10 @@ void ReturnStatementPass::Visit(Function& function)
 
     if (!statement_returns_)
     {
-        if (*function_type->return_type == UnitType{})
+        if (*function_type->return_type == UnitType{TypeQualifier::Constant})
         {
             auto return_statement = std::make_shared<ReturnStatement>(std::make_shared<UnitLiteral>());
-            return_statement->value->type = std::make_shared<UnitType>();
+            return_statement->value->type = std::make_shared<UnitType>(TypeQualifier::Constant);
             function.statements->push_back(return_statement);
         }
         else

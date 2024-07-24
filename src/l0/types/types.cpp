@@ -6,9 +6,27 @@
 namespace l0
 {
 
+std::string str(TypeQualifier qualifier)
+{
+    switch (qualifier)
+    {
+        case TypeQualifier::Constant:
+            return "";
+        case TypeQualifier::Mutable:
+            return "mut ";
+    }
+}
+
+Type::Type(TypeQualifier mutability) : mutability{mutability} {}
+
 bool operator==(const Type& lhs, const Type& rhs) { return typeid(lhs) == typeid(rhs) && lhs.Equals(rhs); }
 
-std::string ReferenceType::ToString() const { return std::format("&{}", base_type->ToString()); }
+ReferenceType::ReferenceType(std::shared_ptr<Type> base_type, TypeQualifier mutability)
+    : Type{mutability}, base_type{base_type}
+{
+}
+
+std::string ReferenceType::ToString() const { return std::format("{}&{}", str(mutability), base_type->ToString()); }
 
 void ReferenceType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
 
@@ -18,33 +36,49 @@ bool ReferenceType::Equals(const Type& other) const
     return other_as_reference_type && (*base_type == *other_as_reference_type->base_type);
 }
 
-std::string UnitType::ToString() const { return "()"; }
+UnitType::UnitType(TypeQualifier mutability) : Type{mutability} {}
+
+std::string UnitType::ToString() const { return str(mutability) + "()"; }
 
 void UnitType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
 
 bool UnitType::Equals(const Type& other) const { return true; }
 
-std::string BooleanType::ToString() const { return "Boolean"; }
+BooleanType::BooleanType(TypeQualifier mutability) : Type{mutability} {}
+
+std::string BooleanType::ToString() const { return str(mutability) + "Boolean"; }
 
 void BooleanType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
 
 bool BooleanType::Equals(const Type& other) const { return true; }
 
-std::string IntegerType::ToString() const { return "Integer"; }
+IntegerType::IntegerType(TypeQualifier mutability) : Type{mutability} {}
+
+std::string IntegerType::ToString() const { return str(mutability) + "Integer"; }
 
 void IntegerType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
 
 bool IntegerType::Equals(const Type& other) const { return true; }
 
-std::string StringType::ToString() const { return "String"; }
+StringType::StringType(TypeQualifier mutability) : Type{mutability} {}
+
+std::string StringType::ToString() const { return str(mutability) + "String"; }
 
 void StringType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
 
 bool StringType::Equals(const Type& other) const { return true; }
 
+FunctionType::FunctionType(
+    std::shared_ptr<ParameterList> parameters, std::shared_ptr<Type> return_type, TypeQualifier mutability
+)
+    : Type{mutability}, parameters{parameters}, return_type{return_type}
+{
+}
+
 std::string FunctionType::ToString() const
 {
     std::stringstream ss{};
+    ss << str(mutability);
     ss << "(";
     for (const auto& parameter : *this->parameters)
     {
@@ -60,7 +94,7 @@ bool FunctionType::Equals(const Type& other) const
 {
     const FunctionType* real_other = static_cast<const FunctionType*>(&other);
 
-    return *this->return_type == *real_other->return_type &&
+    return (*this->return_type == *real_other->return_type) &&
            std::ranges::equal(
                *this->parameters, *real_other->parameters, [](const auto& lhs, const auto& rhs) { return *lhs == *rhs; }
            );
