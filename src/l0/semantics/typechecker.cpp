@@ -34,17 +34,22 @@ void Typechecker::Visit(const Declaration& declaration)
     if (declaration.annotation)
     {
         auto annotated_type = converter_.Convert(*declaration.annotation);
-        if (*annotated_type != *initializer_type)
+        if (!conversion_checker_.CheckCompatibility(annotated_type, initializer_type))
         {
             throw SemanticError(std::format(
-                "Variable '{}' is declared with type {}, but is initialized with value of type {}.",
+                "Variable '{}' is declared with type {}, but is initialized with value of incompatible type {}.",
                 declaration.variable,
                 annotated_type->ToString(),
                 initializer_type->ToString()
             ));
         }
+        declaration.scope->SetType(declaration.variable, annotated_type);
     }
-    declaration.scope->SetType(declaration.variable, initializer_type);
+    else
+    {
+        auto const_initializer_type = ModifyQualifier(*initializer_type, TypeQualifier::Constant);
+        declaration.scope->SetType(declaration.variable, const_initializer_type);
+    }
 }
 
 void Typechecker::Visit(const ExpressionStatement& expression_statement)
@@ -57,7 +62,7 @@ void Typechecker::Visit(const ReturnStatement& return_statement) { return_statem
 void Typechecker::Visit(const ConditionalStatement& conditional_statement)
 {
     conditional_statement.condition->Accept(*this);
-    if (*conditional_statement.condition->type != *simple_types_.at("Boolean"))
+    if (!conversion_checker_.CheckCompatibility(conditional_statement.condition->type, simple_types_.at("Boolean")))
     {
         throw SemanticError(std::format(
             "Condition must be of type Boolean, but is of type '{}'.", conditional_statement.condition->type->ToString()
@@ -82,7 +87,7 @@ void Typechecker::Visit(const ConditionalStatement& conditional_statement)
 void Typechecker::Visit(const WhileLoop& while_loop)
 {
     while_loop.condition->Accept(*this);
-    if (*while_loop.condition->type != *simple_types_.at("Boolean"))
+    if (!conversion_checker_.CheckCompatibility(while_loop.condition->type, simple_types_.at("Boolean")))
     {
         throw SemanticError(std::format(
             "Condition must be of type Boolean, but is of type '{}'.", while_loop.condition->type->ToString()
@@ -113,13 +118,18 @@ void Typechecker::Visit(const Assignment& assignment)
     assignment.target->Accept(*this);
     auto declared = assignment.target->type;
 
+    if (declared->mutability == TypeQualifier::Constant)
+    {
+        throw SemanticError(std::format("Cannot assign to target of constant type {}.", declared->ToString()));
+    }
+
     assignment.expression->Accept(*this);
     auto assigned = assignment.expression->type;
 
-    if (*declared != *assigned)
+    if (!conversion_checker_.CheckCompatibility(declared, assigned))
     {
         throw SemanticError(std::format(
-            "Target of assignment is of type {}, but is assigned value of type {}.",
+            "Target of assignment is of type {}, but is assigned value of incompatible type {}.",
             declared->ToString(),
             assigned->ToString()
         ));
@@ -171,10 +181,13 @@ void Typechecker::Visit(const Call& call)
         call.arguments->at(i)->Accept(*this);
         auto actual = call.arguments->at(i)->type;
 
-        if (*expected != *actual)
+        if (!conversion_checker_.CheckCompatibility(expected, actual))
         {
             throw SemanticError(std::format(
-                "Expected value of type {} as {}th argument, got {}.", expected->ToString(), i, actual->ToString()
+                "Expected value of type {} as argument #{}, got incompatible type {} instead.",
+                expected->ToString(),
+                i,
+                actual->ToString()
             ));
         }
     }
@@ -238,6 +251,7 @@ void Typechecker::Visit(const Allocation& allocation)
         }
     }
 
+    allocation.annotation->mutability = TypeAnnotationQualifier::Mutable;
     allocation.allocated_type = converter_.Convert(*allocation.annotation);
     allocation.type = std::make_shared<ReferenceType>(allocation.allocated_type, TypeQualifier::Constant);
 }

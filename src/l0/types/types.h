@@ -136,6 +136,8 @@ class IConstTypeVisitor
     virtual void Visit(const FunctionType& function_type) = 0;
 };
 
+std::shared_ptr<Type> ModifyQualifier(const Type& type, TypeQualifier qualifier);
+
 }  // namespace l0
 
 #endif

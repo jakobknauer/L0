@@ -26,6 +26,10 @@ void GlobalSymbolPass::Run()
         std::shared_ptr<Type> type;
         if (declaration->annotation)
         {
+            if (declaration->annotation->mutability == TypeAnnotationQualifier::Mutable)
+            {
+                throw SemanticError(std::format("Globals may not be declared mutable."));
+            }
             type = converter_.Convert(*declaration->annotation);
         }
         else

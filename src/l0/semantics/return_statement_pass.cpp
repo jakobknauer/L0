@@ -23,10 +23,10 @@ void ReturnStatementPass::Visit(ExpressionStatement& expression_statement)
 
 void ReturnStatementPass::Visit(ReturnStatement& return_statement)
 {
-    if (*return_statement.value->type != *expected_return_value_.top())
+    if (!conversion_checker_.CheckCompatibility(expected_return_value_.top(), return_statement.value->type))
     {
         throw SemanticError(std::format(
-            "Expected return value of type {}, but got {} instead.",
+            "Expected return value of type {}, but got incompatible type {} instead.",
             expected_return_value_.top()->ToString(),
             return_statement.value->type->ToString()
         ));
@@ -101,7 +101,7 @@ void ReturnStatementPass::Visit(Function& function)
     auto function_type = std::dynamic_pointer_cast<FunctionType>(function.type);
     if (!function_type)
     {
-        throw SemanticError("Type of function must by function type.");
+        throw SemanticError("Type of function must be function type.");
     }
 
     expected_return_value_.push(function_type->return_type);

@@ -100,4 +100,47 @@ bool FunctionType::Equals(const Type& other) const
            );
 }
 
+namespace
+{
+
+class ModifyQualifierVisitor : private IConstTypeVisitor
+{
+   public:
+    std::shared_ptr<Type> ChangeQualifier(const Type& type, TypeQualifier qualifier)
+    {
+        qualifier_ = qualifier;
+        type.Accept(*this);
+        return result_;
+    }
+
+   private:
+    TypeQualifier qualifier_;
+    std::shared_ptr<Type> result_;
+
+    void Visit(const ReferenceType& reference_type)
+    {
+        result_ = std::make_shared<ReferenceType>(reference_type.base_type, qualifier_);
+    }
+
+    void Visit(const UnitType& unit_type) { result_ = std::make_shared<UnitType>(qualifier_); }
+
+    void Visit(const BooleanType& boolean_type) { result_ = std::make_shared<BooleanType>(qualifier_); }
+
+    void Visit(const IntegerType& integer_type) { result_ = std::make_shared<IntegerType>(qualifier_); }
+
+    void Visit(const StringType& string_type) { result_ = std::make_shared<StringType>(qualifier_); }
+
+    void Visit(const FunctionType& function_type)
+    {
+        result_ = std::make_shared<FunctionType>(function_type.parameters, function_type.return_type, qualifier_);
+    }
+};
+
+}  // namespace
+
+std::shared_ptr<Type> ModifyQualifier(const Type& type, TypeQualifier qualifier)
+{
+    return ModifyQualifierVisitor{}.ChangeQualifier(type, qualifier);
+}
+
 }  // namespace l0

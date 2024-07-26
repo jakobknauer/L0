@@ -1,5 +1,7 @@
 add_library(
   semantics
+  conversion_checker.cpp
+  conversion_checker.h
   global_symbol_pass.cpp
   global_symbol_pass.h
   module_validator.cpp
