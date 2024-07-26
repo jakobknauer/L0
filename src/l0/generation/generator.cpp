@@ -529,12 +529,23 @@ void Generator::GenerateFunctionBody(const Function& function, llvm::Function& l
     llvm::BasicBlock* allocas_block = llvm::BasicBlock::Create(context_, kAllocationBlockName, &llvm_function);
     llvm::BasicBlock* entry_block = llvm::BasicBlock::Create(context_, "entry", &llvm_function);
 
+    auto function_type = dynamic_pointer_cast<FunctionType>(function.type);
+
+    builder_.SetInsertPoint(allocas_block);
     for (std::size_t i = 0; i < function.parameters->size(); ++i)
     {
         ParameterDeclaration& param = *function.parameters->at(i);
         llvm::Argument* llvm_param = llvm_function.args().begin() + i;
-        llvm_param->setName(param.name);
-        function.locals->SetLLVMValue(param.name, llvm_param);
+
+        auto param_type = type_converter_.Convert(*function_type->parameters->at(i));
+        if (llvm::isa<llvm::FunctionType>(param_type))
+        {
+            param_type = llvm::PointerType::getUnqual(context_);
+        }
+
+        llvm::AllocaInst* alloca = builder_.CreateAlloca(param_type, nullptr, param.name);
+        function.locals->SetLLVMValue(param.name, alloca);
+        builder_.CreateStore(llvm_param, alloca);
     }
 
     builder_.SetInsertPoint(entry_block);
