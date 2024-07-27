@@ -43,6 +43,8 @@ class AstPrinter : IConstExpressionVisitor, IConstStatementVisitor, ITypeAnnotat
     void Visit(const ReferenceTypeAnnotation& rta) override;
     void Visit(const FunctionTypeAnnotation& fta) override;
 
+    void PrintQualifier(TypeAnnotationQualifier qualifier);
+
     std::ostream& out_;
     detail::Indent indent_;
 };

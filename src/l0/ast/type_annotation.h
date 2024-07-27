@@ -10,12 +10,21 @@ namespace l0
 
 class ITypeAnnotationVisitor;
 
+enum class TypeAnnotationQualifier
+{
+    None,
+    Constant,
+    Mutable,
+};
+
 class TypeAnnotation
 {
    public:
     virtual ~TypeAnnotation() = default;
 
     virtual void Accept(ITypeAnnotationVisitor& visitor) const = 0;
+
+    TypeAnnotationQualifier mutability{TypeAnnotationQualifier::None};
 };
 
 class SimpleTypeAnnotation : public TypeAnnotation

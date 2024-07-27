@@ -8,9 +8,9 @@ namespace l0::detail
 
 OperatorOverloadResolver::OperatorOverloadResolver()
 {
-    auto boolean = std::make_shared<BooleanType>();
-    auto integer = std::make_shared<IntegerType>();
-    auto string = std::make_shared<StringType>();
+    auto boolean = std::make_shared<BooleanType>(TypeQualifier::Constant);
+    auto integer = std::make_shared<IntegerType>(TypeQualifier::Constant);
+    auto string = std::make_shared<StringType>(TypeQualifier::Constant);
 
     unary_operator_overloads_ = {
         {UnaryOp::Operator::Plus, {{integer, integer}}},
@@ -37,9 +37,7 @@ std::shared_ptr<Type> OperatorOverloadResolver::ResolveUnaryOperator(
 {
     if (op == UnaryOp::Operator::Ampersand)
     {
-        auto reference_type = std::make_shared<ReferenceType>();
-        reference_type->base_type = operand;
-        return reference_type;
+        return std::make_shared<ReferenceType>(operand, TypeQualifier::Constant);
     }
     if (op == UnaryOp::Operator::Asterisk)
     {
@@ -82,7 +80,7 @@ std::shared_ptr<Type> OperatorOverloadResolver::ResolveBinaryOperator(
     if (op == BinaryOp::Operator::Plus)
     {
         auto reference_type = dynamic_pointer_cast<ReferenceType>(lhs);
-        if (reference_type && *rhs == IntegerType{})
+        if (reference_type && *rhs == IntegerType{TypeQualifier::Constant})
         {
             return lhs;
         }

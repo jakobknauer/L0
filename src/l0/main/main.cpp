@@ -57,11 +57,12 @@ int main(int argc, char* argv[])
 
     module->name = "MainModule";
 
-    module->externals->Declare("printf");
-    auto string_to_int = std::make_shared<FunctionType>();
-    string_to_int->parameters->push_back(std::make_shared<StringType>());
-    string_to_int->return_type = std::make_shared<IntegerType>();
-    module->externals->SetType("printf", string_to_int);
+    auto parameters = std::make_shared<ParameterList>(
+        std::initializer_list<std::shared_ptr<Type>>{std::make_shared<StringType>(TypeQualifier::Constant)}
+    );
+    auto integer_type = std::make_shared<IntegerType>(TypeQualifier::Constant);
+    auto string_to_int = std::make_shared<FunctionType>(parameters, integer_type, TypeQualifier::Constant);
+    module->externals->Declare("printf", string_to_int);
 
     std::println("Semantical analysis...");
 

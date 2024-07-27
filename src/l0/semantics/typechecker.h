@@ -7,6 +7,7 @@
 #include "l0/ast/expression.h"
 #include "l0/ast/module.h"
 #include "l0/ast/statement.h"
+#include "l0/semantics/conversion_checker.h"
 #include "l0/semantics/operator_overload_resolver.h"
 #include "l0/semantics/type_annotation_converter.h"
 #include "l0/types/types.h"
@@ -26,6 +27,7 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
     std::unordered_map<std::string, const std::shared_ptr<Type>> simple_types_{};
     TypeAnnotationConverter converter_{};
     detail::OperatorOverloadResolver operator_overload_resolver_{};
+    detail::ConversionChecker conversion_checker_{};
 
     void Visit(const Declaration& declaration) override;
     void Visit(const ExpressionStatement& expression_statement) override;

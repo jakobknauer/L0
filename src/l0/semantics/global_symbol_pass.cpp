@@ -1,5 +1,8 @@
 #include "l0/semantics/global_symbol_pass.h"
 
+#include <memory>
+#include <vector>
+
 #include "l0/semantics/semantic_error.h"
 
 namespace l0
@@ -23,27 +26,33 @@ void GlobalSymbolPass::Run()
         std::shared_ptr<Type> type;
         if (declaration->annotation)
         {
+            if (declaration->annotation->mutability == TypeAnnotationQualifier::Mutable)
+            {
+                throw SemanticError(std::format("Globals may not be declared mutable."));
+            }
             type = converter_.Convert(*declaration->annotation);
         }
         else
         {
             if (dynamic_pointer_cast<IntegerLiteral>(declaration->initializer))
             {
-                type = std::make_shared<IntegerType>();
+                type = std::make_shared<IntegerType>(TypeQualifier::Constant);
             }
             else if (dynamic_pointer_cast<StringLiteral>(declaration->initializer))
             {
-                type = std::make_shared<StringType>();
+                type = std::make_shared<StringType>(TypeQualifier::Constant);
             }
             else if (auto function = dynamic_pointer_cast<Function>(declaration->initializer))
             {
-                auto function_type = std::make_shared<FunctionType>();
-                function_type->return_type = converter_.Convert(*function->return_type_annotation);
+                auto parameters = std::make_shared<std::vector<std::shared_ptr<Type>>>();
                 for (auto& parameter : *function->parameters)
                 {
-                    function_type->parameters->push_back(converter_.Convert(*parameter->annotation));
+                    parameters->push_back(converter_.Convert(*parameter->annotation));
                 }
-                type = function_type;
+
+                auto return_type = converter_.Convert(*function->return_type_annotation);
+
+                type = std::make_shared<FunctionType>(parameters, return_type, TypeQualifier::Constant);
             }
         }
 

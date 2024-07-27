@@ -36,6 +36,7 @@ class Parser : public IParser
     Token Consume();
     bool ConsumeIf(TokenType type);
     std::optional<Token> ConsumeIf(std::initializer_list<TokenType> type);
+    std::optional<std::string> ConsumeIfKeyword(std::initializer_list<std::string> keywords);
     Token ConsumeAll(TokenType type);
     Token Expect(TokenType type);
     Token Expect(std::initializer_list<TokenType> types);
@@ -66,6 +67,7 @@ class Parser : public IParser
     std::shared_ptr<ParameterDeclarationList> ParseParameterDeclarationList();
     std::shared_ptr<ParameterDeclaration> ParseParameterDeclaration();
     std::shared_ptr<TypeAnnotation> ParseTypeAnnotation();
+    std::shared_ptr<TypeAnnotation> ParseUnqualifiedTypeAnnotation();
     std::shared_ptr<TypeAnnotation> ParseSimpleTypeAnnotation();
     std::shared_ptr<TypeAnnotation> ParseReferenceTypeAnnotation();
     std::shared_ptr<TypeAnnotation> ParseFunctionTypeAnnotation();

@@ -179,11 +179,16 @@ void AstPrinter::Visit(const Allocation& allocation)
     allocation.annotation->Accept(*this);
 }
 
-void AstPrinter::Visit(const SimpleTypeAnnotation& sta) { out_ << sta.type; }
+void AstPrinter::Visit(const SimpleTypeAnnotation& sta)
+{
+    PrintQualifier(sta.mutability);
+    out_ << sta.type;
+}
 
 void AstPrinter::Visit(const FunctionTypeAnnotation& fta)
 {
     out_ << "(";
+    PrintQualifier(fta.mutability);
     for (auto& parameter : *fta.parameters)
     {
         parameter->Accept(*this);
@@ -195,8 +200,30 @@ void AstPrinter::Visit(const FunctionTypeAnnotation& fta)
 
 void AstPrinter::Visit(const ReferenceTypeAnnotation& rta)
 {
+    PrintQualifier(rta.mutability);
     out_ << "&";
     rta.base_type->Accept(*this);
+}
+
+void AstPrinter::PrintQualifier(TypeAnnotationQualifier qualifier)
+{
+    switch (qualifier)
+    {
+        case TypeAnnotationQualifier::None:
+        {
+            return;
+        }
+        case TypeAnnotationQualifier::Mutable:
+        {
+            out_ << "mut ";
+            return;
+        }
+        case TypeAnnotationQualifier::Constant:
+        {
+            out_ << "const ";
+            return;
+        }
+    }
 }
 
 std::string str(UnaryOp::Operator op)
