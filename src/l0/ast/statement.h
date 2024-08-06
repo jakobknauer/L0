@@ -6,6 +6,7 @@
 
 #include "l0/ast/expression.h"
 #include "l0/ast/type_annotation.h"
+#include "l0/ast/type_expression.h"
 
 namespace l0
 {
@@ -40,6 +41,18 @@ class Declaration : public Statement
     std::shared_ptr<Expression> initializer;
 
     mutable std::shared_ptr<Scope> scope;
+};
+
+class TypeDeclaration : public Statement
+{
+   public:
+    TypeDeclaration(std::string name, std::shared_ptr<TypeExpression> definition);
+
+    void Accept(IConstStatementVisitor& visitor) const override;
+    void Accept(IStatementVisitor& visitor) override;
+
+    std::string name;
+    std::shared_ptr<TypeExpression> definition;
 };
 
 class ExpressionStatement : public Statement
@@ -113,6 +126,7 @@ class IConstStatementVisitor
     virtual ~IConstStatementVisitor() = default;
 
     virtual void Visit(const Declaration& declaration) = 0;
+    virtual void Visit(const TypeDeclaration& type_declaration) {};
     virtual void Visit(const ExpressionStatement& expression_statement) = 0;
     virtual void Visit(const ReturnStatement& return_statement) = 0;
     virtual void Visit(const ConditionalStatement& conditional_statement) = 0;
@@ -126,6 +140,7 @@ class IStatementVisitor
     virtual ~IStatementVisitor() = default;
 
     virtual void Visit(Declaration& declaration) = 0;
+    virtual void Visit(TypeDeclaration& type_declaration) {};
     virtual void Visit(ExpressionStatement& expression_statement) = 0;
     virtual void Visit(ReturnStatement& return_statement) = 0;
     virtual void Visit(ConditionalStatement& conditional_statement) = 0;

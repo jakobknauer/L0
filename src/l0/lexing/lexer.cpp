@@ -16,7 +16,9 @@ bool IsValidIdentifierCharacter(char c) { return std::isalpha(c) || std::isdigit
 
 Lexer::Lexer(std::shared_ptr<std::istream> input)
     : input_{input},
-      keywords_{"return", "unit", "true", "false", "if", "else", "while", "new", "delete", "const", "mut"}
+      keywords_{
+          "return", "unit", "true", "false", "if", "else", "while", "new", "delete", "const", "mut", "type", "struct"
+      }
 {
     single_character_operators_ = {
         {'(', TokenType::OpeningParen},

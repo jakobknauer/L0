@@ -6,11 +6,12 @@
 #include "l0/ast/module.h"
 #include "l0/ast/statement.h"
 #include "l0/ast/type_annotation.h"
+#include "l0/ast/type_expression.h"
 
 namespace l0
 {
 
-class AstPrinter : IConstExpressionVisitor, IConstStatementVisitor, ITypeAnnotationVisitor
+class AstPrinter : IConstExpressionVisitor, IConstStatementVisitor, ITypeAnnotationVisitor, IConstTypeExpressionVisitor
 {
    public:
     AstPrinter(std::ostream& out);
@@ -21,6 +22,7 @@ class AstPrinter : IConstExpressionVisitor, IConstStatementVisitor, ITypeAnnotat
 
    private:
     void Visit(const Declaration& declaration) override;
+    void Visit(const TypeDeclaration& type_declaration) override;
     void Visit(const ExpressionStatement& expression_statement) override;
     void Visit(const ReturnStatement& return_statement) override;
     void Visit(const ConditionalStatement& conditional_statement) override;
@@ -42,6 +44,8 @@ class AstPrinter : IConstExpressionVisitor, IConstStatementVisitor, ITypeAnnotat
     void Visit(const SimpleTypeAnnotation& sta) override;
     void Visit(const ReferenceTypeAnnotation& rta) override;
     void Visit(const FunctionTypeAnnotation& fta) override;
+
+    void Visit(const StructExpression& struct_expression) override;
 
     void PrintQualifier(TypeAnnotationQualifier qualifier);
 

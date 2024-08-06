@@ -8,6 +8,7 @@
 #include "l0/ast/module.h"
 #include "l0/ast/statement.h"
 #include "l0/ast/type_annotation.h"
+#include "l0/ast/type_expression.h"
 #include "l0/lexing/token.h"
 
 namespace l0
@@ -72,6 +73,7 @@ class Parser : public IParser
     std::shared_ptr<TypeAnnotation> ParseReferenceTypeAnnotation();
     std::shared_ptr<TypeAnnotation> ParseFunctionTypeAnnotation();
     std::shared_ptr<ParameterListAnnotation> ParseParameterListAnnotation();
+    std::shared_ptr<TypeExpression> ParseStruct();
 };
 
 class ParserError

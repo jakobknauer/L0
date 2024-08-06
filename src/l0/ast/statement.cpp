@@ -19,6 +19,15 @@ void Declaration::Accept(IConstStatementVisitor& visitor) const { visitor.Visit(
 
 void Declaration::Accept(IStatementVisitor& visitor) { visitor.Visit(*this); }
 
+TypeDeclaration::TypeDeclaration(std::string name, std::shared_ptr<TypeExpression> definition)
+    : name{name}, definition{definition}
+{
+}
+
+void TypeDeclaration::Accept(IConstStatementVisitor& visitor) const { visitor.Visit(*this); }
+
+void TypeDeclaration::Accept(IStatementVisitor& visitor) { visitor.Visit(*this); }
+
 ExpressionStatement::ExpressionStatement(std::shared_ptr<Expression> expression) : expression{expression} {}
 
 void ExpressionStatement::Accept(IConstStatementVisitor& visitor) const { visitor.Visit(*this); }

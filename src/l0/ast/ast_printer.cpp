@@ -35,6 +35,12 @@ void AstPrinter::Visit(const Declaration& declaration)
     declaration.initializer->Accept(*this);
 }
 
+void AstPrinter::Visit(const TypeDeclaration& type_declaration)
+{
+    out_ << type_declaration.name << " : type = ";
+    type_declaration.definition->Accept(*this);
+}
+
 void AstPrinter::Visit(const ExpressionStatement& expression_statement)
 {
     expression_statement.expression->Accept(*this);
@@ -203,6 +209,19 @@ void AstPrinter::Visit(const ReferenceTypeAnnotation& rta)
     PrintQualifier(rta.mutability);
     out_ << "&";
     rta.base_type->Accept(*this);
+}
+
+void AstPrinter::Visit(const StructExpression& struct_expression)
+{
+    out_ << "struct";
+    out_ << "\n{\n";
+    ++indent_;
+    for (const auto& statement : *struct_expression.body)
+    {
+        Print(*statement);
+    }
+    --indent_;
+    out_ << "}";
 }
 
 void AstPrinter::PrintQualifier(TypeAnnotationQualifier qualifier)

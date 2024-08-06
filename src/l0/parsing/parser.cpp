@@ -201,10 +201,19 @@ std::shared_ptr<Statement> Parser::ParseDeclaration()
 {
     auto identifier = Expect(TokenType::Identifier);
     Expect(TokenType::Colon);
-    auto annotation = ParseTypeAnnotation();
-    Expect(TokenType::Equals);
-    auto initializer = ParseExpression();
-    return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), annotation, initializer);
+    if (ConsumeIfKeyword({"type"}))
+    {
+        Expect(TokenType::Equals);
+        auto definition = ParseStruct();
+        return std::make_shared<TypeDeclaration>(std::any_cast<std::string>(identifier.data), definition);
+    }
+    else
+    {
+        auto annotation = ParseTypeAnnotation();
+        Expect(TokenType::Equals);
+        auto initializer = ParseExpression();
+        return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), annotation, initializer);
+    }
 }
 
 std::shared_ptr<Statement> Parser::ParseUnannotatedDeclaration()
@@ -719,6 +728,15 @@ std::shared_ptr<ParameterListAnnotation> Parser::ParseParameterListAnnotation()
             }
         }
     } while (true);
+}
+
+std::shared_ptr<TypeExpression> Parser::ParseStruct()
+{
+    ExpectKeyword("struct");
+    Expect(TokenType::OpeningBrace);
+    auto body = ParseStatementBlock(TokenType::ClosingBrace);
+    Expect(TokenType::ClosingBrace);
+    return std::make_shared<StructExpression>(body);
 }
 
 ParserError::ParserError(std::string message) : message_{message} {}
