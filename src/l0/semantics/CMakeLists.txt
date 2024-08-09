@@ -2,10 +2,8 @@ add_library(
   semantics
   conversion_checker.cpp
   conversion_checker.h
-  global_symbol_pass.cpp
-  global_symbol_pass.h
-  module_validator.cpp
-  module_validator.h
+  global_scope_builder.cpp
+  global_scope_builder.h
   operator_overload_resolver.cpp
   operator_overload_resolver.h
   reference_pass.cpp
@@ -16,8 +14,8 @@ add_library(
   return_statement_pass.h
   semantic_error.cpp
   semantic_error.h
-  type_annotation_converter.cpp
-  type_annotation_converter.h
+  type_resolver.cpp
+  type_resolver.h
   typechecker.cpp
   typechecker.h)
 

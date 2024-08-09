@@ -5,7 +5,7 @@
 namespace l0
 {
 
-Typechecker::Typechecker(Module& module) : module_{module}
+Typechecker::Typechecker(Module& module) : module_{module}, type_resolver_{module}
 {
     simple_types_.insert(std::make_pair("Unit", std::make_shared<UnitType>(TypeQualifier::Constant)));
     simple_types_.insert(std::make_pair("Integer", std::make_shared<IntegerType>(TypeQualifier::Constant)));
@@ -25,7 +25,7 @@ void Typechecker::Visit(const Declaration& declaration)
 {
     declaration.initializer->Accept(*this);
 
-    if (declaration.scope->IsTypeSet(declaration.variable))
+    if (declaration.scope->IsVariableTypeSet(declaration.variable))
     {
         return;
     }
@@ -33,24 +33,26 @@ void Typechecker::Visit(const Declaration& declaration)
     auto initializer_type = declaration.initializer->type;
     if (declaration.annotation)
     {
-        auto annotated_type = converter_.Convert(*declaration.annotation);
+        auto annotated_type = type_resolver_.Convert(*declaration.annotation);
         if (!conversion_checker_.CheckCompatibility(annotated_type, initializer_type))
         {
             throw SemanticError(std::format(
-                "Variable '{}' is declared with type {}, but is initialized with value of incompatible type {}.",
+                "Variable '{}' is declared with type '{}', but is initialized with value of incompatible type '{}'.",
                 declaration.variable,
                 annotated_type->ToString(),
                 initializer_type->ToString()
             ));
         }
-        declaration.scope->SetType(declaration.variable, annotated_type);
+        declaration.scope->SetVariableType(declaration.variable, annotated_type);
     }
     else
     {
         auto const_initializer_type = ModifyQualifier(*initializer_type, TypeQualifier::Constant);
-        declaration.scope->SetType(declaration.variable, const_initializer_type);
+        declaration.scope->SetVariableType(declaration.variable, const_initializer_type);
     }
 }
+
+void Typechecker::Visit(const TypeDeclaration& type_declaration) { type_declaration.definition->Accept(*this); }
 
 void Typechecker::Visit(const ExpressionStatement& expression_statement)
 {
@@ -156,7 +158,7 @@ void Typechecker::Visit(const BinaryOp& binary_op)
     binary_op.type = operator_overload_resolver_.ResolveBinaryOperator(binary_op.op, lhs, rhs);
 }
 
-void Typechecker::Visit(const Variable& variable) { variable.type = variable.scope->GetType(variable.name); }
+void Typechecker::Visit(const Variable& variable) { variable.type = variable.scope->GetVariableType(variable.name); }
 
 void Typechecker::Visit(const Call& call)
 {
@@ -224,11 +226,11 @@ void Typechecker::Visit(const Function& function)
     auto parameters = std::make_shared<std::vector<std::shared_ptr<Type>>>();
     for (const auto& param_decl : *function.parameters)
     {
-        auto param_type = converter_.Convert(*param_decl->annotation);
-        function.locals->SetType(param_decl->name, param_type);
+        auto param_type = type_resolver_.Convert(*param_decl->annotation);
+        function.locals->SetVariableType(param_decl->name, param_type);
         parameters->push_back(param_type);
     }
-    auto return_type = converter_.Convert(*function.return_type_annotation);
+    auto return_type = type_resolver_.Convert(*function.return_type_annotation);
     function.type = std::make_shared<FunctionType>(parameters, return_type, TypeQualifier::Constant);
 
     for (const auto& statement : *function.statements)
@@ -252,8 +254,34 @@ void Typechecker::Visit(const Allocation& allocation)
     }
 
     allocation.annotation->mutability = TypeAnnotationQualifier::Mutable;
-    allocation.allocated_type = converter_.Convert(*allocation.annotation);
+    allocation.allocated_type = type_resolver_.Convert(*allocation.annotation);
     allocation.type = std::make_shared<ReferenceType>(allocation.allocated_type, TypeQualifier::Constant);
+}
+
+void Typechecker::Visit(const StructExpression& struct_expression)
+{
+    for (const auto& statement : *struct_expression.body)
+    {
+        auto member_declaration = dynamic_pointer_cast<Declaration>(statement);
+        if(!member_declaration)
+        {
+            throw SemanticError("Expected declaration as statement in struct expression body.");
+        }
+
+        member_declaration->initializer->Accept(*this);
+        auto initializer_type = member_declaration->initializer->type;
+        auto annotated_type = type_resolver_.Convert(*member_declaration->annotation);
+
+        if (!conversion_checker_.CheckCompatibility(annotated_type, initializer_type))
+        {
+            throw SemanticError(std::format(
+                "Member '{}' is declared with type '{}', buth is initialized with value of incompatible type '{}'.",
+                member_declaration->variable,
+                annotated_type->ToString(),
+                initializer_type->ToString()
+            ));
+        }
+    }
 }
 
 }  // namespace l0

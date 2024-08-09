@@ -15,6 +15,8 @@ void ReturnStatementPass::Visit(Declaration& declaration)
     statement_returns_ = false;
 }
 
+void ReturnStatementPass::Visit(TypeDeclaration& type_declaration) { type_declaration.definition->Accept(*this); }
+
 void ReturnStatementPass::Visit(ExpressionStatement& expression_statement)
 {
     expression_statement.expression->Accept(*this);
@@ -26,7 +28,7 @@ void ReturnStatementPass::Visit(ReturnStatement& return_statement)
     if (!conversion_checker_.CheckCompatibility(expected_return_value_.top(), return_statement.value->type))
     {
         throw SemanticError(std::format(
-            "Expected return value of type {}, but got incompatible type {} instead.",
+            "Expected return value of type '{}', but got incompatible type '{}' instead.",
             expected_return_value_.top()->ToString(),
             return_statement.value->type->ToString()
         ));
@@ -155,6 +157,19 @@ void ReturnStatementPass::Visit(StatementBlock& statement_block)
     }
 
     statement_returns_ = block_returns_;
+}
+
+void ReturnStatementPass::Visit(StructExpression& struct_expression)
+{
+    for (const auto& statement : *struct_expression.body)
+    {
+        auto member_declaration = dynamic_pointer_cast<Declaration>(statement);
+        if (!member_declaration)
+        {
+            throw SemanticError("Expected declaration as statement in struct expression body.");
+        }
+        member_declaration->initializer->Accept(*this);
+    }
 }
 
 }  // namespace l0

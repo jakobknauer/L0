@@ -14,6 +14,7 @@ class Module
    public:
     std::shared_ptr<StatementBlock> statements{};
     std::string name{};
+
     std::shared_ptr<Scope> globals = std::make_shared<Scope>();
     std::shared_ptr<Scope> externals = std::make_shared<Scope>();
 };

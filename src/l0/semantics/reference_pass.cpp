@@ -17,6 +17,8 @@ void ReferencePass::Run()
 
 void ReferencePass::Visit(Declaration& declaration) { declaration.initializer->Accept(*this); }
 
+void ReferencePass::Visit(TypeDeclaration& type_declaration) { type_declaration.definition->Accept(*this); }
+
 void ReferencePass::Visit(ExpressionStatement& expression_statement) { expression_statement.expression->Accept(*this); }
 
 void ReferencePass::Visit(ReturnStatement& return_statement) { return_statement.value->Accept(*this); }
@@ -124,6 +126,25 @@ void ReferencePass::Visit(Function& function)
     }
 }
 
-void ReferencePass::Visit(Allocation& allocation) {}
+void ReferencePass::Visit(Allocation& allocation)
+{
+    if (allocation.size)
+    {
+        allocation.size->Accept(*this);
+    }
+}
+
+void ReferencePass::Visit(StructExpression& struct_expression)
+{
+    for (const auto& statement : *struct_expression.body)
+    {
+        auto member_declaration = dynamic_pointer_cast<Declaration>(statement);
+        if (!member_declaration)
+        {
+            throw SemanticError("Expected declaration as statement in struct expression body.");
+        }
+        member_declaration->initializer->Accept(*this);
+    }
+}
 
 }  // namespace l0

@@ -8,6 +8,7 @@ namespace l0
 {
 
 class IConstTypeExpressionVisitor;
+class ITypeExpressionVisitor;
 
 class TypeExpression
 {
@@ -15,6 +16,7 @@ class TypeExpression
     virtual ~TypeExpression() = default;
 
     virtual void Accept(IConstTypeExpressionVisitor& visitor) const = 0;
+    virtual void Accept(ITypeExpressionVisitor& visitor) = 0;
 };
 
 class Statement;
@@ -26,6 +28,7 @@ class StructExpression : public TypeExpression
     StructExpression(std::shared_ptr<StatementBlock> body);
 
     void Accept(IConstTypeExpressionVisitor& visitor) const override;
+    void Accept(ITypeExpressionVisitor& visitor) override;
 
     std::shared_ptr<StatementBlock> body;
 };
@@ -36,6 +39,14 @@ class IConstTypeExpressionVisitor
     virtual ~IConstTypeExpressionVisitor() = default;
 
     virtual void Visit(const StructExpression& struct_expression) = 0;
+};
+
+class ITypeExpressionVisitor
+{
+   public:
+    virtual ~ITypeExpressionVisitor() = default;
+
+    virtual void Visit(StructExpression& struct_expression) = 0;
 };
 
 };  // namespace l0

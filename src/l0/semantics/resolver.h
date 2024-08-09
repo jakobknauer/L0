@@ -9,7 +9,7 @@
 namespace l0
 {
 
-class Resolver : IConstExpressionVisitor, IConstStatementVisitor
+class Resolver : private IConstExpressionVisitor, private IConstStatementVisitor, private IConstTypeExpressionVisitor
 {
    public:
     Resolver(const Module& module);
@@ -22,7 +22,8 @@ class Resolver : IConstExpressionVisitor, IConstStatementVisitor
     bool local_{false};
 
     void Visit(const Declaration& statement) override;
-    void Visit(const ExpressionStatement& statement_statement) override;
+    void Visit(const TypeDeclaration& type_declaration) override;
+    void Visit(const ExpressionStatement& expression_statement) override;
     void Visit(const ReturnStatement& return_statement) override;
     void Visit(const ConditionalStatement& conditional_statement) override;
     void Visit(const WhileLoop& while_loop) override;
@@ -39,6 +40,8 @@ class Resolver : IConstExpressionVisitor, IConstStatementVisitor
     void Visit(const StringLiteral& literal) override;
     void Visit(const Function& function) override;
     void Visit(const Allocation& allocation) override;
+
+    void Visit(const StructExpression& struct_expression) override;
 
     std::shared_ptr<Scope> Resolve(const std::string name);
 };

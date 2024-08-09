@@ -38,7 +38,11 @@ std::string Generator::Generate()
     llvm_module_.setTargetTriple("x86_64-pc-linux-gnu");
 
     DeclareExternals();
-    DeclareGlobals();
+
+    DeclareGlobalTypes();
+    FillGlobalTypes();
+
+    DeclareGlobalVariables();
     DefineGlobals();
 
     std::string code{};
@@ -51,7 +55,7 @@ void Generator::DeclareExternals()
 {
     for (const std::string& external_symbol : ast_module_.externals->GetVariables())
     {
-        auto type = ast_module_.externals->GetType(external_symbol);
+        auto type = ast_module_.externals->GetVariableType(external_symbol);
 
         if (auto function_type = dynamic_pointer_cast<FunctionType>(type))
         {
@@ -69,47 +73,83 @@ void Generator::DeclareExternals()
     }
 }
 
-void Generator::DeclareGlobals()
+void Generator::DeclareGlobalTypes()
+{
+    for (const auto& type : ast_module_.globals->GetTypes())
+    {
+        llvm::StructType::create(context_, type);
+    }
+}
+
+void Generator::FillGlobalTypes()
+{
+    for (const auto& type : ast_module_.globals->GetTypes())
+    {
+        auto struct_type = dynamic_pointer_cast<StructType>(ast_module_.globals->GetTypeDefinition(type));
+        if (!struct_type)
+        {
+            continue;
+        }
+        auto llvm_struct_type = llvm::StructType::getTypeByName(context_, type);
+
+        std::vector<llvm::Type*> members{};
+        for (const auto& member : *struct_type->members)
+        {
+            members.push_back(type_converter_.GetValueDeclarationType(*member->type));
+        }
+
+        llvm_struct_type->setBody(members, true);
+    }
+}
+
+void Generator::DeclareGlobalVariables()
 {
     for (const auto& statement : *ast_module_.statements)
     {
-        auto declaration = dynamic_pointer_cast<Declaration>(statement);
-        auto type = declaration->scope->GetType(declaration->variable);
-
-        if (auto ft = dynamic_pointer_cast<FunctionType>(type))
+        if (auto declaration = dynamic_pointer_cast<Declaration>(statement))
         {
-            auto llvm_type = type_converter_.GetDeclarationType(*ft);
-            llvm::FunctionCallee function_callee = llvm_module_.getOrInsertFunction(declaration->variable, llvm_type);
-
-            declaration->scope->SetLLVMValue(declaration->variable, function_callee.getCallee());
+            DeclareGlobalVariable(declaration);
         }
-        else if (dynamic_pointer_cast<StringType>(type))
-        {
-            auto literal = dynamic_pointer_cast<StringLiteral>(declaration->initializer);
-            auto global = builder_.CreateGlobalStringPtr(literal->value, declaration->variable, 0, &llvm_module_);
+    }
+}
 
-            declaration->scope->SetLLVMValue(declaration->variable, global);
-        }
-        else if (dynamic_pointer_cast<IntegerType>(type))
-        {
-            auto literal = dynamic_pointer_cast<IntegerLiteral>(declaration->initializer);
-            auto llvm_type = type_converter_.Convert(*type);
+void Generator::DeclareGlobalVariable(std::shared_ptr<Declaration> declaration)
+{
+    auto type = declaration->scope->GetVariableType(declaration->variable);
 
-            llvm_module_.getOrInsertGlobal(declaration->variable, llvm_type);
-            auto global = llvm_module_.getNamedGlobal(declaration->variable);
-            global->setLinkage(llvm::GlobalValue::LinkageTypes::PrivateLinkage);
-            global->setInitializer(llvm::ConstantInt::get(llvm_type, literal->value));
-            global->setAlignment(llvm::Align(1));
-            global->setConstant(true);
+    if (auto ft = dynamic_pointer_cast<FunctionType>(type))
+    {
+        auto llvm_type = type_converter_.GetFunctionDeclarationType(*ft);
+        llvm::FunctionCallee function_callee = llvm_module_.getOrInsertFunction(declaration->variable, llvm_type);
 
-            declaration->scope->SetLLVMValue(declaration->variable, global);
-        }
-        else
-        {
-            throw GeneratorError(
-                std::format("Unexpected type for global variable '{}': '{}'.", declaration->variable, type->ToString())
-            );
-        }
+        declaration->scope->SetLLVMValue(declaration->variable, function_callee.getCallee());
+    }
+    else if (dynamic_pointer_cast<StringType>(type))
+    {
+        auto literal = dynamic_pointer_cast<StringLiteral>(declaration->initializer);
+        auto global = builder_.CreateGlobalStringPtr(literal->value, declaration->variable, 0, &llvm_module_);
+
+        declaration->scope->SetLLVMValue(declaration->variable, global);
+    }
+    else if (dynamic_pointer_cast<IntegerType>(type))
+    {
+        auto literal = dynamic_pointer_cast<IntegerLiteral>(declaration->initializer);
+        auto llvm_type = type_converter_.Convert(*type);
+
+        llvm_module_.getOrInsertGlobal(declaration->variable, llvm_type);
+        auto global = llvm_module_.getNamedGlobal(declaration->variable);
+        global->setLinkage(llvm::GlobalValue::LinkageTypes::PrivateLinkage);
+        global->setInitializer(llvm::ConstantInt::get(llvm_type, literal->value));
+        global->setAlignment(llvm::Align(1));
+        global->setConstant(true);
+
+        declaration->scope->SetLLVMValue(declaration->variable, global);
+    }
+    else
+    {
+        throw GeneratorError(
+            std::format("Unexpected type for global variable '{}': '{}'.", declaration->variable, type->ToString())
+        );
     }
 }
 
@@ -118,7 +158,11 @@ void Generator::DefineGlobals()
     for (const auto& statement : *ast_module_.statements)
     {
         auto declaration = dynamic_pointer_cast<Declaration>(statement);
-        auto type = declaration->scope->GetType(declaration->variable);
+        if (!declaration)
+        {
+            continue;
+        }
+        auto type = declaration->scope->GetVariableType(declaration->variable);
 
         auto function_type = dynamic_pointer_cast<FunctionType>(type);
         if (!function_type)
@@ -141,13 +185,8 @@ void Generator::Visit(const Declaration& declaration)
     declaration.initializer->Accept(*this);
     llvm::Value* initializer = result_;
 
-    auto type = declaration.scope->GetType(declaration.variable);
-    llvm::Type* llvm_type = type_converter_.Convert(*type);
-
-    if (llvm::isa<llvm::FunctionType>(llvm_type))
-    {
-        llvm_type = llvm::PointerType::getUnqual(context_);
-    }
+    auto type = declaration.scope->GetVariableType(declaration.variable);
+    llvm::Type* llvm_type = type_converter_.GetValueDeclarationType(*type);
 
     llvm::Function* llvm_function = builder_.GetInsertBlock()->getParent();
     auto previous_block = builder_.GetInsertBlock();
@@ -176,6 +215,8 @@ void Generator::Visit(const Declaration& declaration)
 
     result_ = nullptr;
 }
+
+void Generator::Visit(const TypeDeclaration& type_declaration) {}
 
 void Generator::Visit(const ExpressionStatement& expression_statement)
 {
@@ -451,7 +492,7 @@ void Generator::Visit(const Call& call)
     llvm::Value* llvm_function = result_;
 
     auto function_type = dynamic_pointer_cast<FunctionType>(call.function->type);
-    llvm::FunctionType* llvm_function_type = type_converter_.GetDeclarationType(*function_type);
+    llvm::FunctionType* llvm_function_type = type_converter_.GetFunctionDeclarationType(*function_type);
 
     std::vector<llvm::Value*> arguments{};
     for (auto& argument : *call.arguments)
@@ -487,7 +528,7 @@ void Generator::Visit(const Function& function)
 {
     llvm::BasicBlock* previous_block = builder_.GetInsertBlock();
 
-    auto llvm_type = type_converter_.GetDeclarationType(*dynamic_pointer_cast<FunctionType>(function.type));
+    auto llvm_type = type_converter_.GetFunctionDeclarationType(*dynamic_pointer_cast<FunctionType>(function.type));
     llvm::FunctionCallee callee = llvm_module_.getOrInsertFunction(GetLambdaName(), llvm_type);
     llvm::Function* llvm_function = llvm::dyn_cast<llvm::Function>(callee.getCallee());
 

@@ -27,14 +27,16 @@ void Resolver::Visit(const Declaration& declaration)
     if (local_)
     {
         auto scope = scopes_.back();
-        if (scope->IsDeclared(declaration.variable))
+        if (scope->IsVariableDeclared(declaration.variable))
         {
             throw SemanticError(std::format("Duplicate declaration of local variable '{}'.", declaration.variable));
         }
-        scope->Declare(declaration.variable);
+        scope->DeclareVariable(declaration.variable);
         declaration.scope = scope;
     }
 }
+
+void Resolver::Visit(const TypeDeclaration& type_declaration) { type_declaration.definition->Accept(*this); }
 
 void Resolver::Visit(const ExpressionStatement& expression_statement)
 {
@@ -118,7 +120,7 @@ void Resolver::Visit(const Function& function)
 {
     for (const auto& param_decl : *function.parameters)
     {
-        function.locals->Declare(param_decl->name);
+        function.locals->DeclareVariable(param_decl->name);
     }
 
     bool restore_local = local_;
@@ -140,11 +142,20 @@ void Resolver::Visit(const Allocation& allocation)
     }
 }
 
+void Resolver::Visit(const StructExpression& struct_expression)
+{
+    for (const auto& statement : *struct_expression.body)
+    {
+        auto member_declaration = dynamic_pointer_cast<Declaration>(statement);
+        member_declaration->initializer->Accept(*this);
+    }
+}
+
 std::shared_ptr<Scope> Resolver::Resolve(const std::string name)
 {
     for (auto scope : scopes_ | std::views::reverse)
     {
-        if (scope->IsDeclared(name))
+        if (scope->IsVariableDeclared(name))
         {
             return scope;
         }

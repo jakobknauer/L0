@@ -35,10 +35,15 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     llvm::Value* result_;
 
     void DeclareExternals();
-    void DeclareGlobals();
+    void DeclareGlobalTypes();
+    void FillGlobalTypes();
+    void DeclareGlobalVariables();
+    void DeclareGlobalVariable(std::shared_ptr<Declaration> declaration);
     void DefineGlobals();
 
+    using IConstStatementVisitor::Visit;
     void Visit(const Declaration& declaration) override;
+    void Visit(const TypeDeclaration& declaration) override;
     void Visit(const ExpressionStatement& expression_statement) override;
     void Visit(const ReturnStatement& return_statement) override;
     void Visit(const ConditionalStatement& conditional_statement) override;

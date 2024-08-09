@@ -126,7 +126,7 @@ class IConstStatementVisitor
     virtual ~IConstStatementVisitor() = default;
 
     virtual void Visit(const Declaration& declaration) = 0;
-    virtual void Visit(const TypeDeclaration& type_declaration) {};
+    virtual void Visit(const TypeDeclaration& type_declaration) = 0;
     virtual void Visit(const ExpressionStatement& expression_statement) = 0;
     virtual void Visit(const ReturnStatement& return_statement) = 0;
     virtual void Visit(const ConditionalStatement& conditional_statement) = 0;
@@ -140,7 +140,7 @@ class IStatementVisitor
     virtual ~IStatementVisitor() = default;
 
     virtual void Visit(Declaration& declaration) = 0;
-    virtual void Visit(TypeDeclaration& type_declaration) {};
+    virtual void Visit(TypeDeclaration& type_declaration) = 0;
     virtual void Visit(ExpressionStatement& expression_statement) = 0;
     virtual void Visit(ReturnStatement& return_statement) = 0;
     virtual void Visit(ConditionalStatement& conditional_statement) = 0;

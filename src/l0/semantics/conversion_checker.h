@@ -23,8 +23,9 @@ class ConversionChecker : IConstTypeVisitor
     void Visit(const IntegerType& integer_type) override;
     void Visit(const StringType& string_type) override;
     void Visit(const FunctionType& function_type) override;
+    void Visit(const StructType& struct_type) override;
 };
 
-}  // namespace l0
+}  // namespace l0::detail
 
 #endif

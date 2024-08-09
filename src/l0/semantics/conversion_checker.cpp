@@ -82,4 +82,10 @@ void ConversionChecker::Visit(const FunctionType& function_type)
     // leave result_ as is
 }
 
+void ConversionChecker::Visit(const StructType& struct_type)
+{
+    auto value_as_struct_type = dynamic_pointer_cast<StructType>(value_);
+    result_ = value_as_struct_type && (struct_type.name == value_as_struct_type->name);
+}
+
 }  // namespace l0::detail

@@ -1,9 +1,16 @@
 # Semantic Checks
 
-The following semantic passes are being done:
-- ModuleValidator: Checks if all module-level statements are declarations, and if the initializers are literals or functions.
-- GlobalSymbolPass: Builds up global scope (with types), checks for duplicate declarations. (As soon as custom types can be declared, two passes will be necessary here.)
-- Resolver: Creates local scopes, resolves uses of variables on function level, checks for duplicate declarations of local variables.
-- TypeChecker: Checks if declared match actual types. Also operator overload resolution is done here (for + and * at this time)
-- ReturnStatementPass: Checks existence and types of return statements in all branches of functions, removes unreachable statements after return statements, and generates return statements for functions that return Unit, if not existing
-- ReferencePass: Checks specifics of reference arithmetic not covered by the type system
+The following semantic checks are required (either directly to ensure a well-formed program; or as a requirement to other checks)
+- Declare types (+ kind)
+- Define types
+- Declare global variables
+- Typecheck globals (excl. function return values)
+- Resolve types
+- Resolve variables (i.e. usages of variables in functions)
+- Typecheck functions
+- Check function return values
+- Check references
+
+The following graph shows the dependencies between these tasks:
+
+![Dependencies](semantic-checks.svg)

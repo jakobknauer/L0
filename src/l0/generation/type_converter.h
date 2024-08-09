@@ -17,7 +17,8 @@ class TypeConverter : private IConstTypeVisitor
 
     llvm::Type* Convert(const Type& type);
     llvm::FunctionType* Convert(const FunctionType& type);
-    llvm::FunctionType* GetDeclarationType(const FunctionType& type);
+    llvm::FunctionType* GetFunctionDeclarationType(const FunctionType& type);
+    llvm::Type* GetValueDeclarationType(const Type& type);
 
    private:
     void Visit(const ReferenceType& reference_type) override;
@@ -26,6 +27,7 @@ class TypeConverter : private IConstTypeVisitor
     void Visit(const IntegerType& integer_type) override;
     void Visit(const StringType& string_type) override;
     void Visit(const FunctionType& function_type) override;
+    void Visit(const StructType& struct_type) override;
 
     llvm::LLVMContext& context_;
     llvm::Type* result_;

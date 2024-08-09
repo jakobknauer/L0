@@ -7,4 +7,6 @@ StructExpression::StructExpression(std::shared_ptr<StatementBlock> body) : body{
 
 void StructExpression::Accept(IConstTypeExpressionVisitor& visitor) const { visitor.Visit(*this); }
 
+void StructExpression::Accept(ITypeExpressionVisitor& visitor) { visitor.Visit(*this); }
+
 }  // namespace l0

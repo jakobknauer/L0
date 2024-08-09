@@ -6,13 +6,14 @@
 #include "l0/ast/expression.h"
 #include "l0/ast/module.h"
 #include "l0/ast/statement.h"
+#include "l0/ast/type_expression.h"
 #include "l0/semantics/conversion_checker.h"
 #include "l0/types/types.h"
 
 namespace l0
 {
 
-class ReturnStatementPass : private IStatementVisitor, private IExpressionVisitor
+class ReturnStatementPass : private IStatementVisitor, private IExpressionVisitor, private ITypeExpressionVisitor
 {
    public:
     ReturnStatementPass(Module& module);
@@ -26,6 +27,7 @@ class ReturnStatementPass : private IStatementVisitor, private IExpressionVisito
     std::stack<std::shared_ptr<Type>> expected_return_value_{};
 
     void Visit(Declaration& declaration) override;
+    void Visit(TypeDeclaration& type_declaration) override;
     void Visit(ExpressionStatement& expression_statement) override;
     void Visit(ReturnStatement& return_statement) override;
     void Visit(ConditionalStatement& conditional_statement) override;
@@ -43,6 +45,8 @@ class ReturnStatementPass : private IStatementVisitor, private IExpressionVisito
     void Visit(StringLiteral& literal) override;
     void Visit(Function& function) override;
     void Visit(Allocation& allocation) override;
+
+    void Visit(StructExpression& struct_expression) override;
 
     void Visit(StatementBlock& statement_block);
 };
