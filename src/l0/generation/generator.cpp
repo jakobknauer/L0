@@ -486,6 +486,22 @@ void Generator::Visit(const Variable& variable)
     }
 }
 
+void Generator::Visit(const MemberAccessor& member_accessor)
+{
+    member_accessor.object->Accept(*this);
+    auto object = result_;
+    auto llvm_struct_type = type_converter_.Convert(*member_accessor.object_type);
+    auto object_ptr = builder_.CreateAlloca(llvm_struct_type, nullptr, "access_allocatmp");
+    builder_.CreateStore(object, object_ptr);
+
+    auto member_address = builder_.CreateConstGEP2_32(
+        llvm_struct_type, object_ptr, 0, member_accessor.member_index, "access_member_geptmp"
+    );
+
+    auto llvm_member_type = type_converter_.Convert(*member_accessor.type);
+    result_ = builder_.CreateLoad(llvm_member_type, member_address, "access_loadtmp");
+}
+
 void Generator::Visit(const Call& call)
 {
     call.function->Accept(*this);
@@ -550,7 +566,7 @@ void Generator::Visit(const Initializer& initializer)
     }
 
     llvm::Type* llvm_type = type_converter_.Convert(*initializer.type);
-    auto alloca = builder_.CreateAlloca(llvm_type, 0, "structvalue_alloc");
+    auto alloca = builder_.CreateAlloca(llvm_type, nullptr, "structinit_allocatmp");
 
     for (std::size_t i{0}; i < struct_type->members->size(); ++i)
     {
@@ -558,14 +574,13 @@ void Generator::Visit(const Initializer& initializer)
         member->default_initializer->Accept(*this);
         auto member_initializer = result_;
 
-
         // auto member_address = builder_.CreateGEP(llvm_type, alloca, {0, i});
-        auto  member_address = builder_.CreateConstGEP1_64(llvm_type, alloca, i, "tmpmember");
+        auto member_address = builder_.CreateConstGEP2_32(llvm_type, alloca, 0, i, "structinit_member_geptmp");
 
         builder_.CreateStore(member_initializer, member_address);
     }
 
-    result_ = builder_.CreateLoad(llvm_type, alloca, "structvalue");
+    result_ = builder_.CreateLoad(llvm_type, alloca, "structinit_loadtmp");
 }
 
 void Generator::Visit(const Allocation& allocation)

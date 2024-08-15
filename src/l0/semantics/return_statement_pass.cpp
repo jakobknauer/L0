@@ -84,6 +84,8 @@ void ReturnStatementPass::Visit(BinaryOp& binary_op)
 
 void ReturnStatementPass::Visit(Variable& variable) {}
 
+void ReturnStatementPass::Visit(MemberAccessor& member_accessor) { member_accessor.object->Accept(*this); }
+
 void ReturnStatementPass::Visit(Call& call)
 {
     call.function->Accept(*this);

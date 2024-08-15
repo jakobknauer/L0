@@ -114,7 +114,7 @@ void AstPrinter::Visit(const Assignment& assignment)
 
 void AstPrinter::Visit(const UnaryOp& unary_op)
 {
-    out_ << str(unary_op.op) << "(";
+    out_ << "(" << str(unary_op.op);
     unary_op.operand->Accept(*this);
     out_ << ")";
 }
@@ -129,6 +129,12 @@ void AstPrinter::Visit(const BinaryOp& binary_op)
 }
 
 void AstPrinter::Visit(const Variable& variable) { out_ << variable.name; }
+
+void AstPrinter::Visit(const MemberAccessor& member_accessor)
+{
+    member_accessor.object->Accept(*this);
+    out_ << "." << member_accessor.member;
+}
 
 void AstPrinter::Visit(const Call& call)
 {

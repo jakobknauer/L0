@@ -286,12 +286,6 @@ std::shared_ptr<Statement> Parser::ParseDeallocation()
 
 std::shared_ptr<Expression> Parser::ParseExpression()
 {
-    if (ConsumeIf(TokenType::OpeningParen))
-    {
-        auto expression = ParseExpression();
-        Expect(TokenType::ClosingParen);
-        return expression;
-    }
     return ParseAssignment();
 }
 
@@ -408,13 +402,36 @@ std::shared_ptr<Expression> Parser::ParseUnary()
 
 std::shared_ptr<Expression> Parser::ParseFactor()
 {
+    if (PeekIsKeyword({"new"}))
+    {
+        return ParseAllocation();
+    }
+    return ParseMemberAccessor();
+}
+
+std::shared_ptr<Expression> Parser::ParseMemberAccessor()
+{
+    auto expression = ParseAtomicExpression();
+    while (ConsumeIf(TokenType::Dot))
+    {
+        auto member = Expect(TokenType::Identifier);
+        expression = std::make_shared<MemberAccessor>(expression, std::any_cast<std::string>(member.data));
+    }
+    return expression;
+}
+
+std::shared_ptr<Expression> Parser::ParseAtomicExpression()
+{
     Token token = Peek();
 
     switch (token.type)
     {
         case TokenType::OpeningParen:
         {
-            return ParseExpression();
+            Consume();
+            auto expression = ParseExpression();
+            Expect(TokenType::ClosingParen);
+            return expression;
         }
         case TokenType::Identifier:
         {
@@ -467,10 +484,6 @@ std::shared_ptr<Expression> Parser::ParseFactor()
             {
                 Consume();
                 return std::make_shared<UnitLiteral>();
-            }
-            else if (keyword == "new")
-            {
-                return ParseAllocation();
             }
             // Fall through intended
         }

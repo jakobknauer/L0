@@ -95,6 +95,21 @@ class Variable : public Expression
     mutable std::shared_ptr<Scope> scope;
 };
 
+class MemberAccessor : public Expression
+{
+   public:
+    MemberAccessor(std::shared_ptr<Expression> object, std::string member);
+
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
+
+    std::shared_ptr<Expression> object;
+    std::string member;
+
+    mutable std::shared_ptr<StructType> object_type;
+    mutable std::size_t member_index;
+};
+
 using ArgumentList = std::vector<std::shared_ptr<Expression>>;
 
 class Call : public Expression
@@ -217,6 +232,7 @@ class IConstExpressionVisitor
     virtual void Visit(const UnaryOp& unary_op) = 0;
     virtual void Visit(const BinaryOp& binary_op) = 0;
     virtual void Visit(const Variable& variable) = 0;
+    virtual void Visit(const MemberAccessor& member_accessor) = 0;
     virtual void Visit(const Call& call) = 0;
     virtual void Visit(const UnitLiteral& literal) = 0;
     virtual void Visit(const BooleanLiteral& literal) = 0;
@@ -236,6 +252,7 @@ class IExpressionVisitor
     virtual void Visit(UnaryOp& unary_op) = 0;
     virtual void Visit(BinaryOp& binary_op) = 0;
     virtual void Visit(Variable& variable) = 0;
+    virtual void Visit(MemberAccessor& member_accessor) = 0;
     virtual void Visit(Call& call) = 0;
     virtual void Visit(UnitLiteral& literal) = 0;
     virtual void Visit(BooleanLiteral& literal) = 0;

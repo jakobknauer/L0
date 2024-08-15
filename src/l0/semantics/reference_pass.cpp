@@ -70,6 +70,8 @@ void ReferencePass::Visit(Assignment& assignment)
         return;
     }
 
+    // TODO handle MemberAccessor
+
     throw SemanticError("Can only assign to lvalues.");
 }
 
@@ -93,6 +95,8 @@ void ReferencePass::Visit(UnaryOp& unary_op)
         return;
     }
 
+    // TODO handle MemberAccessor
+
     throw SemanticError("Can only create references to lvalues.");
 }
 
@@ -103,6 +107,8 @@ void ReferencePass::Visit(BinaryOp& binary_op)
 }
 
 void ReferencePass::Visit(Variable& variable) {}
+
+void ReferencePass::Visit(MemberAccessor& member_accessor) { member_accessor.object->Accept(*this); }
 
 void ReferencePass::Visit(Call& call)
 {

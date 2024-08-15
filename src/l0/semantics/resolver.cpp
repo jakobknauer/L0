@@ -99,6 +99,8 @@ void Resolver::Visit(const BinaryOp& binary_op)
 
 void Resolver::Visit(const Variable& variable) { variable.scope = Resolve(variable.name); }
 
+void Resolver::Visit(const MemberAccessor& member_accessor) { member_accessor.object->Accept(*this); }
+
 void Resolver::Visit(const Call& call)
 {
     call.function->Accept(*this);

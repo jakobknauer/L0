@@ -1,5 +1,7 @@
 #include "l0/semantics/typechecker.h"
 
+#include <algorithm>
+
 #include "l0/semantics/semantic_error.h"
 
 namespace l0
@@ -159,6 +161,34 @@ void Typechecker::Visit(const BinaryOp& binary_op)
 }
 
 void Typechecker::Visit(const Variable& variable) { variable.type = variable.scope->GetVariableType(variable.name); }
+
+void Typechecker::Visit(const MemberAccessor& member_accessor)
+{
+    member_accessor.object->Accept(*this);
+    auto object_type = dynamic_pointer_cast<StructType>(member_accessor.object->type);
+    if (!object_type)
+    {
+        throw SemanticError(std::format(
+            "Member accessor object must be of struct type, but is of type '{}'.",
+            member_accessor.object->type->ToString()
+        ));
+    }
+    member_accessor.object_type = object_type;
+
+    auto member = std::ranges::find(
+        *object_type->members, member_accessor.member, [](const auto& member) { return member->name; }
+    );
+
+    if (member == object_type->members->end())
+    {
+        throw SemanticError(
+            std::format("Struct '{}' does not have a member named '{}'.", object_type->name, member_accessor.member)
+        );
+    }
+
+    member_accessor.member_index = member - object_type->members->begin();
+    member_accessor.type = (*member)->type;
+}
 
 void Typechecker::Visit(const Call& call)
 {

@@ -32,6 +32,7 @@ Lexer::Lexer(std::shared_ptr<std::istream> input)
         {'*', TokenType::Asterisk},
         {'/', TokenType::Slash},
         {'!', TokenType::Bang},
+        {'.', TokenType::Dot},
         {',', TokenType::Comma},
         {':', TokenType::Colon},
         {';', TokenType::Semicolon},

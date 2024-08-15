@@ -41,6 +41,7 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
     void Visit(const UnaryOp& unary_op) override;
     void Visit(const BinaryOp& binary_op) override;
     void Visit(const Variable& variable) override;
+    void Visit(const MemberAccessor& member_accessor) override;
     void Visit(const Call& call) override;
     void Visit(const UnitLiteral& literal) override;
     void Visit(const BooleanLiteral& literal) override;

@@ -18,6 +18,7 @@ namespace l0
 /// The follow expressions are lvalues:
 ///     - Variables
 ///     - Dereferenced references
+///     - Member accessors
 ///
 /// In case 1), we also set the target_address field of the Assignment expression.
 class ReferencePass : private IStatementVisitor, private IExpressionVisitor, private ITypeExpressionVisitor
@@ -39,6 +40,7 @@ class ReferencePass : private IStatementVisitor, private IExpressionVisitor, pri
     void Visit(UnaryOp& unary_op) override;
     void Visit(BinaryOp& binary_op) override;
     void Visit(Variable& variable) override;
+    void Visit(MemberAccessor& member_accessor) override;
     void Visit(Call& call) override;
     void Visit(UnitLiteral& literal) override;
     void Visit(BooleanLiteral& literal) override;

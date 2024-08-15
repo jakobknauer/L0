@@ -36,6 +36,14 @@ void Variable::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*t
 
 void Variable::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
 
+MemberAccessor::MemberAccessor(std::shared_ptr<Expression> object, std::string member) : object{object}, member{member}
+{
+}
+
+void MemberAccessor::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*this); }
+
+void MemberAccessor::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
+
 Call::Call(std::shared_ptr<Variable> function, std::shared_ptr<ArgumentList> arguments)
     : function{function}, arguments{arguments}
 {
