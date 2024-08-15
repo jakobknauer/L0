@@ -57,47 +57,27 @@ void ReferencePass::Visit(Assignment& assignment)
     assignment.expression->Accept(*this);
     assignment.target->Accept(*this);
 
-    if (auto variable = dynamic_pointer_cast<Variable>(assignment.target))
+    if (!IsLValue(assignment.target, assignment.target_address))
     {
-        assignment.target_address = std::make_shared<UnaryOp>(variable, UnaryOp::Operator::Ampersand);
-        return;
+        throw SemanticError("Can only assign to lvalues.");
     }
-
-    auto unary_op = dynamic_pointer_cast<UnaryOp>(assignment.target);
-    if (unary_op && (unary_op->op == UnaryOp::Operator::Asterisk))
-    {
-        assignment.target_address = unary_op->operand;
-        return;
-    }
-
-    // TODO handle MemberAccessor
-
-    throw SemanticError("Can only assign to lvalues.");
 }
 
 void ReferencePass::Visit(UnaryOp& unary_op)
 {
     unary_op.operand->Accept(*this);
 
+    std::shared_ptr<Expression> _;
     if (unary_op.op != UnaryOp::Operator::Ampersand)
     {
         return;
     }
 
-    if (auto variable = dynamic_pointer_cast<Variable>(unary_op.operand))
+    AddressInfo unused;
+    if (!IsLValue(unary_op.operand, unused))
     {
-        return;
+        throw SemanticError("Can only create references to lvalues.");
     }
-
-    auto dereference = dynamic_pointer_cast<UnaryOp>(unary_op.operand);
-    if (dereference && (dereference->op == UnaryOp::Operator::Asterisk))
-    {
-        return;
-    }
-
-    // TODO handle MemberAccessor
-
-    throw SemanticError("Can only create references to lvalues.");
 }
 
 void ReferencePass::Visit(BinaryOp& binary_op)
@@ -153,6 +133,34 @@ void ReferencePass::Visit(StructExpression& struct_expression)
         }
         member_declaration->initializer->Accept(*this);
     }
+}
+
+bool ReferencePass::IsLValue(std::shared_ptr<Expression> value, AddressInfo& out_address) const
+{
+    if (auto variable = dynamic_pointer_cast<Variable>(value))
+    {
+        out_address.object_ref = std::make_shared<UnaryOp>(variable, UnaryOp::Operator::Ampersand);
+        out_address.object_ref->type = std::make_shared<ReferenceType>(variable->type, TypeQualifier::Constant);
+        out_address.object_type = variable->type;
+        return true;
+    }
+    else if (auto unary_op = dynamic_pointer_cast<UnaryOp>(value);
+             unary_op && (unary_op->op == UnaryOp::Operator::Asterisk))
+    {
+        out_address.object_ref = unary_op->operand;
+        out_address.object_type = unary_op->type;
+        return true;
+    }
+    else if (auto member_accessor = dynamic_pointer_cast<MemberAccessor>(value))
+    {
+        if (IsLValue(member_accessor->object, out_address))
+        {
+            out_address.member_indices.push_back(member_accessor->member_index);
+            return true;
+        }
+        return false;
+    }
+    return false;
 }
 
 }  // namespace l0

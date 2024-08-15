@@ -334,13 +334,31 @@ void Generator::Visit(const Deallocation& deallocation)
 void Generator::Visit(const Assignment& assignment)
 {
     // ReferencePass sets target_address
-    assignment.target_address->Accept(*this);
-    auto target = result_;
+    assignment.target_address.object_ref->Accept(*this);
+    auto target_object = result_;
+
+    llvm::Value* target_address;
+    if (assignment.target_address.member_indices.empty())
+    {
+        target_address = target_object;
+    }
+    else
+    {
+        auto target_object_type = type_converter_.Convert(*assignment.target_address.object_type);
+        llvm::Type* integer_type = llvm::Type::getInt32Ty(context_);
+        std::vector<llvm::Value*> indices{llvm::ConstantInt::get(integer_type, 0)};
+        for (auto index : assignment.target_address.member_indices)
+        {
+            auto llvm_index = llvm::ConstantInt::get(integer_type, index);
+            indices.push_back(llvm_index);
+        }
+        target_address = builder_.CreateGEP(target_object_type, target_object, indices, "assign_geptmp");
+    }
 
     assignment.expression->Accept(*this);
     auto value = result_;
 
-    builder_.CreateStore(value, target);
+    builder_.CreateStore(value, target_address);
     // leave result_ as it is :)
 }
 

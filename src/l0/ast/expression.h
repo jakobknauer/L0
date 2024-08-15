@@ -23,6 +23,13 @@ class Expression
     mutable std::shared_ptr<Type> type;
 };
 
+struct AddressInfo
+{
+    std::shared_ptr<Expression> object_ref{nullptr};
+    std::shared_ptr<Type> object_type{nullptr};
+    std::vector<std::size_t> member_indices{};
+};
+
 class Assignment : public Expression
 {
    public:
@@ -34,7 +41,7 @@ class Assignment : public Expression
     std::shared_ptr<Expression> target;
     std::shared_ptr<Expression> expression;
 
-    std::shared_ptr<Expression> target_address;
+    AddressInfo target_address;
 };
 
 class UnaryOp : public Expression

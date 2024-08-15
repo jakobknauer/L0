@@ -124,7 +124,7 @@ void Typechecker::Visit(const Assignment& assignment)
 
     if (declared->mutability == TypeQualifier::Constant)
     {
-        throw SemanticError(std::format("Cannot assign to target of constant type {}.", declared->ToString()));
+        throw SemanticError(std::format("Cannot assign to target of constant type '{}'.", declared->ToString()));
     }
 
     assignment.expression->Accept(*this);
@@ -133,7 +133,7 @@ void Typechecker::Visit(const Assignment& assignment)
     if (!conversion_checker_.CheckCompatibility(declared, assigned))
     {
         throw SemanticError(std::format(
-            "Target of assignment is of type {}, but is assigned value of incompatible type {}.",
+            "Target of assignment is of type '{}', but is assigned value of incompatible type '{}'.",
             declared->ToString(),
             assigned->ToString()
         ));
@@ -186,8 +186,14 @@ void Typechecker::Visit(const MemberAccessor& member_accessor)
         );
     }
 
+    auto member_type = (*member)->type;
+    if (object_type->mutability == TypeQualifier::Constant && member_type->mutability == TypeQualifier::Mutable)
+    {
+        member_type = ModifyQualifier(*member_type, TypeQualifier::Constant);
+    }
+
     member_accessor.member_index = member - object_type->members->begin();
-    member_accessor.type = (*member)->type;
+    member_accessor.type = member_type;
 }
 
 void Typechecker::Visit(const Call& call)
@@ -216,7 +222,7 @@ void Typechecker::Visit(const Call& call)
         if (!conversion_checker_.CheckCompatibility(expected, actual))
         {
             throw SemanticError(std::format(
-                "Expected value of type {} as argument #{}, got incompatible type {} instead.",
+                "Expected value of type '{}' as argument #{}, got incompatible type '{}' instead.",
                 expected->ToString(),
                 i,
                 actual->ToString()

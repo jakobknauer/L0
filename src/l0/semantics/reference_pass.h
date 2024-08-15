@@ -52,6 +52,8 @@ class ReferencePass : private IStatementVisitor, private IExpressionVisitor, pri
 
     void Visit(StructExpression& struct_expression) override;
 
+    bool IsLValue(std::shared_ptr<Expression> value, AddressInfo& out_address) const;
+
     Module& module_;
 };
 
