@@ -539,6 +539,35 @@ void Generator::Visit(const Function& function)
     builder_.SetInsertPoint(previous_block);
 }
 
+void Generator::Visit(const Initializer& initializer)
+{
+    auto struct_type = dynamic_pointer_cast<StructType>(initializer.type);
+    if (!struct_type)
+    {
+        throw GeneratorError(
+            std::format("Type of initializer must by a StructType, but is of type '{}'.", initializer.type->ToString())
+        );
+    }
+
+    llvm::Type* llvm_type = type_converter_.Convert(*initializer.type);
+    auto alloca = builder_.CreateAlloca(llvm_type, 0, "structvalue_alloc");
+
+    for (std::size_t i{0}; i < struct_type->members->size(); ++i)
+    {
+        auto member = struct_type->members->at(i);
+        member->default_initializer->Accept(*this);
+        auto member_initializer = result_;
+
+
+        // auto member_address = builder_.CreateGEP(llvm_type, alloca, {0, i});
+        auto  member_address = builder_.CreateConstGEP1_64(llvm_type, alloca, i, "tmpmember");
+
+        builder_.CreateStore(member_initializer, member_address);
+    }
+
+    result_ = builder_.CreateLoad(llvm_type, alloca, "structvalue");
+}
+
 void Generator::Visit(const Allocation& allocation)
 {
     llvm::Type* llvm_int_type = type_converter_.Convert(IntegerType{TypeQualifier::Constant});

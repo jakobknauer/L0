@@ -239,6 +239,18 @@ void Typechecker::Visit(const Function& function)
     }
 }
 
+void Typechecker::Visit(const Initializer& initializer)
+{
+    auto type = type_resolver_.Convert(*initializer.annotation);
+    if (!dynamic_pointer_cast<StructType>(type))
+    {
+        throw SemanticError(
+            std::format("Initializer type annotation must be of struct type, but is of type '{}'", type->ToString())
+        );
+    }
+    initializer.type = type;
+}
+
 void Typechecker::Visit(const Allocation& allocation)
 {
     if (allocation.size)
@@ -247,9 +259,9 @@ void Typechecker::Visit(const Allocation& allocation)
         auto integer_type = simple_types_.at("Integer");
         if (*allocation.size->type != *integer_type)
         {
-            throw SemanticError(
-                std::format("Allocation size must be of type Integer, but is of type {}.", allocation.type->ToString())
-            );
+            throw SemanticError(std::format(
+                "Allocation size must be of type Integer, but is of type '{}'.", allocation.type->ToString()
+            ));
         }
     }
 
@@ -263,7 +275,7 @@ void Typechecker::Visit(const StructExpression& struct_expression)
     for (const auto& statement : *struct_expression.body)
     {
         auto member_declaration = dynamic_pointer_cast<Declaration>(statement);
-        if(!member_declaration)
+        if (!member_declaration)
         {
             throw SemanticError("Expected declaration as statement in struct expression body.");
         }

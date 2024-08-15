@@ -172,6 +172,12 @@ void AstPrinter::Visit(const Function& function)
     out_ << "}";
 }
 
+void AstPrinter::Visit(const Initializer& initializer)
+{
+    initializer.annotation->Accept(*this);
+    out_ << "{}";
+}
+
 void AstPrinter::Visit(const Allocation& allocation)
 {
     out_ << "new";

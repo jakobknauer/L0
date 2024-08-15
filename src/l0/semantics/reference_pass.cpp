@@ -126,6 +126,8 @@ void ReferencePass::Visit(Function& function)
     }
 }
 
+void ReferencePass::Visit(Initializer& Initializer) {}
+
 void ReferencePass::Visit(Allocation& allocation)
 {
     if (allocation.size)

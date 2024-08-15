@@ -22,7 +22,7 @@ Token Parser::PeekNext()
 {
     if (pos_ + 1 >= tokens_.size())
     {
-        throw ParserError(std::format("Unexpectedly reached end of token stream (Peek)."));
+        throw ParserError(std::format("Unexpectedly reached end of token stream (PeekNext)."));
     }
     return tokens_.at(pos_ + 1);
 }
@@ -418,15 +418,21 @@ std::shared_ptr<Expression> Parser::ParseFactor()
         }
         case TokenType::Identifier:
         {
-            Consume();
-            auto variable = std::make_shared<Variable>(std::any_cast<std::string>(token.data));
-            if (Peek().type == TokenType::OpeningParen)
+            if (PeekNext().type == TokenType::OpeningParen)
             {
+                Consume();
+                auto variable = std::make_shared<Variable>(std::any_cast<std::string>(token.data));
                 auto arguments = ParseArgumentList();
                 return std::make_shared<Call>(variable, arguments);
             }
+            else if (PeekNext().type == TokenType::OpeningBrace)
+            {
+                return ParseInitializer();
+            }
             else
             {
+                Consume();
+                auto variable = std::make_shared<Variable>(std::any_cast<std::string>(token.data));
                 return variable;
             }
         }
@@ -489,6 +495,14 @@ std::shared_ptr<Expression> Parser::ParseFunction()
     auto statements = ParseStatementBlock(TokenType::ClosingBrace);
     Expect(TokenType::ClosingBrace);
     return std::make_shared<Function>(parameters, return_type, statements);
+}
+
+std::shared_ptr<Expression> Parser::ParseInitializer()
+{
+    auto annotation = ParseTypeAnnotation();
+    Expect(TokenType::OpeningBrace);
+    Expect(TokenType::ClosingBrace);
+    return std::make_shared<Initializer>(annotation);
 }
 
 std::shared_ptr<Expression> Parser::ParseAllocation()

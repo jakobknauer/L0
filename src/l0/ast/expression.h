@@ -183,6 +183,17 @@ class Function : public Expression
     mutable std::shared_ptr<Scope> locals = std::make_shared<Scope>();
 };
 
+class Initializer : public Expression
+{
+   public:
+    Initializer(std::shared_ptr<TypeAnnotation> annotation);
+
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
+
+    std::shared_ptr<TypeAnnotation> annotation;
+};
+
 class Allocation : public Expression
 {
    public:
@@ -212,6 +223,7 @@ class IConstExpressionVisitor
     virtual void Visit(const IntegerLiteral& literal) = 0;
     virtual void Visit(const StringLiteral& literal) = 0;
     virtual void Visit(const Function& function) = 0;
+    virtual void Visit(const Initializer& initializer) = 0;
     virtual void Visit(const Allocation& allocation) = 0;
 };
 
@@ -230,6 +242,7 @@ class IExpressionVisitor
     virtual void Visit(IntegerLiteral& literal) = 0;
     virtual void Visit(StringLiteral& literal) = 0;
     virtual void Visit(Function& function) = 0;
+    virtual void Visit(Initializer& initializer) = 0;
     virtual void Visit(Allocation& allocation) = 0;
 };
 

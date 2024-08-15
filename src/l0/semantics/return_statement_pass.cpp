@@ -127,6 +127,8 @@ void ReturnStatementPass::Visit(Function& function)
     statement_returns_ = false;
 }
 
+void ReturnStatementPass::Visit(Initializer& initializer) {}
+
 void ReturnStatementPass::Visit(Allocation& allocation)
 {
     if (allocation.size)

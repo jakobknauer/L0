@@ -134,6 +134,8 @@ void Resolver::Visit(const Function& function)
     local_ = restore_local;
 }
 
+void Resolver::Visit(const Initializer& initializer) {}
+
 void Resolver::Visit(const Allocation& allocation)
 {
     if (allocation.size)

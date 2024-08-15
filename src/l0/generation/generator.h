@@ -60,6 +60,7 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     void Visit(const IntegerLiteral& literal) override;
     void Visit(const StringLiteral& literal) override;
     void Visit(const Function& function) override;
+    void Visit(const Initializer& Initializer) override;
     void Visit(const Allocation& allocation) override;
 
     void GenerateFunctionBody(const Function& function, llvm::Function& llvm_function);

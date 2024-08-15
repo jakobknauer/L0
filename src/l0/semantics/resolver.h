@@ -39,6 +39,7 @@ class Resolver : private IConstExpressionVisitor, private IConstStatementVisitor
     void Visit(const IntegerLiteral& literal) override;
     void Visit(const StringLiteral& literal) override;
     void Visit(const Function& function) override;
+    void Visit(const Initializer& initializer) override;
     void Visit(const Allocation& allocation) override;
 
     void Visit(const StructExpression& struct_expression) override;
