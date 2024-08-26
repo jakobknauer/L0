@@ -19,18 +19,18 @@ class TypeExpression
     virtual void Accept(ITypeExpressionVisitor& visitor) = 0;
 };
 
-class Statement;
-using StatementBlock = std::vector<std::shared_ptr<Statement>>;
+class Declaration;
+using StructMemberDeclarationList = std::vector<std::shared_ptr<Declaration>>;
 
 class StructExpression : public TypeExpression
 {
    public:
-    StructExpression(std::shared_ptr<StatementBlock> body);
+    StructExpression(std::shared_ptr<StructMemberDeclarationList> members);
 
     void Accept(IConstTypeExpressionVisitor& visitor) const override;
     void Accept(ITypeExpressionVisitor& visitor) override;
 
-    std::shared_ptr<StatementBlock> body;
+    std::shared_ptr<StructMemberDeclarationList> members;
 };
 
 class IConstTypeExpressionVisitor

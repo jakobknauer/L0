@@ -25,14 +25,23 @@ void AstPrinter::Visit(const Declaration& declaration)
 {
     out_ << declaration.variable;
     out_ << " :";
+
     if (declaration.annotation)
     {
         out_ << " ";
         declaration.annotation->Accept(*this);
+    }
+
+    if (declaration.annotation && declaration.initializer)
+    {
         out_ << " ";
     }
-    out_ << "= ";
-    declaration.initializer->Accept(*this);
+
+    if (declaration.initializer)
+    {
+        out_ << "= ";
+        declaration.initializer->Accept(*this);
+    }
 }
 
 void AstPrinter::Visit(const TypeDeclaration& type_declaration)
@@ -243,7 +252,7 @@ void AstPrinter::Visit(const StructExpression& struct_expression)
     out_ << "struct";
     out_ << "\n{\n";
     ++indent_;
-    for (const auto& statement : *struct_expression.body)
+    for (const auto& statement : *struct_expression.members)
     {
         Print(*statement);
     }

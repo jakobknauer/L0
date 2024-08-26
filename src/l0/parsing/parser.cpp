@@ -210,8 +210,11 @@ std::shared_ptr<Statement> Parser::ParseDeclaration()
     else
     {
         auto annotation = ParseTypeAnnotation();
-        Expect(TokenType::Equals);
-        auto initializer = ParseExpression();
+        std::shared_ptr<Expression> initializer{nullptr};
+        if (ConsumeIf(TokenType::Equals))
+        {
+            initializer = ParseExpression();
+        }
         return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), annotation, initializer);
     }
 }
@@ -776,9 +779,20 @@ std::shared_ptr<TypeExpression> Parser::ParseStruct()
 {
     ExpectKeyword("struct");
     Expect(TokenType::OpeningBrace);
-    auto body = ParseStatementBlock(TokenType::ClosingBrace);
+    auto members = std::make_shared<StructMemberDeclarationList>();
+    while (ConsumeAll(TokenType::Semicolon).type != TokenType::ClosingBrace)
+    {
+        auto member = ParseStatement();
+        auto member_as_declaration = dynamic_pointer_cast<Declaration>(member);
+        if (!member)
+        {
+            throw ParserError("Only declarations are allowed in struct declarations.");
+        }
+        Expect(TokenType::Semicolon);
+        members->push_back(member_as_declaration);
+    }
     Expect(TokenType::ClosingBrace);
-    return std::make_shared<StructExpression>(body);
+    return std::make_shared<StructExpression>(members);
 }
 
 ParserError::ParserError(std::string message) : message_{message} {}

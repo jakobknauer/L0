@@ -22,7 +22,10 @@ void Resolver::Check()
 
 void Resolver::Visit(const Declaration& declaration)
 {
-    declaration.initializer->Accept(*this);
+    if (declaration.initializer)
+    {
+        declaration.initializer->Accept(*this);
+    }
 
     if (local_)
     {
@@ -154,10 +157,12 @@ void Resolver::Visit(const Allocation& allocation)
 
 void Resolver::Visit(const StructExpression& struct_expression)
 {
-    for (const auto& statement : *struct_expression.body)
+    for (const auto& member_declaration : *struct_expression.members)
     {
-        auto member_declaration = dynamic_pointer_cast<Declaration>(statement);
-        member_declaration->initializer->Accept(*this);
+        if (member_declaration->initializer)
+        {
+            member_declaration->initializer->Accept(*this);
+        }
     }
 }
 

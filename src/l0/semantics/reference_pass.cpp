@@ -130,14 +130,12 @@ void ReferencePass::Visit(Allocation& allocation)
 
 void ReferencePass::Visit(StructExpression& struct_expression)
 {
-    for (const auto& statement : *struct_expression.body)
+    for (const auto& member_declaration : *struct_expression.members)
     {
-        auto member_declaration = dynamic_pointer_cast<Declaration>(statement);
-        if (!member_declaration)
+        if (member_declaration->initializer)
         {
-            throw SemanticError("Expected declaration as statement in struct expression body.");
+            member_declaration->initializer->Accept(*this);
         }
-        member_declaration->initializer->Accept(*this);
     }
 }
 

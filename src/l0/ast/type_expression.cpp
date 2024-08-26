@@ -3,7 +3,7 @@
 namespace l0
 {
 
-StructExpression::StructExpression(std::shared_ptr<StatementBlock> body) : body{body} {}
+StructExpression::StructExpression(std::shared_ptr<StructMemberDeclarationList> members) : members{members} {}
 
 void StructExpression::Accept(IConstTypeExpressionVisitor& visitor) const { visitor.Visit(*this); }
 

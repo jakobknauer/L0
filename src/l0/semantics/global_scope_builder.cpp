@@ -76,19 +76,8 @@ void GlobalScopeBuilder::FillTypeDetails(std::shared_ptr<TypeDeclaration> type_d
     }
 
     auto struct_type = dynamic_pointer_cast<StructType>(module_.globals->GetTypeDefinition(type_declaration->name));
-    if (!struct_expression)
+    for (auto& member_declaration : *struct_expression->members)
     {
-        throw SemanticError("Expected struct expression as type definition.");
-    }
-
-    for (auto& statement : *struct_expression->body)
-    {
-        auto member_declaration = dynamic_pointer_cast<Declaration>(statement);
-        if (!member_declaration)
-        {
-            throw SemanticError("Only declarations are allowed in struct definition bodies.");
-        }
-
         auto member = std::make_shared<StructMember>();
         member->name = member_declaration->variable;
         member->type = type_resolver_.Convert(*member_declaration->annotation);

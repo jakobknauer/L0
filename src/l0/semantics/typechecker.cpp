@@ -1,5 +1,7 @@
 #include "l0/semantics/typechecker.h"
 
+#include <ranges>
+
 #include "l0/semantics/semantic_error.h"
 
 namespace l0
@@ -23,6 +25,11 @@ void Typechecker::Check()
 
 void Typechecker::Visit(const Declaration& declaration)
 {
+    if (!declaration.initializer)
+    {
+        throw SemanticError(std::format("Local variable '{}' does not have an initializer.", declaration.variable));
+    }
+
     declaration.initializer->Accept(*this);
 
     if (declaration.scope->IsVariableTypeSet(declaration.variable))
@@ -277,11 +284,11 @@ void Typechecker::Visit(const Initializer& initializer)
     if (!struct_type)
     {
         throw SemanticError(std::format(
-            "Initializer type annotation must be of struct type, but is of type '{}'", annotated_type->ToString()
+            "Initializer type annotation must be of struct type, but is of type '{}'.", annotated_type->ToString()
         ));
     }
 
-    std::unordered_set<std::string> initialized_members{};
+    std::unordered_set<std::string> explicitely_initialized_members{};
     for (const auto& member_initializer : *initializer.member_initializers)
     {
         const std::string& member_name = member_initializer->member;
@@ -291,11 +298,11 @@ void Typechecker::Visit(const Initializer& initializer)
                 std::format("Struct '{}' does not have a member named '{}'.", struct_type->ToString(), member_name)
             );
         }
-        if (initialized_members.contains(member_name))
+        if (explicitely_initialized_members.contains(member_name))
         {
             throw SemanticError(std::format("Member '{}' is initialized twice.", member_name));
         }
-        initialized_members.insert(member_name);
+        explicitely_initialized_members.insert(member_name);
 
         auto member = struct_type->GetMember(member_initializer->member);
 
@@ -309,6 +316,19 @@ void Typechecker::Visit(const Initializer& initializer)
                 member_initializer->value->type->ToString()
             ));
         }
+    }
+
+    auto not_initialized_members =
+        *struct_type->members |
+        std::views::filter(
+            [&](const auto& member)
+            { return !member->default_initializer && !explicitely_initialized_members.contains(member->name); }
+        ) |
+        std::views::transform([](const auto& member) { return member->name; }) | std::ranges::to<std::unordered_set>();
+
+    if (!not_initialized_members.empty())
+    {
+        throw SemanticError(std::format("There are {} uninitialized struct members.", not_initialized_members.size()));
     }
 
     initializer.type = annotated_type;
@@ -335,12 +355,11 @@ void Typechecker::Visit(const Allocation& allocation)
 
 void Typechecker::Visit(const StructExpression& struct_expression)
 {
-    for (const auto& statement : *struct_expression.body)
+    for (const auto& member_declaration : *struct_expression.members)
     {
-        auto member_declaration = dynamic_pointer_cast<Declaration>(statement);
-        if (!member_declaration)
+        if (!member_declaration->initializer)
         {
-            throw SemanticError("Expected declaration as statement in struct expression body.");
+            continue;
         }
 
         member_declaration->initializer->Accept(*this);
