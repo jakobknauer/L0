@@ -129,7 +129,13 @@ void ReturnStatementPass::Visit(Function& function)
     statement_returns_ = false;
 }
 
-void ReturnStatementPass::Visit(Initializer& initializer) {}
+void ReturnStatementPass::Visit(Initializer& initializer)
+{
+    for (const auto& member_initializer : *initializer.member_initializers)
+    {
+        member_initializer->value->Accept(*this);
+    }
+}
 
 void ReturnStatementPass::Visit(Allocation& allocation)
 {

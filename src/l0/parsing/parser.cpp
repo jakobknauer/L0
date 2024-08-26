@@ -284,10 +284,7 @@ std::shared_ptr<Statement> Parser::ParseDeallocation()
     return std::make_shared<Deallocation>(operand);
 }
 
-std::shared_ptr<Expression> Parser::ParseExpression()
-{
-    return ParseAssignment();
-}
+std::shared_ptr<Expression> Parser::ParseExpression() { return ParseAssignment(); }
 
 std::shared_ptr<Expression> Parser::ParseAssignment()
 {
@@ -512,10 +509,28 @@ std::shared_ptr<Expression> Parser::ParseFunction()
 
 std::shared_ptr<Expression> Parser::ParseInitializer()
 {
-    auto annotation = ParseTypeAnnotation();
+    auto annotation = ParseSimpleTypeAnnotation();
+
     Expect(TokenType::OpeningBrace);
+
+    auto body = std::make_shared<MemberInitializerList>();
+    while (ConsumeAll(TokenType::Semicolon).type != TokenType::ClosingBrace)
+    {
+        auto member = Expect(TokenType::Identifier);
+        Expect(TokenType::Equals);
+        auto value = ParseExpression();
+        Expect(TokenType::Semicolon);
+
+        auto member_initializer = std::make_shared<MemberInitializer>();
+        member_initializer->member = std::any_cast<std::string>(member.data);
+        member_initializer->value = value;
+
+        body->push_back(member_initializer);
+    }
+
     Expect(TokenType::ClosingBrace);
-    return std::make_shared<Initializer>(annotation);
+
+    return std::make_shared<Initializer>(annotation, body);
 }
 
 std::shared_ptr<Expression> Parser::ParseAllocation()

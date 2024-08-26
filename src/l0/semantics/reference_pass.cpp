@@ -112,7 +112,13 @@ void ReferencePass::Visit(Function& function)
     }
 }
 
-void ReferencePass::Visit(Initializer& Initializer) {}
+void ReferencePass::Visit(Initializer& initializer)
+{
+    for (const auto& member_initializer : *initializer.member_initializers)
+    {
+        member_initializer->value->Accept(*this);
+    }
+}
 
 void ReferencePass::Visit(Allocation& allocation)
 {

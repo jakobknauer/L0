@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <format>
+#include <ranges>
 #include <string>
 
 #include "l0/generation/generator_error.h"
@@ -586,16 +587,14 @@ void Generator::Visit(const Initializer& initializer)
     llvm::Type* llvm_type = type_converter_.Convert(*initializer.type);
     auto alloca = builder_.CreateAlloca(llvm_type, nullptr, "structinit_allocatmp");
 
-    for (std::size_t i{0}; i < struct_type->members->size(); ++i)
+    auto actual_initializers = GetActualMemberInitializers(*initializer.member_initializers, *struct_type);
+
+    for (const auto& [name, init_value] : actual_initializers)
     {
-        auto member = struct_type->members->at(i);
-        member->default_initializer->Accept(*this);
-        auto member_initializer = result_;
-
-        // auto member_address = builder_.CreateGEP(llvm_type, alloca, {0, i});
-        auto member_address = builder_.CreateConstGEP2_32(llvm_type, alloca, 0, i, "structinit_member_geptmp");
-
-        builder_.CreateStore(member_initializer, member_address);
+        auto member_index = struct_type->GetMemberIndex(name);
+        auto member_address =
+            builder_.CreateConstGEP2_32(llvm_type, alloca, 0, member_index, "structinit_member_geptmp");
+        builder_.CreateStore(init_value, member_address);
     }
 
     result_ = builder_.CreateLoad(llvm_type, alloca, "structinit_loadtmp");
@@ -661,6 +660,43 @@ void Generator::GenerateFunctionBody(const Function& function, llvm::Function& l
     builder_.CreateBr(entry_block);
 
     llvm::verifyFunction(llvm_function);
+}
+
+std::vector<std::tuple<std::string, llvm::Value*>> Generator::GetActualMemberInitializers(
+    const MemberInitializerList& explicit_initializers, const StructType& struct_type
+)
+{
+    const auto explicitely_initialized_members =
+        explicit_initializers |
+        std::views::transform([](const auto& member_initializer) { return member_initializer->member; }) |
+        std::ranges::to<std::unordered_set>();
+
+    auto default_initialized_members =
+        *struct_type.members | std::views::transform([](const auto& member) { return member->name; }) |
+        std::views::filter([&](const std::string& member) { return !explicitely_initialized_members.contains(member); }
+        );
+
+    std::vector<std::tuple<std::string, llvm::Value*>> actual_initializers{};
+
+    for (const std::string& member_name : default_initialized_members)
+    {
+        auto member = struct_type.GetMember(member_name);
+
+        member->default_initializer->Accept(*this);
+        auto init_value = result_;
+
+        actual_initializers.push_back({member_name, init_value});
+    }
+
+    for (const auto& member_initializer : explicit_initializers)
+    {
+        member_initializer->value->Accept(*this);
+        auto init_value = result_;
+
+        actual_initializers.push_back({member_initializer->member, init_value});
+    }
+
+    return actual_initializers;
 }
 
 }  // namespace l0

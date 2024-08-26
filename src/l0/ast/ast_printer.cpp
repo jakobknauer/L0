@@ -181,7 +181,22 @@ void AstPrinter::Visit(const Function& function)
 void AstPrinter::Visit(const Initializer& initializer)
 {
     initializer.annotation->Accept(*this);
-    out_ << "{}";
+    if (initializer.member_initializers->empty())
+    {
+        out_ << "{}";
+        return;
+    }
+
+    out_ << "\n{\n";
+    ++indent_;
+    for (const auto& member_initializer : *initializer.member_initializers)
+    {
+        out_ << member_initializer->member << " = ";
+        member_initializer->value->Accept(*this);
+        out_ << ";\n";
+    }
+    --indent_;
+    out_ << "}";
 }
 
 void AstPrinter::Visit(const Allocation& allocation)

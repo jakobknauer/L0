@@ -147,6 +147,10 @@ class StructType : public Type
     const std::string name;
     std::shared_ptr<StructMemberList> members;
 
+    bool HasMember(std::string name) const;
+    std::shared_ptr<StructMember> GetMember(std::string name) const;
+    std::size_t GetMemberIndex(std::string name) const;
+
    protected:
     bool Equals(const Type& other) const override;
 };

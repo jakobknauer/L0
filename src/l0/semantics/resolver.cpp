@@ -136,7 +136,13 @@ void Resolver::Visit(const Function& function)
     local_ = restore_local;
 }
 
-void Resolver::Visit(const Initializer& initializer) {}
+void Resolver::Visit(const Initializer& initializer)
+{
+    for (const auto& member_initializer : *initializer.member_initializers)
+    {
+        member_initializer->value->Accept(*this);
+    }
+}
 
 void Resolver::Visit(const Allocation& allocation)
 {

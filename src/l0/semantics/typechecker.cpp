@@ -1,7 +1,5 @@
 #include "l0/semantics/typechecker.h"
 
-#include <algorithm>
-
 #include "l0/semantics/semantic_error.h"
 
 namespace l0
@@ -173,26 +171,23 @@ void Typechecker::Visit(const MemberAccessor& member_accessor)
             member_accessor.object->type->ToString()
         ));
     }
-    member_accessor.object_type = object_type;
 
-    auto member = std::ranges::find(
-        *object_type->members, member_accessor.member, [](const auto& member) { return member->name; }
-    );
-
-    if (member == object_type->members->end())
+    if (!object_type->HasMember(member_accessor.member))
     {
         throw SemanticError(
             std::format("Struct '{}' does not have a member named '{}'.", object_type->name, member_accessor.member)
         );
     }
 
-    auto member_type = (*member)->type;
+    auto member = object_type->GetMember(member_accessor.member);
+    auto member_type = member->type;
     if (object_type->mutability == TypeQualifier::Constant && member_type->mutability == TypeQualifier::Mutable)
     {
         member_type = ModifyQualifier(*member_type, TypeQualifier::Constant);
     }
 
-    member_accessor.member_index = member - object_type->members->begin();
+    member_accessor.object_type = object_type;
+    member_accessor.member_index = object_type->GetMemberIndex(member_accessor.member);
     member_accessor.type = member_type;
 }
 
@@ -277,14 +272,46 @@ void Typechecker::Visit(const Function& function)
 
 void Typechecker::Visit(const Initializer& initializer)
 {
-    auto type = type_resolver_.Convert(*initializer.annotation);
-    if (!dynamic_pointer_cast<StructType>(type))
+    auto annotated_type = type_resolver_.Convert(*initializer.annotation);
+    auto struct_type = dynamic_pointer_cast<StructType>(annotated_type);
+    if (!struct_type)
     {
-        throw SemanticError(
-            std::format("Initializer type annotation must be of struct type, but is of type '{}'", type->ToString())
-        );
+        throw SemanticError(std::format(
+            "Initializer type annotation must be of struct type, but is of type '{}'", annotated_type->ToString()
+        ));
     }
-    initializer.type = type;
+
+    std::unordered_set<std::string> initialized_members{};
+    for (const auto& member_initializer : *initializer.member_initializers)
+    {
+        const std::string& member_name = member_initializer->member;
+        if (!struct_type->HasMember(member_name))
+        {
+            throw SemanticError(
+                std::format("Struct '{}' does not have a member named '{}'.", struct_type->ToString(), member_name)
+            );
+        }
+        if (initialized_members.contains(member_name))
+        {
+            throw SemanticError(std::format("Member '{}' is initialized twice.", member_name));
+        }
+        initialized_members.insert(member_name);
+
+        auto member = struct_type->GetMember(member_initializer->member);
+
+        member_initializer->value->Accept(*this);
+
+        if (!conversion_checker_.CheckCompatibility(member->type, member_initializer->value->type))
+        {
+            throw SemanticError(std::format(
+                "Target of assignment is of type '{}', but is assigned value of incompatible type '{}'.",
+                member->type->ToString(),
+                member_initializer->value->type->ToString()
+            ));
+        }
+    }
+
+    initializer.type = annotated_type;
 }
 
 void Typechecker::Visit(const Allocation& allocation)

@@ -93,7 +93,12 @@ void Function::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*t
 
 void Function::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
 
-Initializer::Initializer(std::shared_ptr<TypeAnnotation> annotation) : annotation{annotation} {}
+Initializer::Initializer(
+    std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<MemberInitializerList> member_initializers
+)
+    : annotation{annotation}, member_initializers{member_initializers}
+{
+}
 
 void Initializer::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*this); }
 

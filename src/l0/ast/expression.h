@@ -205,15 +205,23 @@ class Function : public Expression
     mutable std::shared_ptr<Scope> locals = std::make_shared<Scope>();
 };
 
+struct MemberInitializer
+{
+    std::string member;
+    std::shared_ptr<Expression> value;
+};
+using MemberInitializerList = std::vector<std::shared_ptr<MemberInitializer>>;
+
 class Initializer : public Expression
 {
    public:
-    Initializer(std::shared_ptr<TypeAnnotation> annotation);
+    Initializer(std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<MemberInitializerList> member_initializers);
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
     std::shared_ptr<TypeAnnotation> annotation;
+    std::shared_ptr<MemberInitializerList> member_initializers;
 };
 
 class Allocation : public Expression
