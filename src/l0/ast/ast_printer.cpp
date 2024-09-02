@@ -219,6 +219,28 @@ void AstPrinter::Visit(const Allocation& allocation)
     }
     out_ << " ";
     allocation.annotation->Accept(*this);
+
+    if (!allocation.member_initializers)
+    {
+        return;
+    }
+
+    if (allocation.member_initializers->empty())
+    {
+        out_ << "{}";
+        return;
+    }
+
+    out_ << "\n{\n";
+    ++indent_;
+    for (const auto& member_initializer : *allocation.member_initializers)
+    {
+        out_ << member_initializer->member << " = ";
+        member_initializer->value->Accept(*this);
+        out_ << ";\n";
+    }
+    --indent_;
+    out_ << "}";
 }
 
 void AstPrinter::Visit(const SimpleTypeAnnotation& sta)

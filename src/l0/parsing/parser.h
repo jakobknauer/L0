@@ -77,6 +77,7 @@ class Parser : public IParser
     std::shared_ptr<TypeAnnotation> ParseFunctionTypeAnnotation();
     std::shared_ptr<ParameterListAnnotation> ParseParameterListAnnotation();
     std::shared_ptr<TypeExpression> ParseStruct();
+    std::shared_ptr<MemberInitializerList> ParseMemberInitializerList();
 };
 
 class ParserError

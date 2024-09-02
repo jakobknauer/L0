@@ -227,15 +227,21 @@ class Initializer : public Expression
 class Allocation : public Expression
 {
    public:
-    Allocation(std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Expression> size);
+    Allocation(
+        std::shared_ptr<TypeAnnotation> annotation,
+        std::shared_ptr<Expression> size,
+        std::shared_ptr<MemberInitializerList> member_initializers = nullptr
+    );
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
     std::shared_ptr<TypeAnnotation> annotation;
     std::shared_ptr<Expression> size;
+    std::shared_ptr<MemberInitializerList> member_initializers;
 
     mutable std::shared_ptr<Type> allocated_type;
+    mutable std::shared_ptr<Expression> initial_value;
 };
 
 class IConstExpressionVisitor

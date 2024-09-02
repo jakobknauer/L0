@@ -104,8 +104,12 @@ void Initializer::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit
 
 void Initializer::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
 
-Allocation::Allocation(std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Expression> size)
-    : annotation{annotation}, size{size}
+Allocation::Allocation(
+    std::shared_ptr<TypeAnnotation> annotation,
+    std::shared_ptr<Expression> size,
+    std::shared_ptr<MemberInitializerList> member_initializers
+)
+    : annotation{annotation}, size{size}, member_initializers{member_initializers}
 {
 }
 

@@ -153,6 +153,13 @@ void Resolver::Visit(const Allocation& allocation)
     {
         allocation.size->Accept(*this);
     }
+    if (allocation.member_initializers)
+    {
+        for (const auto& member_initializer : *allocation.member_initializers)
+        {
+            member_initializer->value->Accept(*this);
+        }
+    }
 }
 
 void Resolver::Visit(const StructExpression& struct_expression)

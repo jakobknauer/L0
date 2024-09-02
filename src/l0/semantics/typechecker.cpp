@@ -349,8 +349,21 @@ void Typechecker::Visit(const Allocation& allocation)
     }
 
     allocation.annotation->mutability = TypeAnnotationQualifier::Mutable;
-    allocation.allocated_type = type_resolver_.Convert(*allocation.annotation);
+    auto allocated_type = type_resolver_.Convert(*allocation.annotation);
+    allocation.allocated_type = allocated_type;
     allocation.type = std::make_shared<ReferenceType>(allocation.allocated_type, TypeQualifier::Constant);
+
+    if (allocation.member_initializers)
+    {
+        auto initializer = std::make_shared<Initializer>(allocation.annotation, allocation.member_initializers);
+        allocation.initial_value = initializer;
+    }
+    else
+    {
+        allocation.initial_value = GetInitialValue(allocated_type);
+        allocation.initial_value->Accept(*this);
+    }
+    allocation.initial_value->Accept(*this);
 }
 
 void Typechecker::Visit(const StructExpression& struct_expression)
@@ -376,6 +389,28 @@ void Typechecker::Visit(const StructExpression& struct_expression)
             ));
         }
     }
+}
+
+std::shared_ptr<Expression> Typechecker::GetInitialValue(std::shared_ptr<Type> type) const
+{
+    if (dynamic_pointer_cast<UnitType>(type))
+    {
+        return std::make_shared<UnitLiteral>();
+    }
+    if (dynamic_pointer_cast<BooleanType>(type))
+    {
+        return std::make_shared<BooleanLiteral>(false);
+    }
+    if (dynamic_pointer_cast<IntegerType>(type))
+    {
+        return std::make_shared<IntegerLiteral>(0);
+    }
+    if (dynamic_pointer_cast<StringType>(type))
+    {
+        return std::make_shared<StringLiteral>("");
+    }
+
+    throw SemanticError(std::format("Cannot create initial value of type '{}'.", type->ToString()));
 }
 
 }  // namespace l0

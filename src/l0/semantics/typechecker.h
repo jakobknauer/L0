@@ -52,6 +52,8 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
     void Visit(const Allocation& allocation) override;
 
     void Visit(const StructExpression& struct_expression) override;
+
+    std::shared_ptr<Expression> GetInitialValue(std::shared_ptr<Type> type) const;
 };
 
 }  // namespace l0

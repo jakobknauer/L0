@@ -623,7 +623,14 @@ void Generator::Visit(const Allocation& allocation)
     }
     std::vector<llvm::Value*> arguments{size_to_allocate};
 
-    result_ = builder_.CreateCall(int_to_ptr, malloc_function.getCallee(), arguments, "allocation");
+    allocation.initial_value->Accept(*this);
+    auto initial_value = result_;
+
+    auto reference = builder_.CreateCall(int_to_ptr, malloc_function.getCallee(), arguments, "allocation");
+
+    // TODO use loop + GEP for array initialization
+    builder_.CreateStore(initial_value, reference);
+    result_ = reference;
 }
 
 void Generator::GenerateFunctionBody(const Function& function, llvm::Function& llvm_function)
