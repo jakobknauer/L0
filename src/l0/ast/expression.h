@@ -122,12 +122,12 @@ using ArgumentList = std::vector<std::shared_ptr<Expression>>;
 class Call : public Expression
 {
    public:
-    Call(std::shared_ptr<Variable> function, std::shared_ptr<ArgumentList> arguments);
+    Call(std::shared_ptr<Expression> function, std::shared_ptr<ArgumentList> arguments);
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
-    std::shared_ptr<Variable> function;
+    std::shared_ptr<Expression> function;
     std::shared_ptr<ArgumentList> arguments;
 };
 

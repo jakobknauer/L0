@@ -64,12 +64,14 @@ class Parser : public IParser
     std::shared_ptr<Expression> ParseFactor();
     std::shared_ptr<Expression> ParseMemberAccessor();
     std::shared_ptr<Expression> ParseAtomicExpression();
+    std::shared_ptr<Expression> ParseCall();
     std::shared_ptr<Expression> ParseFunction();
     std::shared_ptr<Expression> ParseInitializer();
     std::shared_ptr<Expression> ParseAllocation();
     std::shared_ptr<ArgumentList> ParseArgumentList();
     std::shared_ptr<ParameterDeclarationList> ParseParameterDeclarationList();
     std::shared_ptr<ParameterDeclaration> ParseParameterDeclaration();
+    std::shared_ptr<MemberInitializerList> ParseMemberInitializerList();
     std::shared_ptr<TypeAnnotation> ParseTypeAnnotation();
     std::shared_ptr<TypeAnnotation> ParseUnqualifiedTypeAnnotation();
     std::shared_ptr<TypeAnnotation> ParseSimpleTypeAnnotation();
@@ -77,7 +79,6 @@ class Parser : public IParser
     std::shared_ptr<TypeAnnotation> ParseFunctionTypeAnnotation();
     std::shared_ptr<ParameterListAnnotation> ParseParameterListAnnotation();
     std::shared_ptr<TypeExpression> ParseStruct();
-    std::shared_ptr<MemberInitializerList> ParseMemberInitializerList();
 };
 
 class ParserError

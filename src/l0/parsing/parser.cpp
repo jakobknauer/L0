@@ -406,7 +406,18 @@ std::shared_ptr<Expression> Parser::ParseFactor()
     {
         return ParseAllocation();
     }
-    return ParseMemberAccessor();
+    return ParseCall();
+}
+
+std::shared_ptr<Expression> Parser::ParseCall()
+{
+    auto expression = ParseMemberAccessor();
+    while (Peek().type == TokenType::OpeningParen)
+    {
+        auto arguments = ParseArgumentList();
+        expression = std::make_shared<Call>(expression, arguments);
+    }
+    return expression;
 }
 
 std::shared_ptr<Expression> Parser::ParseMemberAccessor()
@@ -435,14 +446,7 @@ std::shared_ptr<Expression> Parser::ParseAtomicExpression()
         }
         case TokenType::Identifier:
         {
-            if (PeekNext().type == TokenType::OpeningParen)
-            {
-                Consume();
-                auto variable = std::make_shared<Variable>(std::any_cast<std::string>(token.data));
-                auto arguments = ParseArgumentList();
-                return std::make_shared<Call>(variable, arguments);
-            }
-            else if (PeekNext().type == TokenType::OpeningBrace)
+            if (PeekNext().type == TokenType::OpeningBrace)
             {
                 return ParseInitializer();
             }
@@ -777,7 +781,7 @@ std::shared_ptr<TypeExpression> Parser::ParseStruct()
         {
             throw ParserError("Only declarations are allowed in struct declarations.");
         }
-        if(!member_as_declaration->annotation)
+        if (!member_as_declaration->annotation)
         {
             throw ParserError("Struct member declarations require a type annotation.");
         }

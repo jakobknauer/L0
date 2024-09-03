@@ -44,7 +44,7 @@ void MemberAccessor::Accept(IConstExpressionVisitor& visitor) const { visitor.Vi
 
 void MemberAccessor::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
 
-Call::Call(std::shared_ptr<Variable> function, std::shared_ptr<ArgumentList> arguments)
+Call::Call(std::shared_ptr<Expression> function, std::shared_ptr<ArgumentList> arguments)
     : function{function}, arguments{arguments}
 {
 }

@@ -517,7 +517,7 @@ void Generator::Visit(const MemberAccessor& member_accessor)
         llvm_struct_type, object_ptr, 0, member_accessor.member_index, "access_member_geptmp"
     );
 
-    auto llvm_member_type = type_converter_.Convert(*member_accessor.type);
+    auto llvm_member_type = type_converter_.GetValueDeclarationType(*member_accessor.type);
     result_ = builder_.CreateLoad(llvm_member_type, member_address, "access_loadtmp");
 }
 
