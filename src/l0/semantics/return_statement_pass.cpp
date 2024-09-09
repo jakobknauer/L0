@@ -15,6 +15,8 @@ void ReturnStatementPass::Visit(Declaration& declaration)
     statement_returns_ = false;
 }
 
+void ReturnStatementPass::Visit(TypeDeclaration& type_declaration) { type_declaration.definition->Accept(*this); }
+
 void ReturnStatementPass::Visit(ExpressionStatement& expression_statement)
 {
     expression_statement.expression->Accept(*this);
@@ -26,7 +28,7 @@ void ReturnStatementPass::Visit(ReturnStatement& return_statement)
     if (!conversion_checker_.CheckCompatibility(expected_return_value_.top(), return_statement.value->type))
     {
         throw SemanticError(std::format(
-            "Expected return value of type {}, but got incompatible type {} instead.",
+            "Expected return value of type '{}', but got incompatible type '{}' instead.",
             expected_return_value_.top()->ToString(),
             return_statement.value->type->ToString()
         ));
@@ -82,6 +84,8 @@ void ReturnStatementPass::Visit(BinaryOp& binary_op)
 
 void ReturnStatementPass::Visit(Variable& variable) {}
 
+void ReturnStatementPass::Visit(MemberAccessor& member_accessor) { member_accessor.object->Accept(*this); }
+
 void ReturnStatementPass::Visit(Call& call)
 {
     call.function->Accept(*this);
@@ -125,11 +129,26 @@ void ReturnStatementPass::Visit(Function& function)
     statement_returns_ = false;
 }
 
+void ReturnStatementPass::Visit(Initializer& initializer)
+{
+    for (const auto& member_initializer : *initializer.member_initializers)
+    {
+        member_initializer->value->Accept(*this);
+    }
+}
+
 void ReturnStatementPass::Visit(Allocation& allocation)
 {
     if (allocation.size)
     {
         allocation.size->Accept(*this);
+    }
+    if (allocation.member_initializers)
+    {
+        for (const auto& member_initializer : *allocation.member_initializers)
+        {
+            member_initializer->value->Accept(*this);
+        }
     }
 }
 
@@ -155,6 +174,17 @@ void ReturnStatementPass::Visit(StatementBlock& statement_block)
     }
 
     statement_returns_ = block_returns_;
+}
+
+void ReturnStatementPass::Visit(StructExpression& struct_expression)
+{
+    for (const auto& member_declaration : *struct_expression.members)
+    {
+        if (member_declaration->initializer)
+        {
+            member_declaration->initializer->Accept(*this);
+        }
+    }
 }
 
 }  // namespace l0

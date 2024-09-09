@@ -123,6 +123,38 @@ class FunctionType : public Type
     bool Equals(const Type& other) const override;
 };
 
+class Expression;
+
+class StructMember
+{
+   public:
+    std::string name;
+    std::shared_ptr<Type> type;
+    std::shared_ptr<Expression> default_initializer;
+};
+
+using StructMemberList = std::vector<std::shared_ptr<StructMember>>;
+
+class StructType : public Type
+{
+   public:
+    StructType(std::string name, std::shared_ptr<StructMemberList> members, TypeQualifier mutability);
+
+    std::string ToString() const override;
+
+    void Accept(IConstTypeVisitor& visitor) const override;
+
+    const std::string name;
+    std::shared_ptr<StructMemberList> members;
+
+    bool HasMember(std::string name) const;
+    std::shared_ptr<StructMember> GetMember(std::string name) const;
+    std::size_t GetMemberIndex(std::string name) const;
+
+   protected:
+    bool Equals(const Type& other) const override;
+};
+
 class IConstTypeVisitor
 {
    public:
@@ -134,6 +166,7 @@ class IConstTypeVisitor
     virtual void Visit(const IntegerType& integer_type) = 0;
     virtual void Visit(const StringType& string_type) = 0;
     virtual void Visit(const FunctionType& function_type) = 0;
+    virtual void Visit(const StructType& struct_type) = 0;
 };
 
 std::shared_ptr<Type> ModifyQualifier(const Type& type, TypeQualifier qualifier);

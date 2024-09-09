@@ -37,6 +37,7 @@ enum class TokenType
     ClosingBracket,
     OpeningBrace,
     ClosingBrace,
+    Dot,
     Comma,
     Colon,
     Semicolon,

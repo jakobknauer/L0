@@ -22,19 +22,24 @@ void Resolver::Check()
 
 void Resolver::Visit(const Declaration& declaration)
 {
-    declaration.initializer->Accept(*this);
+    if (declaration.initializer)
+    {
+        declaration.initializer->Accept(*this);
+    }
 
     if (local_)
     {
         auto scope = scopes_.back();
-        if (scope->IsDeclared(declaration.variable))
+        if (scope->IsVariableDeclared(declaration.variable))
         {
             throw SemanticError(std::format("Duplicate declaration of local variable '{}'.", declaration.variable));
         }
-        scope->Declare(declaration.variable);
+        scope->DeclareVariable(declaration.variable);
         declaration.scope = scope;
     }
 }
+
+void Resolver::Visit(const TypeDeclaration& type_declaration) { type_declaration.definition->Accept(*this); }
 
 void Resolver::Visit(const ExpressionStatement& expression_statement)
 {
@@ -97,6 +102,8 @@ void Resolver::Visit(const BinaryOp& binary_op)
 
 void Resolver::Visit(const Variable& variable) { variable.scope = Resolve(variable.name); }
 
+void Resolver::Visit(const MemberAccessor& member_accessor) { member_accessor.object->Accept(*this); }
+
 void Resolver::Visit(const Call& call)
 {
     call.function->Accept(*this);
@@ -118,7 +125,7 @@ void Resolver::Visit(const Function& function)
 {
     for (const auto& param_decl : *function.parameters)
     {
-        function.locals->Declare(param_decl->name);
+        function.locals->DeclareVariable(param_decl->name);
     }
 
     bool restore_local = local_;
@@ -132,11 +139,37 @@ void Resolver::Visit(const Function& function)
     local_ = restore_local;
 }
 
+void Resolver::Visit(const Initializer& initializer)
+{
+    for (const auto& member_initializer : *initializer.member_initializers)
+    {
+        member_initializer->value->Accept(*this);
+    }
+}
+
 void Resolver::Visit(const Allocation& allocation)
 {
     if (allocation.size)
     {
         allocation.size->Accept(*this);
+    }
+    if (allocation.member_initializers)
+    {
+        for (const auto& member_initializer : *allocation.member_initializers)
+        {
+            member_initializer->value->Accept(*this);
+        }
+    }
+}
+
+void Resolver::Visit(const StructExpression& struct_expression)
+{
+    for (const auto& member_declaration : *struct_expression.members)
+    {
+        if (member_declaration->initializer)
+        {
+            member_declaration->initializer->Accept(*this);
+        }
     }
 }
 
@@ -144,7 +177,7 @@ std::shared_ptr<Scope> Resolver::Resolve(const std::string name)
 {
     for (auto scope : scopes_ | std::views::reverse)
     {
-        if (scope->IsDeclared(name))
+        if (scope->IsVariableDeclared(name))
         {
             return scope;
         }

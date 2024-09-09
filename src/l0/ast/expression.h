@@ -23,6 +23,13 @@ class Expression
     mutable std::shared_ptr<Type> type;
 };
 
+struct AddressInfo
+{
+    std::shared_ptr<Expression> object_ref{nullptr};
+    std::shared_ptr<Type> object_type{nullptr};
+    std::vector<std::size_t> member_indices{};
+};
+
 class Assignment : public Expression
 {
    public:
@@ -34,7 +41,7 @@ class Assignment : public Expression
     std::shared_ptr<Expression> target;
     std::shared_ptr<Expression> expression;
 
-    std::shared_ptr<Expression> target_address;
+    AddressInfo target_address;
 };
 
 class UnaryOp : public Expression
@@ -95,17 +102,32 @@ class Variable : public Expression
     mutable std::shared_ptr<Scope> scope;
 };
 
+class MemberAccessor : public Expression
+{
+   public:
+    MemberAccessor(std::shared_ptr<Expression> object, std::string member);
+
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
+
+    std::shared_ptr<Expression> object;
+    std::string member;
+
+    mutable std::shared_ptr<StructType> object_type;
+    mutable std::size_t member_index;
+};
+
 using ArgumentList = std::vector<std::shared_ptr<Expression>>;
 
 class Call : public Expression
 {
    public:
-    Call(std::shared_ptr<Variable> function, std::shared_ptr<ArgumentList> arguments);
+    Call(std::shared_ptr<Expression> function, std::shared_ptr<ArgumentList> arguments);
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
-    std::shared_ptr<Variable> function;
+    std::shared_ptr<Expression> function;
     std::shared_ptr<ArgumentList> arguments;
 };
 
@@ -183,18 +205,43 @@ class Function : public Expression
     mutable std::shared_ptr<Scope> locals = std::make_shared<Scope>();
 };
 
+struct MemberInitializer
+{
+    std::string member;
+    std::shared_ptr<Expression> value;
+};
+using MemberInitializerList = std::vector<std::shared_ptr<MemberInitializer>>;
+
+class Initializer : public Expression
+{
+   public:
+    Initializer(std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<MemberInitializerList> member_initializers);
+
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
+
+    std::shared_ptr<TypeAnnotation> annotation;
+    std::shared_ptr<MemberInitializerList> member_initializers;
+};
+
 class Allocation : public Expression
 {
    public:
-    Allocation(std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Expression> size);
+    Allocation(
+        std::shared_ptr<TypeAnnotation> annotation,
+        std::shared_ptr<Expression> size,
+        std::shared_ptr<MemberInitializerList> member_initializers = nullptr
+    );
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
     std::shared_ptr<TypeAnnotation> annotation;
     std::shared_ptr<Expression> size;
+    std::shared_ptr<MemberInitializerList> member_initializers;
 
     mutable std::shared_ptr<Type> allocated_type;
+    mutable std::shared_ptr<Expression> initial_value;
 };
 
 class IConstExpressionVisitor
@@ -206,12 +253,14 @@ class IConstExpressionVisitor
     virtual void Visit(const UnaryOp& unary_op) = 0;
     virtual void Visit(const BinaryOp& binary_op) = 0;
     virtual void Visit(const Variable& variable) = 0;
+    virtual void Visit(const MemberAccessor& member_accessor) = 0;
     virtual void Visit(const Call& call) = 0;
     virtual void Visit(const UnitLiteral& literal) = 0;
     virtual void Visit(const BooleanLiteral& literal) = 0;
     virtual void Visit(const IntegerLiteral& literal) = 0;
     virtual void Visit(const StringLiteral& literal) = 0;
     virtual void Visit(const Function& function) = 0;
+    virtual void Visit(const Initializer& initializer) = 0;
     virtual void Visit(const Allocation& allocation) = 0;
 };
 
@@ -224,12 +273,14 @@ class IExpressionVisitor
     virtual void Visit(UnaryOp& unary_op) = 0;
     virtual void Visit(BinaryOp& binary_op) = 0;
     virtual void Visit(Variable& variable) = 0;
+    virtual void Visit(MemberAccessor& member_accessor) = 0;
     virtual void Visit(Call& call) = 0;
     virtual void Visit(UnitLiteral& literal) = 0;
     virtual void Visit(BooleanLiteral& literal) = 0;
     virtual void Visit(IntegerLiteral& literal) = 0;
     virtual void Visit(StringLiteral& literal) = 0;
     virtual void Visit(Function& function) = 0;
+    virtual void Visit(Initializer& initializer) = 0;
     virtual void Visit(Allocation& allocation) = 0;
 };
 

@@ -51,6 +51,8 @@ std::string str(TokenType type)
             return "OpeningBrace";
         case TokenType::ClosingBrace:
             return "ClosingBrace";
+        case TokenType::Dot:
+            return "Dot";
         case TokenType::Comma:
             return "Comma";
         case TokenType::Colon:

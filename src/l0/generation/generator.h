@@ -35,10 +35,15 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     llvm::Value* result_;
 
     void DeclareExternals();
-    void DeclareGlobals();
+    void DeclareGlobalTypes();
+    void FillGlobalTypes();
+    void DeclareGlobalVariables();
+    void DeclareGlobalVariable(std::shared_ptr<Declaration> declaration);
     void DefineGlobals();
 
+    using IConstStatementVisitor::Visit;
     void Visit(const Declaration& declaration) override;
+    void Visit(const TypeDeclaration& declaration) override;
     void Visit(const ExpressionStatement& expression_statement) override;
     void Visit(const ReturnStatement& return_statement) override;
     void Visit(const ConditionalStatement& conditional_statement) override;
@@ -49,15 +54,21 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     void Visit(const UnaryOp& unary_op) override;
     void Visit(const BinaryOp& binary_op) override;
     void Visit(const Variable& variable) override;
+    void Visit(const MemberAccessor& member_accessor) override;
     void Visit(const Call& call) override;
     void Visit(const UnitLiteral& literal) override;
     void Visit(const BooleanLiteral& literal) override;
     void Visit(const IntegerLiteral& literal) override;
     void Visit(const StringLiteral& literal) override;
     void Visit(const Function& function) override;
+    void Visit(const Initializer& Initializer) override;
     void Visit(const Allocation& allocation) override;
 
     void GenerateFunctionBody(const Function& function, llvm::Function& llvm_function);
+
+    std::vector<std::tuple<std::string, llvm::Value*>> GetActualMemberInitializers(
+        const MemberInitializerList& explicit_initializers, const StructType& struct_type
+    );
 };
 
 }  // namespace l0

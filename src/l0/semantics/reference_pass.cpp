@@ -17,6 +17,8 @@ void ReferencePass::Run()
 
 void ReferencePass::Visit(Declaration& declaration) { declaration.initializer->Accept(*this); }
 
+void ReferencePass::Visit(TypeDeclaration& type_declaration) { type_declaration.definition->Accept(*this); }
+
 void ReferencePass::Visit(ExpressionStatement& expression_statement) { expression_statement.expression->Accept(*this); }
 
 void ReferencePass::Visit(ReturnStatement& return_statement) { return_statement.value->Accept(*this); }
@@ -55,43 +57,27 @@ void ReferencePass::Visit(Assignment& assignment)
     assignment.expression->Accept(*this);
     assignment.target->Accept(*this);
 
-    if (auto variable = dynamic_pointer_cast<Variable>(assignment.target))
+    if (!IsLValue(assignment.target, assignment.target_address))
     {
-        assignment.target_address = std::make_shared<UnaryOp>(variable, UnaryOp::Operator::Ampersand);
-        return;
+        throw SemanticError("Can only assign to lvalues.");
     }
-
-    auto unary_op = dynamic_pointer_cast<UnaryOp>(assignment.target);
-    if (unary_op && (unary_op->op == UnaryOp::Operator::Asterisk))
-    {
-        assignment.target_address = unary_op->operand;
-        return;
-    }
-
-    throw SemanticError("Can only assign to lvalues.");
 }
 
 void ReferencePass::Visit(UnaryOp& unary_op)
 {
     unary_op.operand->Accept(*this);
 
+    std::shared_ptr<Expression> _;
     if (unary_op.op != UnaryOp::Operator::Ampersand)
     {
         return;
     }
 
-    if (auto variable = dynamic_pointer_cast<Variable>(unary_op.operand))
+    AddressInfo unused;
+    if (!IsLValue(unary_op.operand, unused))
     {
-        return;
+        throw SemanticError("Can only create references to lvalues.");
     }
-
-    auto dereference = dynamic_pointer_cast<UnaryOp>(unary_op.operand);
-    if (dereference && (dereference->op == UnaryOp::Operator::Asterisk))
-    {
-        return;
-    }
-
-    throw SemanticError("Can only create references to lvalues.");
 }
 
 void ReferencePass::Visit(BinaryOp& binary_op)
@@ -101,6 +87,8 @@ void ReferencePass::Visit(BinaryOp& binary_op)
 }
 
 void ReferencePass::Visit(Variable& variable) {}
+
+void ReferencePass::Visit(MemberAccessor& member_accessor) { member_accessor.object->Accept(*this); }
 
 void ReferencePass::Visit(Call& call)
 {
@@ -124,6 +112,66 @@ void ReferencePass::Visit(Function& function)
     }
 }
 
-void ReferencePass::Visit(Allocation& allocation) {}
+void ReferencePass::Visit(Initializer& initializer)
+{
+    for (const auto& member_initializer : *initializer.member_initializers)
+    {
+        member_initializer->value->Accept(*this);
+    }
+}
+
+void ReferencePass::Visit(Allocation& allocation)
+{
+    if (allocation.size)
+    {
+        allocation.size->Accept(*this);
+    }
+    if (allocation.member_initializers)
+    {
+        for (const auto& member_initializer : *allocation.member_initializers)
+        {
+            member_initializer->value->Accept(*this);
+        }
+    }
+}
+
+void ReferencePass::Visit(StructExpression& struct_expression)
+{
+    for (const auto& member_declaration : *struct_expression.members)
+    {
+        if (member_declaration->initializer)
+        {
+            member_declaration->initializer->Accept(*this);
+        }
+    }
+}
+
+bool ReferencePass::IsLValue(std::shared_ptr<Expression> value, AddressInfo& out_address) const
+{
+    if (auto variable = dynamic_pointer_cast<Variable>(value))
+    {
+        out_address.object_ref = std::make_shared<UnaryOp>(variable, UnaryOp::Operator::Ampersand);
+        out_address.object_ref->type = std::make_shared<ReferenceType>(variable->type, TypeQualifier::Constant);
+        out_address.object_type = variable->type;
+        return true;
+    }
+    else if (auto unary_op = dynamic_pointer_cast<UnaryOp>(value);
+             unary_op && (unary_op->op == UnaryOp::Operator::Asterisk))
+    {
+        out_address.object_ref = unary_op->operand;
+        out_address.object_type = unary_op->type;
+        return true;
+    }
+    else if (auto member_accessor = dynamic_pointer_cast<MemberAccessor>(value))
+    {
+        if (IsLValue(member_accessor->object, out_address))
+        {
+            out_address.member_indices.push_back(member_accessor->member_index);
+            return true;
+        }
+        return false;
+    }
+    return false;
+}
 
 }  // namespace l0

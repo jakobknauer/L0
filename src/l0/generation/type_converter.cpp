@@ -20,32 +20,27 @@ llvm::FunctionType* TypeConverter::Convert(const FunctionType& type)
     return llvm::dyn_cast<llvm::FunctionType>(result_);
 }
 
-llvm::FunctionType* TypeConverter::GetDeclarationType(const FunctionType& type)
+llvm::FunctionType* TypeConverter::GetFunctionDeclarationType(const FunctionType& type)
 {
     std::vector<llvm::Type*> params;
     for (const auto& param : *type.parameters)
     {
-        if (dynamic_pointer_cast<FunctionType>(param))
-        {
-            params.push_back(llvm::PointerType::getUnqual(context_));
-        }
-        else
-        {
-            params.push_back(Convert(*param));
-        }
+        params.push_back(GetValueDeclarationType(*param));
     }
+    llvm::Type* return_type = GetValueDeclarationType(*type.return_type);
+    return llvm::FunctionType::get(return_type, params, false);
+}
 
-    llvm::Type* return_type;
-    if (dynamic_pointer_cast<FunctionType>(type.return_type))
+llvm::Type* TypeConverter::GetValueDeclarationType(const Type& type)
+{
+    if (auto function_type = dynamic_cast<const FunctionType*>(&type))
     {
-        return_type = llvm::PointerType::getUnqual(context_);
+        return llvm::PointerType::getUnqual(context_);
     }
     else
     {
-        return_type = Convert(*type.return_type);
+        return Convert(type);
     }
-
-    return llvm::FunctionType::get(return_type, params, false);
 }
 
 void TypeConverter::Visit(const ReferenceType& reference_type)
@@ -78,6 +73,12 @@ void TypeConverter::Visit(const FunctionType& function_type)
     auto return_type = result_;
 
     result_ = llvm::FunctionType::get(return_type, params, false);
+}
+
+void TypeConverter::Visit(const StructType& struct_type)
+{
+    auto llvm_struct_type = llvm::StructType::getTypeByName(context_, struct_type.name);
+    result_ = llvm_struct_type;
 }
 
 }  // namespace l0

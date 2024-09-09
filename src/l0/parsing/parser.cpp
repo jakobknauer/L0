@@ -22,7 +22,7 @@ Token Parser::PeekNext()
 {
     if (pos_ + 1 >= tokens_.size())
     {
-        throw ParserError(std::format("Unexpectedly reached end of token stream (Peek)."));
+        throw ParserError(std::format("Unexpectedly reached end of token stream (PeekNext)."));
     }
     return tokens_.at(pos_ + 1);
 }
@@ -201,10 +201,22 @@ std::shared_ptr<Statement> Parser::ParseDeclaration()
 {
     auto identifier = Expect(TokenType::Identifier);
     Expect(TokenType::Colon);
-    auto annotation = ParseTypeAnnotation();
-    Expect(TokenType::Equals);
-    auto initializer = ParseExpression();
-    return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), annotation, initializer);
+    if (ConsumeIfKeyword({"type"}))
+    {
+        Expect(TokenType::Equals);
+        auto definition = ParseStruct();
+        return std::make_shared<TypeDeclaration>(std::any_cast<std::string>(identifier.data), definition);
+    }
+    else
+    {
+        auto annotation = ParseTypeAnnotation();
+        std::shared_ptr<Expression> initializer{nullptr};
+        if (ConsumeIf(TokenType::Equals))
+        {
+            initializer = ParseExpression();
+        }
+        return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), annotation, initializer);
+    }
 }
 
 std::shared_ptr<Statement> Parser::ParseUnannotatedDeclaration()
@@ -275,16 +287,7 @@ std::shared_ptr<Statement> Parser::ParseDeallocation()
     return std::make_shared<Deallocation>(operand);
 }
 
-std::shared_ptr<Expression> Parser::ParseExpression()
-{
-    if (ConsumeIf(TokenType::OpeningParen))
-    {
-        auto expression = ParseExpression();
-        Expect(TokenType::ClosingParen);
-        return expression;
-    }
-    return ParseAssignment();
-}
+std::shared_ptr<Expression> Parser::ParseExpression() { return ParseAssignment(); }
 
 std::shared_ptr<Expression> Parser::ParseAssignment()
 {
@@ -399,25 +402,58 @@ std::shared_ptr<Expression> Parser::ParseUnary()
 
 std::shared_ptr<Expression> Parser::ParseFactor()
 {
+    if (PeekIsKeyword({"new"}))
+    {
+        return ParseAllocation();
+    }
+    return ParseCall();
+}
+
+std::shared_ptr<Expression> Parser::ParseCall()
+{
+    auto expression = ParseMemberAccessor();
+    while (Peek().type == TokenType::OpeningParen)
+    {
+        auto arguments = ParseArgumentList();
+        expression = std::make_shared<Call>(expression, arguments);
+    }
+    return expression;
+}
+
+std::shared_ptr<Expression> Parser::ParseMemberAccessor()
+{
+    auto expression = ParseAtomicExpression();
+    while (ConsumeIf(TokenType::Dot))
+    {
+        auto member = Expect(TokenType::Identifier);
+        expression = std::make_shared<MemberAccessor>(expression, std::any_cast<std::string>(member.data));
+    }
+    return expression;
+}
+
+std::shared_ptr<Expression> Parser::ParseAtomicExpression()
+{
     Token token = Peek();
 
     switch (token.type)
     {
         case TokenType::OpeningParen:
         {
-            return ParseExpression();
+            Consume();
+            auto expression = ParseExpression();
+            Expect(TokenType::ClosingParen);
+            return expression;
         }
         case TokenType::Identifier:
         {
-            Consume();
-            auto variable = std::make_shared<Variable>(std::any_cast<std::string>(token.data));
-            if (Peek().type == TokenType::OpeningParen)
+            if (PeekNext().type == TokenType::OpeningBrace)
             {
-                auto arguments = ParseArgumentList();
-                return std::make_shared<Call>(variable, arguments);
+                return ParseInitializer();
             }
             else
             {
+                Consume();
+                auto variable = std::make_shared<Variable>(std::any_cast<std::string>(token.data));
                 return variable;
             }
         }
@@ -453,10 +489,6 @@ std::shared_ptr<Expression> Parser::ParseFactor()
                 Consume();
                 return std::make_shared<UnitLiteral>();
             }
-            else if (keyword == "new")
-            {
-                return ParseAllocation();
-            }
             // Fall through intended
         }
         default:
@@ -482,11 +514,19 @@ std::shared_ptr<Expression> Parser::ParseFunction()
     return std::make_shared<Function>(parameters, return_type, statements);
 }
 
+std::shared_ptr<Expression> Parser::ParseInitializer()
+{
+    auto annotation = ParseSimpleTypeAnnotation();
+    auto member_initializer_list = ParseMemberInitializerList();
+
+    return std::make_shared<Initializer>(annotation, member_initializer_list);
+}
+
 std::shared_ptr<Expression> Parser::ParseAllocation()
 {
     ExpectKeyword("new");
 
-    std::shared_ptr<Expression> size;
+    std::shared_ptr<Expression> size{nullptr};
     if (ConsumeIf(TokenType::OpeningBracket))
     {
         size = ParseExpression();
@@ -494,7 +534,14 @@ std::shared_ptr<Expression> Parser::ParseAllocation()
     }
 
     auto annotation = ParseUnqualifiedTypeAnnotation();
-    return std::make_shared<Allocation>(annotation, size);
+
+    std::shared_ptr<MemberInitializerList> member_initializer_list{nullptr};
+    if (Peek().type == TokenType::OpeningBrace)
+    {
+        member_initializer_list = ParseMemberInitializerList();
+    }
+
+    return std::make_shared<Allocation>(annotation, size, member_initializer_list);
 }
 
 std::shared_ptr<ArgumentList> Parser::ParseArgumentList()
@@ -719,6 +766,54 @@ std::shared_ptr<ParameterListAnnotation> Parser::ParseParameterListAnnotation()
             }
         }
     } while (true);
+}
+
+std::shared_ptr<TypeExpression> Parser::ParseStruct()
+{
+    ExpectKeyword("struct");
+    Expect(TokenType::OpeningBrace);
+    auto members = std::make_shared<StructMemberDeclarationList>();
+    while (ConsumeAll(TokenType::Semicolon).type != TokenType::ClosingBrace)
+    {
+        auto member = ParseStatement();
+        auto member_as_declaration = dynamic_pointer_cast<Declaration>(member);
+        if (!member)
+        {
+            throw ParserError("Only declarations are allowed in struct declarations.");
+        }
+        if (!member_as_declaration->annotation)
+        {
+            throw ParserError("Struct member declarations require a type annotation.");
+        }
+        Expect(TokenType::Semicolon);
+        members->push_back(member_as_declaration);
+    }
+    Expect(TokenType::ClosingBrace);
+    return std::make_shared<StructExpression>(members);
+}
+
+std::shared_ptr<MemberInitializerList> Parser::ParseMemberInitializerList()
+{
+    Expect(TokenType::OpeningBrace);
+
+    auto member_initializer_list = std::make_shared<MemberInitializerList>();
+    while (ConsumeAll(TokenType::Semicolon).type != TokenType::ClosingBrace)
+    {
+        auto member = Expect(TokenType::Identifier);
+        Expect(TokenType::Equals);
+        auto value = ParseExpression();
+        Expect(TokenType::Semicolon);
+
+        auto member_initializer = std::make_shared<MemberInitializer>();
+        member_initializer->member = std::any_cast<std::string>(member.data);
+        member_initializer->value = value;
+
+        member_initializer_list->push_back(member_initializer);
+    }
+
+    Expect(TokenType::ClosingBrace);
+
+    return member_initializer_list;
 }
 
 ParserError::ParserError(std::string message) : message_{message} {}

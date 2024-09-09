@@ -100,6 +100,38 @@ bool FunctionType::Equals(const Type& other) const
            );
 }
 
+StructType::StructType(std::string name, std::shared_ptr<StructMemberList> members, TypeQualifier mutability)
+    : Type{mutability}, name{name}, members{members}
+{
+}
+
+std::string StructType::ToString() const { return name; }
+
+void StructType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
+
+bool StructType::HasMember(std::string name) const
+{
+    return std::ranges::contains(*members, name, [](const auto& member) { return member->name; });
+}
+
+std::shared_ptr<StructMember> StructType::GetMember(std::string name) const
+{
+    return *std::ranges::find(*members, name, [](const auto& member) { return member->name; });
+}
+
+std::size_t StructType::GetMemberIndex(std::string name) const
+{
+    return std::ranges::find(*members, name, [](const auto& member) { return member->name; }) - members->begin();
+}
+
+bool StructType::Equals(const Type& other) const
+{
+    const StructType* real_other = static_cast<const StructType*>(&other);
+
+    // TODO proper check?
+    return this->name == real_other->name;
+}
+
 namespace
 {
 
@@ -133,6 +165,11 @@ class ModifyQualifierVisitor : private IConstTypeVisitor
     void Visit(const FunctionType& function_type)
     {
         result_ = std::make_shared<FunctionType>(function_type.parameters, function_type.return_type, qualifier_);
+    }
+
+    void Visit(const StructType& struct_type)
+    {
+        result_ = std::make_shared<StructType>(struct_type.name, struct_type.members, qualifier_);
     }
 };
 

@@ -36,7 +36,15 @@ void Variable::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*t
 
 void Variable::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
 
-Call::Call(std::shared_ptr<Variable> function, std::shared_ptr<ArgumentList> arguments)
+MemberAccessor::MemberAccessor(std::shared_ptr<Expression> object, std::string member) : object{object}, member{member}
+{
+}
+
+void MemberAccessor::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*this); }
+
+void MemberAccessor::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
+
+Call::Call(std::shared_ptr<Expression> function, std::shared_ptr<ArgumentList> arguments)
     : function{function}, arguments{arguments}
 {
 }
@@ -77,9 +85,7 @@ Function::Function(
     std::shared_ptr<TypeAnnotation> return_type_annotation,
     std::shared_ptr<StatementBlock> statements
 )
-    : parameters{parameters},
-      return_type_annotation{return_type_annotation},
-      statements{statements}
+    : parameters{parameters}, return_type_annotation{return_type_annotation}, statements{statements}
 {
 }
 
@@ -87,8 +93,23 @@ void Function::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*t
 
 void Function::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
 
-Allocation::Allocation(std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Expression> size)
-    : annotation{annotation}, size{size}
+Initializer::Initializer(
+    std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<MemberInitializerList> member_initializers
+)
+    : annotation{annotation}, member_initializers{member_initializers}
+{
+}
+
+void Initializer::Accept(IConstExpressionVisitor& visitor) const { visitor.Visit(*this); }
+
+void Initializer::Accept(IExpressionVisitor& visitor) { visitor.Visit(*this); }
+
+Allocation::Allocation(
+    std::shared_ptr<TypeAnnotation> annotation,
+    std::shared_ptr<Expression> size,
+    std::shared_ptr<MemberInitializerList> member_initializers
+)
+    : annotation{annotation}, size{size}, member_initializers{member_initializers}
 {
 }
 

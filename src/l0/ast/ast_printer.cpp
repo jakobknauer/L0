@@ -25,14 +25,29 @@ void AstPrinter::Visit(const Declaration& declaration)
 {
     out_ << declaration.variable;
     out_ << " :";
+
     if (declaration.annotation)
     {
         out_ << " ";
         declaration.annotation->Accept(*this);
+    }
+
+    if (declaration.annotation && declaration.initializer)
+    {
         out_ << " ";
     }
-    out_ << "= ";
-    declaration.initializer->Accept(*this);
+
+    if (declaration.initializer)
+    {
+        out_ << "= ";
+        declaration.initializer->Accept(*this);
+    }
+}
+
+void AstPrinter::Visit(const TypeDeclaration& type_declaration)
+{
+    out_ << type_declaration.name << " : type = ";
+    type_declaration.definition->Accept(*this);
 }
 
 void AstPrinter::Visit(const ExpressionStatement& expression_statement)
@@ -108,7 +123,7 @@ void AstPrinter::Visit(const Assignment& assignment)
 
 void AstPrinter::Visit(const UnaryOp& unary_op)
 {
-    out_ << str(unary_op.op) << "(";
+    out_ << "(" << str(unary_op.op);
     unary_op.operand->Accept(*this);
     out_ << ")";
 }
@@ -123,6 +138,12 @@ void AstPrinter::Visit(const BinaryOp& binary_op)
 }
 
 void AstPrinter::Visit(const Variable& variable) { out_ << variable.name; }
+
+void AstPrinter::Visit(const MemberAccessor& member_accessor)
+{
+    member_accessor.object->Accept(*this);
+    out_ << "." << member_accessor.member;
+}
 
 void AstPrinter::Visit(const Call& call)
 {
@@ -166,6 +187,27 @@ void AstPrinter::Visit(const Function& function)
     out_ << "}";
 }
 
+void AstPrinter::Visit(const Initializer& initializer)
+{
+    initializer.annotation->Accept(*this);
+    if (initializer.member_initializers->empty())
+    {
+        out_ << "{}";
+        return;
+    }
+
+    out_ << "\n{\n";
+    ++indent_;
+    for (const auto& member_initializer : *initializer.member_initializers)
+    {
+        out_ << member_initializer->member << " = ";
+        member_initializer->value->Accept(*this);
+        out_ << ";\n";
+    }
+    --indent_;
+    out_ << "}";
+}
+
 void AstPrinter::Visit(const Allocation& allocation)
 {
     out_ << "new";
@@ -177,6 +219,28 @@ void AstPrinter::Visit(const Allocation& allocation)
     }
     out_ << " ";
     allocation.annotation->Accept(*this);
+
+    if (!allocation.member_initializers)
+    {
+        return;
+    }
+
+    if (allocation.member_initializers->empty())
+    {
+        out_ << "{}";
+        return;
+    }
+
+    out_ << "\n{\n";
+    ++indent_;
+    for (const auto& member_initializer : *allocation.member_initializers)
+    {
+        out_ << member_initializer->member << " = ";
+        member_initializer->value->Accept(*this);
+        out_ << ";\n";
+    }
+    --indent_;
+    out_ << "}";
 }
 
 void AstPrinter::Visit(const SimpleTypeAnnotation& sta)
@@ -203,6 +267,19 @@ void AstPrinter::Visit(const ReferenceTypeAnnotation& rta)
     PrintQualifier(rta.mutability);
     out_ << "&";
     rta.base_type->Accept(*this);
+}
+
+void AstPrinter::Visit(const StructExpression& struct_expression)
+{
+    out_ << "struct";
+    out_ << "\n{\n";
+    ++indent_;
+    for (const auto& statement : *struct_expression.members)
+    {
+        Print(*statement);
+    }
+    --indent_;
+    out_ << "}";
 }
 
 void AstPrinter::PrintQualifier(TypeAnnotationQualifier qualifier)

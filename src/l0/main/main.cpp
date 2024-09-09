@@ -9,8 +9,7 @@
 #include "l0/generation/generator_error.h"
 #include "l0/lexing/lexer.h"
 #include "l0/parsing/parser.h"
-#include "l0/semantics/global_symbol_pass.h"
-#include "l0/semantics/module_validator.h"
+#include "l0/semantics/global_scope_builder.h"
 #include "l0/semantics/reference_pass.h"
 #include "l0/semantics/resolver.h"
 #include "l0/semantics/return_statement_pass.h"
@@ -62,25 +61,14 @@ int main(int argc, char* argv[])
     );
     auto integer_type = std::make_shared<IntegerType>(TypeQualifier::Constant);
     auto string_to_int = std::make_shared<FunctionType>(parameters, integer_type, TypeQualifier::Constant);
-    module->externals->Declare("printf", string_to_int);
+    module->externals->DeclareVariable("printf", string_to_int);
 
     std::println("Semantical analysis...");
 
-    std::println("Checking module...");
+    std::println("Building global scope...");
     try
     {
-        ModuleValidator{*module}.Check();
-    }
-    catch (const SemanticError& err)
-    {
-        std::println("Semantic error occured: {}", err.GetMessage());
-        return -1;
-    }
-
-    std::println("Checking declarations...");
-    try
-    {
-        GlobalSymbolPass{*module}.Run();
+        GlobalScopeBuilder{*module}.Run();
     }
     catch (const SemanticError& err)
     {
@@ -144,6 +132,11 @@ int main(int argc, char* argv[])
     catch (const GeneratorError& ge)
     {
         std::println("Generator error occured: {}", ge.GetMessage());
+        return -1;
+    }
+    catch (const ScopeError& se)
+    {
+        std::println("Scope error occured: {}", se.GetMessage());
         return -1;
     }
 

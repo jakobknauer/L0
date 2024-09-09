@@ -9,7 +9,7 @@
 #include "l0/ast/statement.h"
 #include "l0/semantics/conversion_checker.h"
 #include "l0/semantics/operator_overload_resolver.h"
-#include "l0/semantics/type_annotation_converter.h"
+#include "l0/semantics/type_resolver.h"
 #include "l0/types/types.h"
 
 namespace l0
@@ -25,11 +25,12 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
    private:
     Module& module_;
     std::unordered_map<std::string, const std::shared_ptr<Type>> simple_types_{};
-    TypeAnnotationConverter converter_{};
+    TypeResolver type_resolver_;
     detail::OperatorOverloadResolver operator_overload_resolver_{};
     detail::ConversionChecker conversion_checker_{};
 
     void Visit(const Declaration& declaration) override;
+    void Visit(const TypeDeclaration& type_declaration) override;
     void Visit(const ExpressionStatement& expression_statement) override;
     void Visit(const ReturnStatement& return_statement) override;
     void Visit(const ConditionalStatement& conditional_statement) override;
@@ -40,13 +41,17 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
     void Visit(const UnaryOp& unary_op) override;
     void Visit(const BinaryOp& binary_op) override;
     void Visit(const Variable& variable) override;
+    void Visit(const MemberAccessor& member_accessor) override;
     void Visit(const Call& call) override;
     void Visit(const UnitLiteral& literal) override;
     void Visit(const BooleanLiteral& literal) override;
     void Visit(const IntegerLiteral& literal) override;
     void Visit(const StringLiteral& literal) override;
     void Visit(const Function& function) override;
+    void Visit(const Initializer& initializer) override;
     void Visit(const Allocation& allocation) override;
+
+    std::shared_ptr<Expression> GetInitialValue(std::shared_ptr<Type> type) const;
 };
 
 }  // namespace l0
