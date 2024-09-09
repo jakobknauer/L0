@@ -1,7 +1,28 @@
 #include "l0/ast/ast_printer.h"
 
+#include <ranges>
+
 namespace l0
 {
+
+template <std::ranges::input_range R, class UnaryFunc, class InterleaveUnaryFunc>
+void interleaved_for_each(R&& r, UnaryFunc f, InterleaveUnaryFunc interleave)
+{
+    auto it = r.begin();
+    if (it == r.end())
+    {
+        return;
+    }
+
+    f(*it);
+    ++it;
+
+    for (; it != r.end(); ++it)
+    {
+        interleave(*it);
+        f(*it);
+    }
+}
 
 AstPrinter::AstPrinter(std::ostream& out) : out_{out}, indent_{out_} {}
 
@@ -149,11 +170,11 @@ void AstPrinter::Visit(const Call& call)
 {
     call.function->Accept(*this);
     out_ << "(";
-    for (auto& argument : *call.arguments)
-    {
-        argument->Accept(*this);
-        out_ << ", ";
-    }
+    interleaved_for_each(
+        *call.arguments,
+        [&](const auto& argument) { argument->Accept(*this); },
+        [&](const auto& argument) { out_ << ", "; }
+    );
     out_ << ")";
 }
 
@@ -168,12 +189,15 @@ void AstPrinter::Visit(const StringLiteral& literal) { out_ << "\"" << literal.v
 void AstPrinter::Visit(const Function& function)
 {
     out_ << "$(";
-    for (auto& parameter : *function.parameters)
-    {
-        out_ << parameter->name << ": ";
-        parameter->annotation->Accept(*this);
-        out_ << ", ";
-    }
+    interleaved_for_each(
+        *function.parameters,
+        [&](const auto& parameter)
+        {
+            out_ << parameter->name << ": ";
+            parameter->annotation->Accept(*this);
+        },
+        [&](const auto& parameter) { out_ << ", "; }
+    );
     out_ << ") -> ";
     function.return_type_annotation->Accept(*this);
     out_ << "\n{\n";
@@ -251,13 +275,13 @@ void AstPrinter::Visit(const SimpleTypeAnnotation& sta)
 
 void AstPrinter::Visit(const FunctionTypeAnnotation& fta)
 {
-    out_ << "(";
     PrintQualifier(fta.mutability);
-    for (auto& parameter : *fta.parameters)
-    {
-        parameter->Accept(*this);
-        out_ << ", ";
-    }
+    out_ << "(";
+    interleaved_for_each(
+        *fta.parameters,
+        [&](const auto& parameter) { parameter->Accept(*this); },
+        [&](const auto& parameter) { out_ << ", "; }
+    );
     out_ << ") -> ";
     fta.return_type->Accept(*this);
 }
