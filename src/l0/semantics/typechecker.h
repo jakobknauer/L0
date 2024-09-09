@@ -15,7 +15,7 @@
 namespace l0
 {
 
-class Typechecker : private IConstExpressionVisitor, private IConstStatementVisitor, private IConstTypeExpressionVisitor
+class Typechecker : private IConstExpressionVisitor, private IConstStatementVisitor
 {
    public:
     Typechecker(Module& module);
@@ -50,8 +50,6 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
     void Visit(const Function& function) override;
     void Visit(const Initializer& initializer) override;
     void Visit(const Allocation& allocation) override;
-
-    void Visit(const StructExpression& struct_expression) override;
 
     std::shared_ptr<Expression> GetInitialValue(std::shared_ptr<Type> type) const;
 };

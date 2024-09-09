@@ -59,7 +59,36 @@ void Typechecker::Visit(const Declaration& declaration)
     }
 }
 
-void Typechecker::Visit(const TypeDeclaration& type_declaration) { type_declaration.definition->Accept(*this); }
+void Typechecker::Visit(const TypeDeclaration& type_declaration)
+{
+    auto type = module_.globals->GetTypeDefinition(type_declaration.name);
+    auto struct_type = dynamic_pointer_cast<StructType>(type);
+    if (!struct_type)
+    {
+        throw SemanticError(std::format("Expected struct type as global type, got '{}'.", type->ToString()));
+    }
+    for (const auto& member : *struct_type->members)
+    {
+        if (!member->default_initializer)
+        {
+            continue;
+        }
+
+        member->default_initializer->Accept(*this);
+        auto initializer_type = member->default_initializer->type;
+        auto annotated_type = member->type;
+
+        if (!conversion_checker_.CheckCompatibility(annotated_type, initializer_type))
+        {
+            throw SemanticError(std::format(
+                "Member '{}' is declared with type '{}', but default initializer has incompatible type '{}'.",
+                member->name,
+                annotated_type->ToString(),
+                initializer_type->ToString()
+            ));
+        }
+    }
+}
 
 void Typechecker::Visit(const ExpressionStatement& expression_statement)
 {
@@ -364,31 +393,6 @@ void Typechecker::Visit(const Allocation& allocation)
         allocation.initial_value->Accept(*this);
     }
     allocation.initial_value->Accept(*this);
-}
-
-void Typechecker::Visit(const StructExpression& struct_expression)
-{
-    for (const auto& member_declaration : *struct_expression.members)
-    {
-        if (!member_declaration->initializer)
-        {
-            continue;
-        }
-
-        member_declaration->initializer->Accept(*this);
-        auto initializer_type = member_declaration->initializer->type;
-        auto annotated_type = type_resolver_.Convert(*member_declaration->annotation);
-
-        if (!conversion_checker_.CheckCompatibility(annotated_type, initializer_type))
-        {
-            throw SemanticError(std::format(
-                "Member '{}' is declared with type '{}', buth is initialized with value of incompatible type '{}'.",
-                member_declaration->variable,
-                annotated_type->ToString(),
-                initializer_type->ToString()
-            ));
-        }
-    }
 }
 
 std::shared_ptr<Expression> Typechecker::GetInitialValue(std::shared_ptr<Type> type) const
