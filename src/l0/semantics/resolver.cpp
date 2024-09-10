@@ -7,7 +7,10 @@
 namespace l0
 {
 
-Resolver::Resolver(const Module& module) : module_{module} {}
+Resolver::Resolver(const Module& module)
+    : module_{module}
+{
+}
 
 void Resolver::Check()
 {
@@ -39,14 +42,20 @@ void Resolver::Visit(const Declaration& declaration)
     }
 }
 
-void Resolver::Visit(const TypeDeclaration& type_declaration) { type_declaration.definition->Accept(*this); }
+void Resolver::Visit(const TypeDeclaration& type_declaration)
+{
+    type_declaration.definition->Accept(*this);
+}
 
 void Resolver::Visit(const ExpressionStatement& expression_statement)
 {
     expression_statement.expression->Accept(*this);
 }
 
-void Resolver::Visit(const ReturnStatement& return_statement) { return_statement.value->Accept(*this); }
+void Resolver::Visit(const ReturnStatement& return_statement)
+{
+    return_statement.value->Accept(*this);
+}
 
 void Resolver::Visit(const ConditionalStatement& conditional_statement)
 {
@@ -84,7 +93,10 @@ void Resolver::Visit(const WhileLoop& while_loop)
     scopes_.pop_back();
 }
 
-void Resolver::Visit(const Deallocation& deallocation) { deallocation.reference->Accept(*this); }
+void Resolver::Visit(const Deallocation& deallocation)
+{
+    deallocation.reference->Accept(*this);
+}
 
 void Resolver::Visit(const Assignment& assignment)
 {
@@ -92,7 +104,10 @@ void Resolver::Visit(const Assignment& assignment)
     assignment.expression->Accept(*this);
 }
 
-void Resolver::Visit(const UnaryOp& unary_op) { unary_op.operand->Accept(*this); }
+void Resolver::Visit(const UnaryOp& unary_op)
+{
+    unary_op.operand->Accept(*this);
+}
 
 void Resolver::Visit(const BinaryOp& binary_op)
 {
@@ -100,9 +115,15 @@ void Resolver::Visit(const BinaryOp& binary_op)
     binary_op.right->Accept(*this);
 }
 
-void Resolver::Visit(const Variable& variable) { variable.scope = Resolve(variable.name); }
+void Resolver::Visit(const Variable& variable)
+{
+    variable.scope = Resolve(variable.name);
+}
 
-void Resolver::Visit(const MemberAccessor& member_accessor) { member_accessor.object->Accept(*this); }
+void Resolver::Visit(const MemberAccessor& member_accessor)
+{
+    member_accessor.object->Accept(*this);
+}
 
 void Resolver::Visit(const Call& call)
 {

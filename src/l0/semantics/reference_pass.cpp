@@ -5,7 +5,10 @@
 namespace l0
 {
 
-ReferencePass::ReferencePass(Module& module) : module_{module} {}
+ReferencePass::ReferencePass(Module& module)
+    : module_{module}
+{
+}
 
 void ReferencePass::Run()
 {
@@ -15,13 +18,25 @@ void ReferencePass::Run()
     }
 }
 
-void ReferencePass::Visit(Declaration& declaration) { declaration.initializer->Accept(*this); }
+void ReferencePass::Visit(Declaration& declaration)
+{
+    declaration.initializer->Accept(*this);
+}
 
-void ReferencePass::Visit(TypeDeclaration& type_declaration) { type_declaration.definition->Accept(*this); }
+void ReferencePass::Visit(TypeDeclaration& type_declaration)
+{
+    type_declaration.definition->Accept(*this);
+}
 
-void ReferencePass::Visit(ExpressionStatement& expression_statement) { expression_statement.expression->Accept(*this); }
+void ReferencePass::Visit(ExpressionStatement& expression_statement)
+{
+    expression_statement.expression->Accept(*this);
+}
 
-void ReferencePass::Visit(ReturnStatement& return_statement) { return_statement.value->Accept(*this); }
+void ReferencePass::Visit(ReturnStatement& return_statement)
+{
+    return_statement.value->Accept(*this);
+}
 
 void ReferencePass::Visit(ConditionalStatement& conditional_statement)
 {
@@ -50,7 +65,10 @@ void ReferencePass::Visit(WhileLoop& while_loop)
     }
 }
 
-void ReferencePass::Visit(Deallocation& deallocation) { deallocation.reference->Accept(*this); }
+void ReferencePass::Visit(Deallocation& deallocation)
+{
+    deallocation.reference->Accept(*this);
+}
 
 void ReferencePass::Visit(Assignment& assignment)
 {
@@ -88,7 +106,10 @@ void ReferencePass::Visit(BinaryOp& binary_op)
 
 void ReferencePass::Visit(Variable& variable) {}
 
-void ReferencePass::Visit(MemberAccessor& member_accessor) { member_accessor.object->Accept(*this); }
+void ReferencePass::Visit(MemberAccessor& member_accessor)
+{
+    member_accessor.object->Accept(*this);
+}
 
 void ReferencePass::Visit(Call& call)
 {

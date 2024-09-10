@@ -5,9 +5,15 @@
 namespace l0
 {
 
-Parser::Parser(const std::vector<Token>& tokens) : tokens_{tokens} {}
+Parser::Parser(const std::vector<Token>& tokens)
+    : tokens_{tokens}
+{
+}
 
-std::shared_ptr<Module> Parser::Parse() { return ParseModule(); }
+std::shared_ptr<Module> Parser::Parse()
+{
+    return ParseModule();
+}
 
 Token Parser::Peek()
 {
@@ -46,7 +52,10 @@ Token Parser::Consume()
     return tokens_.at(pos_++);
 }
 
-bool Parser::ConsumeIf(TokenType type) { return ConsumeIf({type}).has_value(); }
+bool Parser::ConsumeIf(TokenType type)
+{
+    return ConsumeIf({type}).has_value();
+}
 
 std::optional<Token> Parser::ConsumeIf(std::initializer_list<TokenType> types)
 {
@@ -287,7 +296,10 @@ std::shared_ptr<Statement> Parser::ParseDeallocation()
     return std::make_shared<Deallocation>(operand);
 }
 
-std::shared_ptr<Expression> Parser::ParseExpression() { return ParseAssignment(); }
+std::shared_ptr<Expression> Parser::ParseExpression()
+{
+    return ParseAssignment();
+}
 
 std::shared_ptr<Expression> Parser::ParseAssignment()
 {
@@ -489,7 +501,7 @@ std::shared_ptr<Expression> Parser::ParseAtomicExpression()
                 Consume();
                 return std::make_shared<UnitLiteral>();
             }
-            // Fall through intended
+            [[fallthrough]];
         }
         default:
         {
@@ -712,7 +724,7 @@ std::shared_ptr<TypeAnnotation> Parser::ParseFunctionTypeAnnotation()
         auto return_value = ParseTypeAnnotation();
         return std::make_shared<FunctionTypeAnnotation>(arguments, return_value);
     }
-    else if (arguments->size() == 0)
+    else if (arguments->empty())
     {
         return std::make_shared<SimpleTypeAnnotation>("()");
     }
@@ -816,8 +828,14 @@ std::shared_ptr<MemberInitializerList> Parser::ParseMemberInitializerList()
     return member_initializer_list;
 }
 
-ParserError::ParserError(std::string message) : message_{message} {}
+ParserError::ParserError(std::string message)
+    : message_{message}
+{
+}
 
-std::string ParserError::GetMessage() const { return message_; }
+std::string ParserError::GetMessage() const
+{
+    return message_;
+}
 
 }  // namespace l0
