@@ -3,7 +3,8 @@
 namespace l0
 {
 
-TypeConverter::TypeConverter(llvm::LLVMContext& context) : context_{context}
+TypeConverter::TypeConverter(llvm::LLVMContext& context)
+    : context_{context}
 {
     llvm::StructType::create(context_, {}, "Unit", true);
 }
@@ -49,11 +50,20 @@ void TypeConverter::Visit(const ReferenceType& reference_type)
     result_ = llvm::PointerType::get(result_, 0);
 }
 
-void TypeConverter::Visit(const UnitType& unit_type) { result_ = llvm::StructType::getTypeByName(context_, "Unit"); }
+void TypeConverter::Visit(const UnitType& unit_type)
+{
+    result_ = llvm::StructType::getTypeByName(context_, "Unit");
+}
 
-void TypeConverter::Visit(const BooleanType& boolean_type) { result_ = llvm::IntegerType::getInt1Ty(context_); }
+void TypeConverter::Visit(const BooleanType& boolean_type)
+{
+    result_ = llvm::IntegerType::getInt1Ty(context_);
+}
 
-void TypeConverter::Visit(const IntegerType& integer_type) { result_ = llvm::IntegerType::getInt64Ty(context_); }
+void TypeConverter::Visit(const IntegerType& integer_type)
+{
+    result_ = llvm::IntegerType::getInt64Ty(context_);
+}
 
 void TypeConverter::Visit(const StringType& string_type)
 {

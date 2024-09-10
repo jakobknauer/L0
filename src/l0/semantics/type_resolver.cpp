@@ -5,7 +5,10 @@
 namespace l0
 {
 
-TypeResolver::TypeResolver(const Module& module) : module_{module} {}
+TypeResolver::TypeResolver(const Module& module)
+    : module_{module}
+{
+}
 
 std::shared_ptr<Type> TypeResolver::Convert(const TypeAnnotation& annotation)
 {

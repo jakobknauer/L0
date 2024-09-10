@@ -7,7 +7,9 @@
 namespace l0
 {
 
-Typechecker::Typechecker(Module& module) : module_{module}, type_resolver_{module}
+Typechecker::Typechecker(Module& module)
+    : module_{module},
+      type_resolver_{module}
 {
     simple_types_.insert(std::make_pair("Unit", std::make_shared<UnitType>(TypeQualifier::Constant)));
     simple_types_.insert(std::make_pair("Integer", std::make_shared<IntegerType>(TypeQualifier::Constant)));
@@ -95,7 +97,10 @@ void Typechecker::Visit(const ExpressionStatement& expression_statement)
     expression_statement.expression->Accept(*this);
 }
 
-void Typechecker::Visit(const ReturnStatement& return_statement) { return_statement.value->Accept(*this); }
+void Typechecker::Visit(const ReturnStatement& return_statement)
+{
+    return_statement.value->Accept(*this);
+}
 
 void Typechecker::Visit(const ConditionalStatement& conditional_statement)
 {
@@ -194,7 +199,10 @@ void Typechecker::Visit(const BinaryOp& binary_op)
     binary_op.type = operator_overload_resolver_.ResolveBinaryOperator(binary_op.op, lhs, rhs);
 }
 
-void Typechecker::Visit(const Variable& variable) { variable.type = variable.scope->GetVariableType(variable.name); }
+void Typechecker::Visit(const Variable& variable)
+{
+    variable.type = variable.scope->GetVariableType(variable.name);
+}
 
 void Typechecker::Visit(const MemberAccessor& member_accessor)
 {
@@ -348,12 +356,13 @@ void Typechecker::Visit(const Initializer& initializer)
     }
 
     auto not_initialized_members =
-        *struct_type->members |
-        std::views::filter(
+        *struct_type->members
+        | std::views::filter(
             [&](const auto& member)
             { return !member->default_initializer && !explicitely_initialized_members.contains(member->name); }
-        ) |
-        std::views::transform([](const auto& member) { return member->name; }) | std::ranges::to<std::unordered_set>();
+        )
+        | std::views::transform([](const auto& member) { return member->name; })
+        | std::ranges::to<std::unordered_set>();
 
     if (!not_initialized_members.empty())
     {

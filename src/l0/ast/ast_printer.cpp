@@ -24,7 +24,11 @@ void interleaved_for_each(R&& r, UnaryFunc f, InterleaveUnaryFunc interleave)
     }
 }
 
-AstPrinter::AstPrinter(std::ostream& out) : out_{out}, indent_{out_} {}
+AstPrinter::AstPrinter(std::ostream& out)
+    : out_{out},
+      indent_{out_}
+{
+}
 
 void AstPrinter::Print(Module& module)
 {
@@ -40,7 +44,10 @@ void AstPrinter::Print(Statement& statement)
     out_ << ";\n";
 }
 
-void AstPrinter::Print(Expression& expression) { expression.Accept(*this); }
+void AstPrinter::Print(Expression& expression)
+{
+    expression.Accept(*this);
+}
 
 void AstPrinter::Visit(const Declaration& declaration)
 {
@@ -158,7 +165,10 @@ void AstPrinter::Visit(const BinaryOp& binary_op)
     out_ << ")";
 }
 
-void AstPrinter::Visit(const Variable& variable) { out_ << variable.name; }
+void AstPrinter::Visit(const Variable& variable)
+{
+    out_ << variable.name;
+}
 
 void AstPrinter::Visit(const MemberAccessor& member_accessor)
 {
@@ -178,13 +188,25 @@ void AstPrinter::Visit(const Call& call)
     out_ << ")";
 }
 
-void AstPrinter::Visit(const UnitLiteral& literal) { out_ << "unit"; }
+void AstPrinter::Visit(const UnitLiteral& literal)
+{
+    out_ << "unit";
+}
 
-void AstPrinter::Visit(const BooleanLiteral& literal) { out_ << (literal.value ? "true" : "false"); }
+void AstPrinter::Visit(const BooleanLiteral& literal)
+{
+    out_ << (literal.value ? "true" : "false");
+}
 
-void AstPrinter::Visit(const IntegerLiteral& literal) { out_ << literal.value; }
+void AstPrinter::Visit(const IntegerLiteral& literal)
+{
+    out_ << literal.value;
+}
 
-void AstPrinter::Visit(const StringLiteral& literal) { out_ << "\"" << literal.value << "\""; }
+void AstPrinter::Visit(const StringLiteral& literal)
+{
+    out_ << "\"" << literal.value << "\"";
+}
 
 void AstPrinter::Visit(const Function& function)
 {

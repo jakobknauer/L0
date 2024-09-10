@@ -17,18 +17,31 @@ std::string str(TypeQualifier qualifier)
     }
 }
 
-Type::Type(TypeQualifier mutability) : mutability{mutability} {}
-
-bool operator==(const Type& lhs, const Type& rhs) { return typeid(lhs) == typeid(rhs) && lhs.Equals(rhs); }
-
-ReferenceType::ReferenceType(std::shared_ptr<Type> base_type, TypeQualifier mutability)
-    : Type{mutability}, base_type{base_type}
+Type::Type(TypeQualifier mutability)
+    : mutability{mutability}
 {
 }
 
-std::string ReferenceType::ToString() const { return std::format("{}&{}", str(mutability), base_type->ToString()); }
+bool operator==(const Type& lhs, const Type& rhs)
+{
+    return typeid(lhs) == typeid(rhs) && lhs.Equals(rhs);
+}
 
-void ReferenceType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
+ReferenceType::ReferenceType(std::shared_ptr<Type> base_type, TypeQualifier mutability)
+    : Type{mutability},
+      base_type{base_type}
+{
+}
+
+std::string ReferenceType::ToString() const
+{
+    return std::format("{}&{}", str(mutability), base_type->ToString());
+}
+
+void ReferenceType::Accept(IConstTypeVisitor& visitor) const
+{
+    visitor.Visit(*this);
+}
 
 bool ReferenceType::Equals(const Type& other) const
 {
@@ -36,42 +49,92 @@ bool ReferenceType::Equals(const Type& other) const
     return other_as_reference_type && (*base_type == *other_as_reference_type->base_type);
 }
 
-UnitType::UnitType(TypeQualifier mutability) : Type{mutability} {}
+UnitType::UnitType(TypeQualifier mutability)
+    : Type{mutability}
+{
+}
 
-std::string UnitType::ToString() const { return str(mutability) + "()"; }
+std::string UnitType::ToString() const
+{
+    return str(mutability) + "()";
+}
 
-void UnitType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
+void UnitType::Accept(IConstTypeVisitor& visitor) const
+{
+    visitor.Visit(*this);
+}
 
-bool UnitType::Equals(const Type& other) const { return true; }
+bool UnitType::Equals(const Type& other) const
+{
+    return true;
+}
 
-BooleanType::BooleanType(TypeQualifier mutability) : Type{mutability} {}
+BooleanType::BooleanType(TypeQualifier mutability)
+    : Type{mutability}
+{
+}
 
-std::string BooleanType::ToString() const { return str(mutability) + "Boolean"; }
+std::string BooleanType::ToString() const
+{
+    return str(mutability) + "Boolean";
+}
 
-void BooleanType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
+void BooleanType::Accept(IConstTypeVisitor& visitor) const
+{
+    visitor.Visit(*this);
+}
 
-bool BooleanType::Equals(const Type& other) const { return true; }
+bool BooleanType::Equals(const Type& other) const
+{
+    return true;
+}
 
-IntegerType::IntegerType(TypeQualifier mutability) : Type{mutability} {}
+IntegerType::IntegerType(TypeQualifier mutability)
+    : Type{mutability}
+{
+}
 
-std::string IntegerType::ToString() const { return str(mutability) + "Integer"; }
+std::string IntegerType::ToString() const
+{
+    return str(mutability) + "Integer";
+}
 
-void IntegerType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
+void IntegerType::Accept(IConstTypeVisitor& visitor) const
+{
+    visitor.Visit(*this);
+}
 
-bool IntegerType::Equals(const Type& other) const { return true; }
+bool IntegerType::Equals(const Type& other) const
+{
+    return true;
+}
 
-StringType::StringType(TypeQualifier mutability) : Type{mutability} {}
+StringType::StringType(TypeQualifier mutability)
+    : Type{mutability}
+{
+}
 
-std::string StringType::ToString() const { return str(mutability) + "String"; }
+std::string StringType::ToString() const
+{
+    return str(mutability) + "String";
+}
 
-void StringType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
+void StringType::Accept(IConstTypeVisitor& visitor) const
+{
+    visitor.Visit(*this);
+}
 
-bool StringType::Equals(const Type& other) const { return true; }
+bool StringType::Equals(const Type& other) const
+{
+    return true;
+}
 
 FunctionType::FunctionType(
     std::shared_ptr<ParameterList> parameters, std::shared_ptr<Type> return_type, TypeQualifier mutability
 )
-    : Type{mutability}, parameters{parameters}, return_type{return_type}
+    : Type{mutability},
+      parameters{parameters},
+      return_type{return_type}
 {
 }
 
@@ -88,26 +151,37 @@ std::string FunctionType::ToString() const
     return ss.str();
 }
 
-void FunctionType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
+void FunctionType::Accept(IConstTypeVisitor& visitor) const
+{
+    visitor.Visit(*this);
+}
 
 bool FunctionType::Equals(const Type& other) const
 {
     const FunctionType* real_other = static_cast<const FunctionType*>(&other);
 
-    return (*this->return_type == *real_other->return_type) &&
-           std::ranges::equal(
+    return (*this->return_type == *real_other->return_type)
+        && std::ranges::equal(
                *this->parameters, *real_other->parameters, [](const auto& lhs, const auto& rhs) { return *lhs == *rhs; }
-           );
+        );
 }
 
 StructType::StructType(std::string name, std::shared_ptr<StructMemberList> members, TypeQualifier mutability)
-    : Type{mutability}, name{name}, members{members}
+    : Type{mutability},
+      name{name},
+      members{members}
 {
 }
 
-std::string StructType::ToString() const { return name; }
+std::string StructType::ToString() const
+{
+    return name;
+}
 
-void StructType::Accept(IConstTypeVisitor& visitor) const { visitor.Visit(*this); }
+void StructType::Accept(IConstTypeVisitor& visitor) const
+{
+    visitor.Visit(*this);
+}
 
 bool StructType::HasMember(std::string name) const
 {
@@ -154,13 +228,25 @@ class ModifyQualifierVisitor : private IConstTypeVisitor
         result_ = std::make_shared<ReferenceType>(reference_type.base_type, qualifier_);
     }
 
-    void Visit(const UnitType& unit_type) { result_ = std::make_shared<UnitType>(qualifier_); }
+    void Visit(const UnitType& unit_type)
+    {
+        result_ = std::make_shared<UnitType>(qualifier_);
+    }
 
-    void Visit(const BooleanType& boolean_type) { result_ = std::make_shared<BooleanType>(qualifier_); }
+    void Visit(const BooleanType& boolean_type)
+    {
+        result_ = std::make_shared<BooleanType>(qualifier_);
+    }
 
-    void Visit(const IntegerType& integer_type) { result_ = std::make_shared<IntegerType>(qualifier_); }
+    void Visit(const IntegerType& integer_type)
+    {
+        result_ = std::make_shared<IntegerType>(qualifier_);
+    }
 
-    void Visit(const StringType& string_type) { result_ = std::make_shared<StringType>(qualifier_); }
+    void Visit(const StringType& string_type)
+    {
+        result_ = std::make_shared<StringType>(qualifier_);
+    }
 
     void Visit(const FunctionType& function_type)
     {

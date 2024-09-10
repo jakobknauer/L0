@@ -21,8 +21,8 @@ void ConversionChecker::Visit(const ReferenceType& reference_type)
         return;
     }
 
-    if (reference_type.base_type->mutability == TypeQualifier::Mutable &&
-        value_as_reference_type->base_type->mutability == TypeQualifier::Constant)
+    if (reference_type.base_type->mutability == TypeQualifier::Mutable
+        && value_as_reference_type->base_type->mutability == TypeQualifier::Constant)
     {
         result_ = false;
         return;
@@ -33,7 +33,10 @@ void ConversionChecker::Visit(const ReferenceType& reference_type)
     // leave result_ as is
 }
 
-void ConversionChecker::Visit(const UnitType& unit_type) { result_ = bool{dynamic_pointer_cast<UnitType>(value_)}; }
+void ConversionChecker::Visit(const UnitType& unit_type)
+{
+    result_ = bool{dynamic_pointer_cast<UnitType>(value_)};
+}
 
 void ConversionChecker::Visit(const BooleanType& boolean_type)
 {

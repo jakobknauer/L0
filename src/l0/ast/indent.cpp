@@ -4,12 +4,17 @@ namespace l0::detail
 {
 
 Indent::Indent(std::ostream& stream, std::size_t tab_width)
-    : streambuf_{stream.rdbuf()}, stream_{stream}, tab_width{tab_width}
+    : streambuf_{stream.rdbuf()},
+      stream_{stream},
+      tab_width{tab_width}
 {
     stream_.rdbuf(this);
 }
 
-Indent::~Indent() { stream_.rdbuf(streambuf_); }
+Indent::~Indent()
+{
+    stream_.rdbuf(streambuf_);
+}
 
 Indent& Indent::operator++()
 {
@@ -34,6 +39,9 @@ int Indent::overflow(int ch)
     return streambuf_->sputc(ch);
 }
 
-std::string Indent::GetIndent() const { return std::string(tab_width * indentation_level_, ' '); }
+std::string Indent::GetIndent() const
+{
+    return std::string(tab_width * indentation_level_, ' ');
+}
 
 }  // namespace l0::detail

@@ -5,9 +5,15 @@
 namespace l0
 {
 
-ReturnStatementPass::ReturnStatementPass(Module& module) : module_{module} {}
+ReturnStatementPass::ReturnStatementPass(Module& module)
+    : module_{module}
+{
+}
 
-void ReturnStatementPass::Run() { Visit(*module_.statements); }
+void ReturnStatementPass::Run()
+{
+    Visit(*module_.statements);
+}
 
 void ReturnStatementPass::Visit(Declaration& declaration)
 {
@@ -15,7 +21,10 @@ void ReturnStatementPass::Visit(Declaration& declaration)
     statement_returns_ = false;
 }
 
-void ReturnStatementPass::Visit(TypeDeclaration& type_declaration) { type_declaration.definition->Accept(*this); }
+void ReturnStatementPass::Visit(TypeDeclaration& type_declaration)
+{
+    type_declaration.definition->Accept(*this);
+}
 
 void ReturnStatementPass::Visit(ExpressionStatement& expression_statement)
 {
@@ -74,7 +83,10 @@ void ReturnStatementPass::Visit(Assignment& assignment)
     assignment.expression->Accept(*this);
 }
 
-void ReturnStatementPass::Visit(UnaryOp& unary_op) { unary_op.operand->Accept(*this); }
+void ReturnStatementPass::Visit(UnaryOp& unary_op)
+{
+    unary_op.operand->Accept(*this);
+}
 
 void ReturnStatementPass::Visit(BinaryOp& binary_op)
 {
@@ -84,7 +96,10 @@ void ReturnStatementPass::Visit(BinaryOp& binary_op)
 
 void ReturnStatementPass::Visit(Variable& variable) {}
 
-void ReturnStatementPass::Visit(MemberAccessor& member_accessor) { member_accessor.object->Accept(*this); }
+void ReturnStatementPass::Visit(MemberAccessor& member_accessor)
+{
+    member_accessor.object->Accept(*this);
+}
 
 void ReturnStatementPass::Visit(Call& call)
 {

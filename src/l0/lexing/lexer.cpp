@@ -9,8 +9,14 @@ namespace l0
 namespace
 {
 
-bool IsValidFirstIdentifierCharacter(char c) { return std::isalpha(c) || c == '_'; }
-bool IsValidIdentifierCharacter(char c) { return std::isalpha(c) || std::isdigit(c) || c == '_'; }
+bool IsValidFirstIdentifierCharacter(char c)
+{
+    return std::isalpha(c) || c == '_';
+}
+bool IsValidIdentifierCharacter(char c)
+{
+    return std::isalpha(c) || std::isdigit(c) || c == '_';
+}
 
 }  // namespace
 
@@ -85,9 +91,15 @@ std::vector<Token> Lexer::GetTokens()
     return tokens;
 }
 
-bool Lexer::AtEnd() const { return input_->eof(); }
+bool Lexer::AtEnd() const
+{
+    return input_->eof();
+}
 
-char Lexer::Read() { return current_ = input_->get(); }
+char Lexer::Read()
+{
+    return current_ = input_->get();
+}
 
 char Lexer::Skip()
 {
@@ -243,8 +255,14 @@ Token Lexer::ReadStringLiteral()
     };
 }
 
-LexerError::LexerError(std::string message) : message_{message} {}
+LexerError::LexerError(std::string message)
+    : message_{message}
+{
+}
 
-std::string LexerError::GetMessage() const { return message_; }
+std::string LexerError::GetMessage() const
+{
+    return message_;
+}
 
 }  // namespace l0

@@ -27,7 +27,10 @@ constexpr std::string kAllocationBlockName{"allocas"};
 }  // namespace
 
 Generator::Generator(Module& module)
-    : ast_module_{module}, builder_{context_}, llvm_module_{module.name, context_}, type_converter_{context_}
+    : ast_module_{module},
+      builder_{context_},
+      llvm_module_{module.name, context_},
+      type_converter_{context_}
 {
 }
 
@@ -557,7 +560,10 @@ void Generator::Visit(const IntegerLiteral& literal)
     result_ = llvm::ConstantInt::get(type, literal.value);
 }
 
-void Generator::Visit(const StringLiteral& literal) { result_ = builder_.CreateGlobalString(literal.value); }
+void Generator::Visit(const StringLiteral& literal)
+{
+    result_ = builder_.CreateGlobalString(literal.value);
+}
 
 void Generator::Visit(const Function& function)
 {
@@ -673,15 +679,16 @@ std::vector<std::tuple<std::string, llvm::Value*>> Generator::GetActualMemberIni
     const MemberInitializerList& explicit_initializers, const StructType& struct_type
 )
 {
-    const auto explicitely_initialized_members =
-        explicit_initializers |
-        std::views::transform([](const auto& member_initializer) { return member_initializer->member; }) |
-        std::ranges::to<std::unordered_set>();
+    // clang-format off
+    const auto explicitely_initialized_members = explicit_initializers
+        | std::views::transform([](const auto& member_initializer) { return member_initializer->member; })
+        | std::ranges::to<std::unordered_set>();
 
-    auto default_initialized_members =
-        *struct_type.members | std::views::transform([](const auto& member) { return member->name; }) |
-        std::views::filter([&](const std::string& member) { return !explicitely_initialized_members.contains(member); }
-        );
+    auto default_initialized_members = *struct_type.members
+        | std::views::transform([](const auto& member) { return member->name; })
+        | std::views::filter([&](const std::string& member)
+                             { return !explicitely_initialized_members.contains(member); });
+    // clang-format on
 
     std::vector<std::tuple<std::string, llvm::Value*>> actual_initializers{};
 

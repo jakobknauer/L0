@@ -19,7 +19,10 @@ void Scope::DeclareVariable(const std::string& name, std::shared_ptr<Type> type)
     SetVariableType(name, type);
 }
 
-bool Scope::IsVariableDeclared(const std::string& name) const { return variables_.contains(name); }
+bool Scope::IsVariableDeclared(const std::string& name) const
+{
+    return variables_.contains(name);
+}
 
 void Scope::SetVariableType(const std::string& name, std::shared_ptr<Type> type)
 {
@@ -36,7 +39,10 @@ void Scope::SetVariableType(const std::string& name, std::shared_ptr<Type> type)
     variable_types_.insert(std::make_pair(name, type));
 }
 
-bool Scope::IsVariableTypeSet(const std::string& name) const { return variable_types_.contains(name); }
+bool Scope::IsVariableTypeSet(const std::string& name) const
+{
+    return variable_types_.contains(name);
+}
 
 std::shared_ptr<Type> Scope::GetVariableType(const std::string& name) const
 {
@@ -93,7 +99,10 @@ void Scope::DeclareType(const std::string& name)
     types_.insert(name);
 }
 
-bool Scope::IsTypeDeclared(const std::string& name) const { return types_.contains(name); }
+bool Scope::IsTypeDeclared(const std::string& name) const
+{
+    return types_.contains(name);
+}
 
 void Scope::DefineType(const std::string& name, std::shared_ptr<Type> type)
 {
@@ -110,7 +119,10 @@ void Scope::DefineType(const std::string& name, std::shared_ptr<Type> type)
     type_definitions_.insert({name, type});
 }
 
-bool Scope::IsTypeDefined(const std::string& name) const { return type_definitions_.contains(name); }
+bool Scope::IsTypeDefined(const std::string& name) const
+{
+    return type_definitions_.contains(name);
+}
 
 std::shared_ptr<Type> Scope::GetTypeDefinition(const std::string& name) const
 {
@@ -129,12 +141,24 @@ void Scope::Clear()
     variables_.clear();
 }
 
-const std::unordered_set<std::string>& Scope::GetVariables() const { return variables_; }
+const std::unordered_set<std::string>& Scope::GetVariables() const
+{
+    return variables_;
+}
 
-const std::unordered_set<std::string>& Scope::GetTypes() const { return types_; }
+const std::unordered_set<std::string>& Scope::GetTypes() const
+{
+    return types_;
+}
 
-ScopeError::ScopeError(const std::string& message) : message_{message} {}
+ScopeError::ScopeError(const std::string& message)
+    : message_{message}
+{
+}
 
-std::string ScopeError::GetMessage() const { return message_; }
+std::string ScopeError::GetMessage() const
+{
+    return message_;
+}
 
 }  // namespace l0

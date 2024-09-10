@@ -7,3 +7,7 @@ BreakBeforeBraces: Allman
 AlignAfterOpenBracket: BlockIndent
 BinPackArguments: false
 BinPackParameters: false
+AllowShortFunctionsOnASingleLine: Empty
+PackConstructorInitializers: Never
+AlignOperands: AlignAfterOperator
+BreakBeforeBinaryOperators: NonAssignment
