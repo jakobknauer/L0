@@ -238,38 +238,16 @@ void Typechecker::Visit(const MemberAccessor& member_accessor)
 void Typechecker::Visit(const Call& call)
 {
     call.function->Accept(*this);
-    auto function_type = dynamic_pointer_cast<FunctionType>(call.function->type);
 
-    if (!function_type)
+    if (IsMethodCall(call))
     {
-        throw SemanticError(std::format("Cannot call value of non-function type {}.", call.function->type->ToString()));
+        call.is_method_call = true;
+        CheckMethodCall(call);
     }
-
-    if (call.arguments->size() != function_type->parameters->size())
+    else
     {
-        throw SemanticError(std::format(
-            "Expected {} arguments to function call, got {}.", function_type->parameters->size(), call.arguments->size()
-        ));
+        CheckFunctionCall(call);
     }
-
-    for (auto i = 0zu; i < call.arguments->size(); ++i)
-    {
-        auto expected = function_type->parameters->at(i);
-        call.arguments->at(i)->Accept(*this);
-        auto actual = call.arguments->at(i)->type;
-
-        if (!conversion_checker_.CheckCompatibility(expected, actual))
-        {
-            throw SemanticError(std::format(
-                "Expected value of type '{}' as argument #{}, got incompatible type '{}' instead.",
-                expected->ToString(),
-                i,
-                actual->ToString()
-            ));
-        }
-    }
-
-    call.type = function_type->return_type;
 }
 
 void Typechecker::Visit(const UnitLiteral& literal)
@@ -424,6 +402,100 @@ std::shared_ptr<Expression> Typechecker::GetInitialValue(std::shared_ptr<Type> t
     }
 
     throw SemanticError(std::format("Cannot create initial value of type '{}'.", type->ToString()));
+}
+
+bool Typechecker::IsMethodCall(const Call& call) const
+{
+    auto member_accessor = dynamic_pointer_cast<MemberAccessor>(call.function);
+
+    if (!member_accessor)
+    {
+        return false;
+    }
+
+    auto member = member_accessor->object_type->GetMember(member_accessor->member);
+    return member->is_method;
+}
+
+void Typechecker::CheckFunctionCall(const Call& call)
+{
+    auto function_type = dynamic_pointer_cast<FunctionType>(call.function->type);
+    if (!function_type)
+    {
+        throw SemanticError(std::format("Cannot call value of non-function type {}.", call.function->type->ToString()));
+    }
+    auto parameter_types = std::views::all(*function_type->parameters);
+
+    std::ranges::for_each(*call.arguments, [&](auto argument) { argument->Accept(*this); });
+    auto argument_types = *call.arguments | std::views::transform([](auto argument) { return argument->type; });
+
+    if (parameter_types.size() != argument_types.size())
+    {
+        throw SemanticError(std::format(
+            "Expected {} arguments to function call, got {}.", parameter_types.size(), argument_types.size()
+        ));
+    }
+
+    auto indices = std::views::iota(1);
+
+    for (auto [index, expected, actual] : std::views::zip(indices, parameter_types, argument_types))
+    {
+        if (!conversion_checker_.CheckCompatibility(expected, actual))
+        {
+            throw SemanticError(std::format(
+                "Expected value of type '{}' as argument #{}, got incompatible type '{}' instead.",
+                expected->ToString(),
+                index,
+                actual->ToString()
+            ));
+        }
+    }
+
+    call.type = function_type->return_type;
+}
+
+void Typechecker::CheckMethodCall(const Call& call)
+{
+    auto function_type = dynamic_pointer_cast<FunctionType>(call.function->type);
+    if (!function_type)
+    {
+        throw SemanticError(std::format("Cannot call value of non-function type {}.", call.function->type->ToString()));
+    }
+    auto parameter_types = std::views::all(*function_type->parameters);
+
+    std::vector<std::shared_ptr<Type>> argument_types{};
+
+    auto this_type = dynamic_pointer_cast<MemberAccessor>(call.function)->object_type;
+    argument_types.push_back(std::make_shared<ReferenceType>(this_type, TypeQualifier::Mutable));
+
+    std::ranges::for_each(*call.arguments, [&](auto argument) { argument->Accept(*this); });
+    auto explicit_arguments = *call.arguments | std::views::transform([](auto argument) { return argument->type; })
+                            | std::ranges::to<std::vector>();
+    argument_types.insert(argument_types.end(), explicit_arguments.begin(), explicit_arguments.end());
+
+    if (parameter_types.size() != argument_types.size())
+    {
+        throw SemanticError(
+            std::format("Expected {} arguments to method call, got {}.", parameter_types.size(), argument_types.size())
+        );
+    }
+
+    auto indices = std::views::iota(1);
+
+    for (auto [index, expected, actual] : std::views::zip(indices, parameter_types, argument_types))
+    {
+        if (!conversion_checker_.CheckCompatibility(expected, actual))
+        {
+            throw SemanticError(std::format(
+                "Expected value of type '{}' as argument #{}, got incompatible type '{}' instead.",
+                expected->ToString(),
+                index,
+                actual->ToString()
+            ));
+        }
+    }
+
+    call.type = function_type->return_type;
 }
 
 }  // namespace l0

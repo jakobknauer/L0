@@ -62,6 +62,16 @@ class FunctionTypeAnnotation : public TypeAnnotation
     std::shared_ptr<TypeAnnotation> return_type;
 };
 
+class MethodTypeAnnotation : public TypeAnnotation
+{
+   public:
+    MethodTypeAnnotation(std::shared_ptr<FunctionTypeAnnotation> function_type);
+
+    void Accept(ITypeAnnotationVisitor& visitor) const override;
+
+    std::shared_ptr<FunctionTypeAnnotation> function_type;
+};
+
 class ITypeAnnotationVisitor
 {
    public:
@@ -70,6 +80,7 @@ class ITypeAnnotationVisitor
     virtual void Visit(const SimpleTypeAnnotation& sta) = 0;
     virtual void Visit(const ReferenceTypeAnnotation& rta) = 0;
     virtual void Visit(const FunctionTypeAnnotation& fta) = 0;
+    virtual void Visit(const MethodTypeAnnotation& mta) = 0;
 };
 
 }  // namespace l0

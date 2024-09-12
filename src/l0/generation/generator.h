@@ -33,6 +33,8 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
 
     TypeConverter type_converter_;
     llvm::Value* result_;
+    llvm::Value* result_address_;
+    llvm::Value* object_ptr_;
 
     void DeclareExternals();
     void DeclareGlobalTypes();
@@ -69,6 +71,8 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     std::vector<std::tuple<std::string, llvm::Value*>> GetActualMemberInitializers(
         const MemberInitializerList& explicit_initializers, const StructType& struct_type
     );
+
+    void GenerateResultAddress();
 };
 
 }  // namespace l0

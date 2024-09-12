@@ -685,10 +685,20 @@ std::shared_ptr<TypeAnnotation> Parser::ParseUnqualifiedTypeAnnotation()
         {
             return ParseFunctionTypeAnnotation();
         }
+        case TokenType::Keyword:
+        {
+            if (PeekIsKeyword("method"))
+            {
+                return ParseMethodTypeAnnotation();
+            }
+            [[fallthrough]];
+        }
         default:
         {
             throw ParserError(std::format(
-                "Expected identifier, '&', '(', got token '{}' of type {} instead.", token.lexeme, str(token.type)
+                "Expected identifier, '&', '(', or 'method', got token '{}' of type {} instead.",
+                token.lexeme,
+                str(token.type)
             ));
         }
     }
@@ -735,6 +745,18 @@ std::shared_ptr<TypeAnnotation> Parser::ParseFunctionTypeAnnotation()
             "Expected '->' after non-empty type list, got token '{}' of type {} instead.", token.lexeme, str(token.type)
         ));
     }
+}
+
+std::shared_ptr<TypeAnnotation> Parser::ParseMethodTypeAnnotation()
+{
+    ExpectKeyword("method");
+    auto inner = ParseFunctionTypeAnnotation();
+    auto inner_as_function_type = dynamic_pointer_cast<FunctionTypeAnnotation>(inner);
+    if (!inner)
+    {
+        throw ParserError(std::format("Expected function type annotation after 'method'."));
+    }
+    return std::make_shared<MethodTypeAnnotation>(inner_as_function_type);
 }
 
 std::shared_ptr<ParameterListAnnotation> Parser::ParseParameterListAnnotation()

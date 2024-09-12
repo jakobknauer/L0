@@ -52,6 +52,10 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
     void Visit(const Allocation& allocation) override;
 
     std::shared_ptr<Expression> GetInitialValue(std::shared_ptr<Type> type) const;
+
+    bool IsMethodCall(const Call& call) const;
+    void CheckFunctionCall(const Call& call);
+    void CheckMethodCall(const Call& call);
 };
 
 }  // namespace l0

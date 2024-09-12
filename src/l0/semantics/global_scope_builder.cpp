@@ -82,8 +82,18 @@ void GlobalScopeBuilder::FillTypeDetails(std::shared_ptr<TypeDeclaration> type_d
     {
         auto member = std::make_shared<StructMember>();
         member->name = member_declaration->variable;
-        member->type = type_resolver_.Convert(*member_declaration->annotation);
         member->default_initializer = member_declaration->initializer;
+
+        if (auto method_annotation = dynamic_pointer_cast<MethodTypeAnnotation>(member_declaration->annotation))
+        {
+            member->type = type_resolver_.Convert(*method_annotation->function_type);
+            member->is_method = true;
+        }
+        else
+        {
+            member->type = type_resolver_.Convert(*member_declaration->annotation);
+        }
+
         struct_type->members->push_back(member);
     }
 }

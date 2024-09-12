@@ -338,32 +338,15 @@ void Generator::Visit(const Deallocation& deallocation)
 void Generator::Visit(const Assignment& assignment)
 {
     // ReferencePass sets target_address
-    assignment.target_address.object_ref->Accept(*this);
-    auto target_object = result_;
-
-    llvm::Value* target_address;
-    if (assignment.target_address.member_indices.empty())
-    {
-        target_address = target_object;
-    }
-    else
-    {
-        auto target_object_type = type_converter_.Convert(*assignment.target_address.object_type);
-        llvm::Type* integer_type = llvm::Type::getInt32Ty(context_);
-        std::vector<llvm::Value*> indices{llvm::ConstantInt::get(integer_type, 0)};
-        for (auto index : assignment.target_address.member_indices)
-        {
-            auto llvm_index = llvm::ConstantInt::get(integer_type, index);
-            indices.push_back(llvm_index);
-        }
-        target_address = builder_.CreateGEP(target_object_type, target_object, indices, "assign_geptmp");
-    }
+    assignment.target->Accept(*this);
+    auto target_address = result_address_;
 
     assignment.expression->Accept(*this);
     auto value = result_;
 
     builder_.CreateStore(value, target_address);
     // leave result_ as it is :)
+    result_address_ = target_address;
 }
 
 void Generator::Visit(const UnaryOp& unary_op)
@@ -373,8 +356,7 @@ void Generator::Visit(const UnaryOp& unary_op)
         case UnaryOp::Operator::Plus:
         {
             unary_op.operand->Accept(*this);
-            llvm::Value* operand = result_;
-            result_ = operand;
+            // leave result_ and result_address
             break;
         }
         case l0::UnaryOp::Operator::Minus:
@@ -382,6 +364,7 @@ void Generator::Visit(const UnaryOp& unary_op)
             unary_op.operand->Accept(*this);
             llvm::Value* operand = result_;
             result_ = builder_.CreateNeg(operand, "negtmp");
+            GenerateResultAddress();
             break;
         }
         case l0::UnaryOp::Operator::Bang:
@@ -389,22 +372,14 @@ void Generator::Visit(const UnaryOp& unary_op)
             unary_op.operand->Accept(*this);
             llvm::Value* operand = result_;
             result_ = builder_.CreateNot(operand, "nottmp");
+            GenerateResultAddress();
             break;
         }
         case l0::UnaryOp::Operator::Ampersand:
         {
-            // ReferencePass guarentees that the operand is an lvalue
-            if (auto variable = dynamic_pointer_cast<Variable>(unary_op.operand))
-            {
-                result_ = variable->scope->GetLLVMValue(variable->name);
-                break;
-            }
-
-            auto dereference = dynamic_pointer_cast<UnaryOp>(unary_op.operand);
-            assert(dereference && (dereference->op == UnaryOp::Operator::Asterisk));
-
-            dereference->operand->Accept(*this);
-            // Leave result as is
+            unary_op.operand->Accept(*this);
+            result_ = result_address_;
+            GenerateResultAddress();
             break;
         }
         case l0::UnaryOp::Operator::Asterisk:
@@ -413,6 +388,7 @@ void Generator::Visit(const UnaryOp& unary_op)
             auto address = result_;
             auto llvm_type = type_converter_.Convert(*unary_op.type);
             result_ = builder_.CreateLoad(llvm_type, address, "dereftmp");
+            result_address_ = address;
         }
     }
 }
@@ -434,41 +410,49 @@ void Generator::Visit(const BinaryOp& binary_op)
                 auto llvm_type = type_converter_.Convert(*reference_type->base_type);
                 std::vector<llvm::Value*> indices = {right};
                 result_ = builder_.CreateGEP(llvm_type, left, indices, "geptmp");
+                GenerateResultAddress();
             }
             else
             {
                 result_ = builder_.CreateAdd(left, right, "addtmp");
+                GenerateResultAddress();
             }
             break;
         }
         case BinaryOp::Operator::Minus:
         {
             result_ = builder_.CreateSub(left, right, "subtmp");
+            GenerateResultAddress();
             break;
         }
         case BinaryOp::Operator::Asterisk:
         {
             result_ = builder_.CreateMul(left, right, "multmp");
+            GenerateResultAddress();
             break;
         }
         case BinaryOp::Operator::AmpersandAmpersand:
         {
             result_ = builder_.CreateLogicalAnd(left, right, "andtmp");
+            GenerateResultAddress();
             break;
         }
         case BinaryOp::Operator::PipePipe:
         {
             result_ = builder_.CreateLogicalOr(left, right, "ortmp");
+            GenerateResultAddress();
             break;
         }
         case BinaryOp::Operator::EqualsEquals:
         {
             result_ = builder_.CreateICmpEQ(left, right, "eqtmp");
+            GenerateResultAddress();
             break;
         }
         case BinaryOp::Operator::BangEquals:
         {
             result_ = builder_.CreateICmpNE(left, right, "netmp");
+            GenerateResultAddress();
             break;
         }
     }
@@ -481,6 +465,7 @@ void Generator::Visit(const Variable& variable)
     {
         auto allocated_type = allocation->getAllocatedType();
         result_ = builder_.CreateLoad(allocated_type, llvm_value, variable.name);
+        result_address_ = llvm_value;
     }
     else if (auto global_variable = llvm::dyn_cast<llvm::GlobalVariable>(llvm_value))
     {
@@ -488,19 +473,23 @@ void Generator::Visit(const Variable& variable)
         if (llvm::isa<llvm::ArrayType>(llvm_type))
         {
             result_ = llvm_value;
+            GenerateResultAddress();
         }
         else
         {
             result_ = builder_.CreateLoad(llvm_type, llvm_value, variable.name);
+            result_address_ = llvm_value;
         }
     }
     else if (llvm::isa<llvm::Function>(llvm_value))
     {
         result_ = llvm_value;
+        GenerateResultAddress();
     }
     else if (llvm::isa<llvm::Argument>(llvm_value))
     {
         result_ = llvm_value;
+        GenerateResultAddress();
     }
     else
     {
@@ -511,10 +500,8 @@ void Generator::Visit(const Variable& variable)
 void Generator::Visit(const MemberAccessor& member_accessor)
 {
     member_accessor.object->Accept(*this);
-    auto object = result_;
+    auto object_ptr = result_address_;
     auto llvm_struct_type = type_converter_.Convert(*member_accessor.object_type);
-    auto object_ptr = builder_.CreateAlloca(llvm_struct_type, nullptr, "access_allocatmp");
-    builder_.CreateStore(object, object_ptr);
 
     auto member_address = builder_.CreateConstGEP2_32(
         llvm_struct_type, object_ptr, 0, member_accessor.member_index, "access_member_geptmp"
@@ -522,17 +509,26 @@ void Generator::Visit(const MemberAccessor& member_accessor)
 
     auto llvm_member_type = type_converter_.GetValueDeclarationType(*member_accessor.type);
     result_ = builder_.CreateLoad(llvm_member_type, member_address, "access_loadtmp");
+    result_address_ = member_address;
+    object_ptr_ = object_ptr;
 }
 
 void Generator::Visit(const Call& call)
 {
     call.function->Accept(*this);
+
     llvm::Value* llvm_function = result_;
+    llvm::Value* object_ptr = object_ptr_;
+    object_ptr_ = nullptr;
 
     auto function_type = dynamic_pointer_cast<FunctionType>(call.function->type);
     llvm::FunctionType* llvm_function_type = type_converter_.GetFunctionDeclarationType(*function_type);
 
     std::vector<llvm::Value*> arguments{};
+    if (call.is_method_call)
+    {
+        arguments.push_back(object_ptr);
+    }
     for (auto& argument : *call.arguments)
     {
         argument->Accept(*this);
@@ -540,29 +536,34 @@ void Generator::Visit(const Call& call)
     }
 
     result_ = builder_.CreateCall(llvm_function_type, llvm_function, arguments, "calltmp");
+    GenerateResultAddress();
 }
 
 void Generator::Visit(const UnitLiteral& literal)
 {
     auto unit_type = llvm::dyn_cast<llvm::StructType>(type_converter_.Convert(*literal.type));
     result_ = llvm::ConstantStruct::get(unit_type, {});
+    GenerateResultAddress();
 }
 
 void Generator::Visit(const BooleanLiteral& literal)
 {
     llvm::Type* type = llvm::Type::getInt1Ty(context_);
     result_ = llvm::ConstantInt::get(type, literal.value ? 1 : 0);
+    GenerateResultAddress();
 }
 
 void Generator::Visit(const IntegerLiteral& literal)
 {
     llvm::Type* type = llvm::Type::getInt64Ty(context_);
     result_ = llvm::ConstantInt::get(type, literal.value);
+    GenerateResultAddress();
 }
 
 void Generator::Visit(const StringLiteral& literal)
 {
     result_ = builder_.CreateGlobalString(literal.value);
+    GenerateResultAddress();
 }
 
 void Generator::Visit(const Function& function)
@@ -575,9 +576,10 @@ void Generator::Visit(const Function& function)
 
     GenerateFunctionBody(function, *llvm_function);
 
-    result_ = llvm_function;
-
     builder_.SetInsertPoint(previous_block);
+
+    result_ = llvm_function;
+    GenerateResultAddress();
 }
 
 void Generator::Visit(const Initializer& initializer)
@@ -604,6 +606,7 @@ void Generator::Visit(const Initializer& initializer)
     }
 
     result_ = builder_.CreateLoad(llvm_type, alloca, "structinit_loadtmp");
+    result_address_ = alloca;
 }
 
 void Generator::Visit(const Allocation& allocation)
@@ -637,6 +640,7 @@ void Generator::Visit(const Allocation& allocation)
     // TODO use loop + GEP for array initialization
     builder_.CreateStore(initial_value, reference);
     result_ = reference;
+    GenerateResultAddress();
 }
 
 void Generator::GenerateFunctionBody(const Function& function, llvm::Function& llvm_function)
@@ -711,6 +715,32 @@ std::vector<std::tuple<std::string, llvm::Value*>> Generator::GetActualMemberIni
     }
 
     return actual_initializers;
+}
+
+void Generator::GenerateResultAddress()
+{
+    llvm::Function* llvm_function = builder_.GetInsertBlock()->getParent();
+    auto previous_block = builder_.GetInsertBlock();
+
+    auto alloca_block = std::find_if(
+        llvm_function->begin(),
+        llvm_function->end(),
+        [](const llvm::BasicBlock& block) { return block.getName() == kAllocationBlockName; }
+    );
+    if (alloca_block == llvm_function->end())
+    {
+        throw GeneratorError(std::format(
+            "Function '{}' does not have '{}' block. This should never happen.",
+            llvm_function->getName().str(),
+            kAllocationBlockName
+        ));
+    }
+
+    builder_.SetInsertPoint(&*alloca_block);
+    result_address_ = builder_.CreateAlloca(result_->getType(), nullptr, "result_tmp");
+
+    builder_.SetInsertPoint(previous_block);
+    builder_.CreateStore(result_, result_address_);
 }
 
 }  // namespace l0

@@ -23,13 +23,6 @@ class Expression
     mutable std::shared_ptr<Type> type;
 };
 
-struct AddressInfo
-{
-    std::shared_ptr<Expression> object_ref{nullptr};
-    std::shared_ptr<Type> object_type{nullptr};
-    std::vector<std::size_t> member_indices{};
-};
-
 class Assignment : public Expression
 {
    public:
@@ -40,8 +33,6 @@ class Assignment : public Expression
 
     std::shared_ptr<Expression> target;
     std::shared_ptr<Expression> expression;
-
-    AddressInfo target_address;
 };
 
 class UnaryOp : public Expression
@@ -129,6 +120,8 @@ class Call : public Expression
 
     std::shared_ptr<Expression> function;
     std::shared_ptr<ArgumentList> arguments;
+
+    mutable bool is_method_call{false};
 };
 
 class UnitLiteral : public Expression

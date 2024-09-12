@@ -23,7 +23,20 @@ bool IsValidIdentifierCharacter(char c)
 Lexer::Lexer(std::shared_ptr<std::istream> input)
     : input_{input},
       keywords_{
-          "return", "unit", "true", "false", "if", "else", "while", "new", "delete", "const", "mut", "type", "struct"
+          "return",
+          "unit",
+          "true",
+          "false",
+          "if",
+          "else",
+          "while",
+          "new",
+          "delete",
+          "const",
+          "mut",
+          "type",
+          "struct",
+          "method",
       }
 {
     single_character_operators_ = {

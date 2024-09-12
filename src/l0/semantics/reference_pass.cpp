@@ -75,7 +75,7 @@ void ReferencePass::Visit(Assignment& assignment)
     assignment.expression->Accept(*this);
     assignment.target->Accept(*this);
 
-    if (!IsLValue(assignment.target, assignment.target_address))
+    if (!IsLValue(assignment.target))
     {
         throw SemanticError("Can only assign to lvalues.");
     }
@@ -91,8 +91,7 @@ void ReferencePass::Visit(UnaryOp& unary_op)
         return;
     }
 
-    AddressInfo unused;
-    if (!IsLValue(unary_op.operand, unused))
+    if (!IsLValue(unary_op.operand))
     {
         throw SemanticError("Can only create references to lvalues.");
     }
@@ -167,27 +166,21 @@ void ReferencePass::Visit(StructExpression& struct_expression)
     }
 }
 
-bool ReferencePass::IsLValue(std::shared_ptr<Expression> value, AddressInfo& out_address) const
+bool ReferencePass::IsLValue(std::shared_ptr<Expression> value) const
 {
     if (auto variable = dynamic_pointer_cast<Variable>(value))
     {
-        out_address.object_ref = std::make_shared<UnaryOp>(variable, UnaryOp::Operator::Ampersand);
-        out_address.object_ref->type = std::make_shared<ReferenceType>(variable->type, TypeQualifier::Constant);
-        out_address.object_type = variable->type;
         return true;
     }
     else if (auto unary_op = dynamic_pointer_cast<UnaryOp>(value);
              unary_op && (unary_op->op == UnaryOp::Operator::Asterisk))
     {
-        out_address.object_ref = unary_op->operand;
-        out_address.object_type = unary_op->type;
         return true;
     }
     else if (auto member_accessor = dynamic_pointer_cast<MemberAccessor>(value))
     {
-        if (IsLValue(member_accessor->object, out_address))
+        if (IsLValue(member_accessor->object))
         {
-            out_address.member_indices.push_back(member_accessor->member_index);
             return true;
         }
         return false;

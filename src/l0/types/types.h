@@ -131,6 +131,8 @@ class StructMember
     std::string name;
     std::shared_ptr<Type> type;
     std::shared_ptr<Expression> default_initializer;
+
+    bool is_method{false};
 };
 
 using StructMemberList = std::vector<std::shared_ptr<StructMember>>;
