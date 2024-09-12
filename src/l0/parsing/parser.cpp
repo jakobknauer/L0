@@ -418,27 +418,29 @@ std::shared_ptr<Expression> Parser::ParseFactor()
     {
         return ParseAllocation();
     }
-    return ParseCall();
+    return ParseCallsAndMemberAccessors();
 }
 
-std::shared_ptr<Expression> Parser::ParseCall()
-{
-    auto expression = ParseMemberAccessor();
-    while (Peek().type == TokenType::OpeningParen)
-    {
-        auto arguments = ParseArgumentList();
-        expression = std::make_shared<Call>(expression, arguments);
-    }
-    return expression;
-}
-
-std::shared_ptr<Expression> Parser::ParseMemberAccessor()
+std::shared_ptr<Expression> Parser::ParseCallsAndMemberAccessors()
 {
     auto expression = ParseAtomicExpression();
-    while (ConsumeIf(TokenType::Dot))
+
+    while (true)
     {
-        auto member = Expect(TokenType::Identifier);
-        expression = std::make_shared<MemberAccessor>(expression, std::any_cast<std::string>(member.data));
+        if (Peek().type == TokenType::OpeningParen)
+        {
+            auto arguments = ParseArgumentList();
+            expression = std::make_shared<Call>(expression, arguments);
+        }
+        else if (ConsumeIf(TokenType::Dot))
+        {
+            auto member = Expect(TokenType::Identifier);
+            expression = std::make_shared<MemberAccessor>(expression, std::any_cast<std::string>(member.data));
+        }
+        else
+        {
+            break;
+        }
     }
     return expression;
 }
