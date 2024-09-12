@@ -19,8 +19,6 @@ namespace l0
 ///     - Variables
 ///     - Dereferenced references
 ///     - Member accessors
-///
-/// In case 1), we also set the target_address field of the Assignment expression.
 class ReferencePass : private IStatementVisitor, private IExpressionVisitor, private ITypeExpressionVisitor
 {
    public:
@@ -52,7 +50,7 @@ class ReferencePass : private IStatementVisitor, private IExpressionVisitor, pri
 
     void Visit(StructExpression& struct_expression) override;
 
-    bool IsLValue(std::shared_ptr<Expression> value, AddressInfo& out_address) const;
+    bool IsLValue(std::shared_ptr<Expression> value) const;
 
     Module& module_;
 };

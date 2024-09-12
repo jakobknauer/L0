@@ -295,6 +295,13 @@ void AstPrinter::Visit(const SimpleTypeAnnotation& sta)
     out_ << sta.type;
 }
 
+void AstPrinter::Visit(const ReferenceTypeAnnotation& rta)
+{
+    PrintQualifier(rta.mutability);
+    out_ << "&";
+    rta.base_type->Accept(*this);
+}
+
 void AstPrinter::Visit(const FunctionTypeAnnotation& fta)
 {
     PrintQualifier(fta.mutability);
@@ -308,11 +315,10 @@ void AstPrinter::Visit(const FunctionTypeAnnotation& fta)
     fta.return_type->Accept(*this);
 }
 
-void AstPrinter::Visit(const ReferenceTypeAnnotation& rta)
+void AstPrinter::Visit(const MethodTypeAnnotation& mta)
 {
-    PrintQualifier(rta.mutability);
-    out_ << "&";
-    rta.base_type->Accept(*this);
+    out_ << "method ";
+    mta.function_type->Accept(*this);
 }
 
 void AstPrinter::Visit(const StructExpression& struct_expression)

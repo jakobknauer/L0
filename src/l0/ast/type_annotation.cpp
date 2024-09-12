@@ -36,4 +36,14 @@ void FunctionTypeAnnotation::Accept(ITypeAnnotationVisitor& visitor) const
     visitor.Visit(*this);
 };
 
+MethodTypeAnnotation::MethodTypeAnnotation(std::shared_ptr<FunctionTypeAnnotation> function_type)
+    : function_type{function_type}
+{
+}
+
+void MethodTypeAnnotation::Accept(ITypeAnnotationVisitor& visitor) const
+{
+    visitor.Visit(*this);
+};
+
 }  // namespace l0

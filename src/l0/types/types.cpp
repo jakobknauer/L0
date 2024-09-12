@@ -175,7 +175,7 @@ StructType::StructType(std::string name, std::shared_ptr<StructMemberList> membe
 
 std::string StructType::ToString() const
 {
-    return name;
+    return str(mutability) + name;
 }
 
 void StructType::Accept(IConstTypeVisitor& visitor) const

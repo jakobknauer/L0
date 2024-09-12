@@ -27,6 +27,7 @@ class TypeResolver : private ITypeAnnotationVisitor
     void Visit(const SimpleTypeAnnotation& sta) override;
     void Visit(const ReferenceTypeAnnotation& rta) override;
     void Visit(const FunctionTypeAnnotation& fta) override;
+    void Visit(const MethodTypeAnnotation& mta) override;
 };
 
 }  // namespace l0

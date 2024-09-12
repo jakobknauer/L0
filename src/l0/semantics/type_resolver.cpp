@@ -78,4 +78,9 @@ void TypeResolver::Visit(const FunctionTypeAnnotation& fta)
     result_ = std::make_shared<FunctionType>(parameters, return_type, mutability);
 }
 
+void TypeResolver::Visit(const MethodTypeAnnotation& mta)
+{
+    throw SemanticError(std::format("Unexpected method type annotation."));
+}
+
 }  // namespace l0
