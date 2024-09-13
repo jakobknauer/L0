@@ -37,6 +37,7 @@ Lexer::Lexer(std::shared_ptr<std::istream> input)
           "type",
           "struct",
           "method",
+          "fn",
       }
 {
     single_character_operators_ = {

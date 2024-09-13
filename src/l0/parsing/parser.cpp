@@ -1,6 +1,7 @@
 #include "l0/parsing/parser.h"
 
 #include <optional>
+#include <ranges>
 
 namespace l0
 {
@@ -202,6 +203,18 @@ std::shared_ptr<Statement> Parser::ParseStatement()
     else if (PeekIsKeyword("delete"))
     {
         return ParseDeallocation();
+    }
+    else if (PeekIsKeyword("fn"))
+    {
+        return ParseAlternativeFunctionDeclaration();
+    }
+    else if (PeekIsKeyword("struct"))
+    {
+        return ParseAlternativeStructDeclaration();
+    }
+    else if (PeekIsKeyword("method"))
+    {
+        return ParseAlternativeMethodDeclaration();
     }
     return ParseExpressionStatement();
 }
@@ -805,8 +818,14 @@ std::shared_ptr<ParameterListAnnotation> Parser::ParseParameterListAnnotation()
 std::shared_ptr<TypeExpression> Parser::ParseStruct()
 {
     ExpectKeyword("struct");
-    Expect(TokenType::OpeningBrace);
+    auto members = ParseMemberDeclarationList();
+    return std::make_shared<StructExpression>(members);
+}
+
+std::shared_ptr<StructMemberDeclarationList> Parser::ParseMemberDeclarationList()
+{
     auto members = std::make_shared<StructMemberDeclarationList>();
+    Expect(TokenType::OpeningBrace);
     while (ConsumeAll(TokenType::Semicolon).type != TokenType::ClosingBrace)
     {
         auto member = ParseStatement();
@@ -823,7 +842,7 @@ std::shared_ptr<TypeExpression> Parser::ParseStruct()
         members->push_back(member_as_declaration);
     }
     Expect(TokenType::ClosingBrace);
-    return std::make_shared<StructExpression>(members);
+    return members;
 }
 
 std::shared_ptr<MemberInitializerList> Parser::ParseMemberInitializerList()
@@ -848,6 +867,68 @@ std::shared_ptr<MemberInitializerList> Parser::ParseMemberInitializerList()
     Expect(TokenType::ClosingBrace);
 
     return member_initializer_list;
+}
+
+std::shared_ptr<Statement> Parser::ParseAlternativeFunctionDeclaration()
+{
+    ExpectKeyword("fn");
+
+    auto identifier = Expect(TokenType::Identifier);
+
+    auto parameters = ParseParameterDeclarationList();
+    Expect(TokenType::Arrow);
+    auto return_type = ParseTypeAnnotation();
+
+    Expect(TokenType::OpeningBrace);
+    auto statements = ParseStatementBlock(TokenType::ClosingBrace);
+    Expect(TokenType::ClosingBrace);
+
+    auto parameter_list_annotation = *parameters | std::views::transform([](auto param) { return param->annotation; })
+                                   | std::ranges::to<std::vector>();
+    auto type_annotation = std::make_shared<FunctionTypeAnnotation>(
+        std::make_shared<ParameterListAnnotation>(parameter_list_annotation), return_type
+    );
+
+    auto function = std::make_shared<Function>(parameters, return_type, statements);
+
+    return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), type_annotation, function);
+}
+
+std::shared_ptr<Statement> Parser::ParseAlternativeStructDeclaration()
+{
+    ExpectKeyword("struct");
+    auto identifier = Expect(TokenType::Identifier);
+
+    auto members = ParseMemberDeclarationList();
+
+    auto struct_expression = std::make_shared<StructExpression>(members);
+    return std::make_shared<TypeDeclaration>(std::any_cast<std::string>(identifier.data), struct_expression);
+}
+
+std::shared_ptr<Statement> Parser::ParseAlternativeMethodDeclaration()
+{
+    ExpectKeyword("method");
+
+    auto identifier = Expect(TokenType::Identifier);
+
+    auto parameters = ParseParameterDeclarationList();
+    Expect(TokenType::Arrow);
+    auto return_type = ParseTypeAnnotation();
+
+    Expect(TokenType::OpeningBrace);
+    auto statements = ParseStatementBlock(TokenType::ClosingBrace);
+    Expect(TokenType::ClosingBrace);
+
+    auto parameter_list_annotation = *parameters | std::views::transform([](auto param) { return param->annotation; })
+                                   | std::ranges::to<std::vector>();
+    auto function_annotation = std::make_shared<FunctionTypeAnnotation>(
+        std::make_shared<ParameterListAnnotation>(std::move(parameter_list_annotation)), return_type
+    );
+    auto method_annotation = std::make_shared<MethodTypeAnnotation>(function_annotation);
+
+    auto function = std::make_shared<Function>(parameters, return_type, statements);
+
+    return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), method_annotation, function);
 }
 
 ParserError::ParserError(std::string message)
