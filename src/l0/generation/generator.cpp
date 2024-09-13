@@ -568,11 +568,25 @@ void Generator::Visit(const StringLiteral& literal)
 
 void Generator::Visit(const Function& function)
 {
-    llvm::BasicBlock* previous_block = builder_.GetInsertBlock();
+    if (!function.global_name.has_value())
+    {
+        function.global_name = GetLambdaName();
+    }
+
+    llvm::Function* llvm_function = llvm_module_.getFunction(function.global_name.value());
+
+    if (llvm_function)
+    {
+        result_ = llvm_function;
+        GenerateResultAddress();
+        return;
+    }
 
     auto llvm_type = type_converter_.GetFunctionDeclarationType(*dynamic_pointer_cast<FunctionType>(function.type));
-    llvm::FunctionCallee callee = llvm_module_.getOrInsertFunction(GetLambdaName(), llvm_type);
-    llvm::Function* llvm_function = llvm::dyn_cast<llvm::Function>(callee.getCallee());
+    auto callee = llvm_module_.getOrInsertFunction(function.global_name.value(), llvm_type);
+    llvm_function = llvm::dyn_cast<llvm::Function>(callee.getCallee());
+
+    llvm::BasicBlock* previous_block = builder_.GetInsertBlock();
 
     GenerateFunctionBody(function, *llvm_function);
 
