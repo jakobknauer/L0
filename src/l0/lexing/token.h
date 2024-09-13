@@ -26,6 +26,7 @@ enum class TokenType
     Slash,
     Bang,
     Ampersand,
+    Caret,
     EqualsEquals,
     BangEquals,
     AmpersandAmpersand,

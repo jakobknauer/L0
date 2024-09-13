@@ -39,7 +39,7 @@ std::shared_ptr<Type> OperatorOverloadResolver::ResolveUnaryOperator(
     {
         return std::make_shared<ReferenceType>(operand, TypeQualifier::Constant);
     }
-    if (op == UnaryOp::Operator::Asterisk)
+    if (op == UnaryOp::Operator::Caret)
     {
         if (auto reference_type = dynamic_pointer_cast<ReferenceType>(operand))
         {

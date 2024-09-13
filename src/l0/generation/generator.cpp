@@ -382,7 +382,7 @@ void Generator::Visit(const UnaryOp& unary_op)
             GenerateResultAddress();
             break;
         }
-        case l0::UnaryOp::Operator::Asterisk:
+        case l0::UnaryOp::Operator::Caret:
         {
             unary_op.operand->Accept(*this);
             auto address = result_;

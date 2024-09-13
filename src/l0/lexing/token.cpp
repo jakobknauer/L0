@@ -31,6 +31,8 @@ std::string str(TokenType type)
             return "Bang";
         case TokenType::Ampersand:
             return "Ampersand";
+        case TokenType::Caret:
+            return "Caret";
         case TokenType::EqualsEquals:
             return "EqualsEquals";
         case TokenType::BangEquals:

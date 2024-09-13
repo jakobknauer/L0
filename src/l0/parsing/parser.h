@@ -62,7 +62,7 @@ class Parser : public IParser
     std::shared_ptr<Expression> ParseTerm();
     std::shared_ptr<Expression> ParseUnary();
     std::shared_ptr<Expression> ParseFactor();
-    std::shared_ptr<Expression> ParseCallsAndMemberAccessors();
+    std::shared_ptr<Expression> ParseCallsDerefsAndMemberAccessors();
     std::shared_ptr<Expression> ParseAtomicExpression();
     std::shared_ptr<Expression> ParseFunction();
     std::shared_ptr<Expression> ParseInitializer();
