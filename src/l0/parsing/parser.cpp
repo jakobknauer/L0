@@ -399,12 +399,6 @@ std::shared_ptr<Expression> Parser::ParseUnary()
             auto expression = ParseUnary();
             return std::make_shared<UnaryOp>(expression, UnaryOp::Operator::Ampersand);
         }
-        case TokenType::Asterisk:
-        {
-            Consume();
-            auto expression = ParseUnary();
-            return std::make_shared<UnaryOp>(expression, UnaryOp::Operator::Asterisk);
-        }
         default:
         {
             return ParseFactor();
@@ -418,10 +412,10 @@ std::shared_ptr<Expression> Parser::ParseFactor()
     {
         return ParseAllocation();
     }
-    return ParseCallsAndMemberAccessors();
+    return ParseCallsDerefsAndMemberAccessors();
 }
 
-std::shared_ptr<Expression> Parser::ParseCallsAndMemberAccessors()
+std::shared_ptr<Expression> Parser::ParseCallsDerefsAndMemberAccessors()
 {
     auto expression = ParseAtomicExpression();
 
@@ -436,6 +430,10 @@ std::shared_ptr<Expression> Parser::ParseCallsAndMemberAccessors()
         {
             auto member = Expect(TokenType::Identifier);
             expression = std::make_shared<MemberAccessor>(expression, std::any_cast<std::string>(member.data));
+        }
+        else if (ConsumeIf(TokenType::Caret))
+        {
+            expression = std::make_shared<UnaryOp>(expression, UnaryOp::Operator::Caret);
         }
         else
         {

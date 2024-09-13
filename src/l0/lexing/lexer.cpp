@@ -40,24 +40,13 @@ Lexer::Lexer(std::shared_ptr<std::istream> input)
       }
 {
     single_character_operators_ = {
-        {'(', TokenType::OpeningParen},
-        {')', TokenType::ClosingParen},
-        {'[', TokenType::OpeningBracket},
-        {']', TokenType::ClosingBracket},
-        {'{', TokenType::OpeningBrace},
-        {'}', TokenType::ClosingBrace},
-        {'+', TokenType::Plus},
-        {'-', TokenType::Minus},
-        {'*', TokenType::Asterisk},
-        {'/', TokenType::Slash},
-        {'!', TokenType::Bang},
-        {'.', TokenType::Dot},
-        {',', TokenType::Comma},
-        {':', TokenType::Colon},
-        {';', TokenType::Semicolon},
-        {'=', TokenType::Equals},
-        {'$', TokenType::Dollar},
-        {'&', TokenType::Ampersand},
+        {'(', TokenType::OpeningParen},   {')', TokenType::ClosingParen}, {'[', TokenType::OpeningBracket},
+        {']', TokenType::ClosingBracket}, {'{', TokenType::OpeningBrace}, {'}', TokenType::ClosingBrace},
+        {'+', TokenType::Plus},           {'-', TokenType::Minus},        {'*', TokenType::Asterisk},
+        {'/', TokenType::Slash},          {'!', TokenType::Bang},         {'.', TokenType::Dot},
+        {',', TokenType::Comma},          {':', TokenType::Colon},        {';', TokenType::Semicolon},
+        {'=', TokenType::Equals},         {'$', TokenType::Dollar},       {'&', TokenType::Ampersand},
+        {'^', TokenType::Caret},
     };
 
     two_character_operators_ = {

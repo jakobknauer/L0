@@ -151,9 +151,18 @@ void AstPrinter::Visit(const Assignment& assignment)
 
 void AstPrinter::Visit(const UnaryOp& unary_op)
 {
-    out_ << "(" << str(unary_op.op);
-    unary_op.operand->Accept(*this);
-    out_ << ")";
+    if (unary_op.op != UnaryOp::Operator::Caret)
+    {
+        out_ << "(" << str(unary_op.op);
+        unary_op.operand->Accept(*this);
+        out_ << ")";
+    }
+    else
+    {
+        out_ << "(";
+        unary_op.operand->Accept(*this);
+        out_ << str(unary_op.op) << ")";
+    }
 }
 
 void AstPrinter::Visit(const BinaryOp& binary_op)
@@ -367,8 +376,8 @@ std::string str(UnaryOp::Operator op)
             return "!";
         case UnaryOp::Operator::Ampersand:
             return "&";
-        case UnaryOp::Operator::Asterisk:
-            return "*";
+        case UnaryOp::Operator::Caret:
+            return "^";
     }
 }
 
