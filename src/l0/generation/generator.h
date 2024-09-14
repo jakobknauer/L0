@@ -61,6 +61,7 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     void Visit(const UnitLiteral& literal) override;
     void Visit(const BooleanLiteral& literal) override;
     void Visit(const IntegerLiteral& literal) override;
+    void Visit(const CharacterLiteral& literal) override;
     void Visit(const StringLiteral& literal) override;
     void Visit(const Function& function) override;
     void Visit(const Initializer& Initializer) override;

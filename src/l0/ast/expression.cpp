@@ -142,6 +142,21 @@ void IntegerLiteral::Accept(IExpressionVisitor& visitor)
     visitor.Visit(*this);
 }
 
+CharacterLiteral::CharacterLiteral(char8_t value)
+    : value{value}
+{
+}
+
+void CharacterLiteral::Accept(IConstExpressionVisitor& visitor) const
+{
+    visitor.Visit(*this);
+}
+
+void CharacterLiteral::Accept(IExpressionVisitor& visitor)
+{
+    visitor.Visit(*this);
+}
+
 StringLiteral::StringLiteral(std::string value)
     : value{value}
 {

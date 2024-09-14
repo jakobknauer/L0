@@ -48,9 +48,9 @@ void ConversionChecker::Visit(const IntegerType& integer_type)
     result_ = dynamic_pointer_cast<IntegerType>(value_) != nullptr;
 }
 
-void ConversionChecker::Visit(const StringType& string_type)
+void ConversionChecker::Visit(const CharacterType& character_type)
 {
-    result_ = bool{dynamic_pointer_cast<StringType>(value_)};
+    result_ = dynamic_pointer_cast<CharacterType>(value_) != nullptr;
 }
 
 void ConversionChecker::Visit(const FunctionType& function_type)

@@ -17,6 +17,8 @@ std::string str(TokenType type)
             return "Identifier";
         case TokenType::IntegerLiteral:
             return "IntegerLiteral";
+        case TokenType::CharacterLiteral:
+            return "CharacterLiteral";
         case TokenType::StringLiteral:
             return "StringLiteral";
         case TokenType::Plus:

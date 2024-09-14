@@ -35,6 +35,7 @@ class Lexer : public ILexer
 
     Token ReadIdentifierOrKeyword();
     Token ReadIntegerLiteral();
+    Token ReadCharacterLiteral();
     Token ReadStringLiteral();
 
     char current_{};
@@ -44,7 +45,7 @@ class Lexer : public ILexer
     std::unordered_map<std::string, TokenType> two_character_operators_;
     std::unordered_set<char> operator_characters_;
     std::unordered_set<std::string> keywords_;
-    std::unordered_map<char, std::string> escape_sequences_;
+    std::unordered_map<char, char> escape_sequences_;
 };
 
 class LexerError

@@ -140,6 +140,8 @@ void Resolver::Visit(const BooleanLiteral& literal) {}
 
 void Resolver::Visit(const IntegerLiteral& literal) {}
 
+void Resolver::Visit(const CharacterLiteral& literal) {}
+
 void Resolver::Visit(const StringLiteral& literal) {}
 
 void Resolver::Visit(const Function& function)

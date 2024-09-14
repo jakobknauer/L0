@@ -487,6 +487,11 @@ std::shared_ptr<Expression> Parser::ParseAtomicExpression()
             Consume();
             return std::make_shared<IntegerLiteral>(std::any_cast<std::int64_t>(token.data));
         }
+        case TokenType::CharacterLiteral:
+        {
+            Consume();
+            return std::make_shared<CharacterLiteral>(std::any_cast<char8_t>(token.data));
+        }
         case TokenType::StringLiteral:
         {
             Consume();
@@ -883,10 +888,10 @@ std::shared_ptr<Statement> Parser::ParseAlternativeFunctionDeclaration()
     auto statements = ParseStatementBlock(TokenType::ClosingBrace);
     Expect(TokenType::ClosingBrace);
 
-    auto parameter_list_annotation = *parameters | std::views::transform([](auto param) { return param->annotation; })
-                                   | std::ranges::to<std::vector>();
+    auto parameter_list_annotation = *parameters | std::views::transform([](auto param) { return param->annotation; });
     auto type_annotation = std::make_shared<FunctionTypeAnnotation>(
-        std::make_shared<ParameterListAnnotation>(parameter_list_annotation), return_type
+        std::make_shared<ParameterListAnnotation>(parameter_list_annotation.begin(), parameter_list_annotation.end()),
+        return_type
     );
 
     auto function = std::make_shared<Function>(parameters, return_type, statements);
@@ -919,10 +924,10 @@ std::shared_ptr<Statement> Parser::ParseAlternativeMethodDeclaration()
     auto statements = ParseStatementBlock(TokenType::ClosingBrace);
     Expect(TokenType::ClosingBrace);
 
-    auto parameter_list_annotation = *parameters | std::views::transform([](auto param) { return param->annotation; })
-                                   | std::ranges::to<std::vector>();
+    auto parameter_list_annotation = *parameters | std::views::transform([](auto param) { return param->annotation; });
     auto function_annotation = std::make_shared<FunctionTypeAnnotation>(
-        std::make_shared<ParameterListAnnotation>(std::move(parameter_list_annotation)), return_type
+        std::make_shared<ParameterListAnnotation>(parameter_list_annotation.begin(), parameter_list_annotation.end()),
+        return_type
     );
     auto method_annotation = std::make_shared<MethodTypeAnnotation>(function_annotation);
 

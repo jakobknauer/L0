@@ -18,6 +18,7 @@ enum class TokenType
     Identifier,
 
     IntegerLiteral,
+    CharacterLiteral,
     StringLiteral,
 
     Plus,

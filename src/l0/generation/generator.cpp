@@ -128,13 +128,6 @@ void Generator::DeclareGlobalVariable(std::shared_ptr<Declaration> declaration)
 
         declaration->scope->SetLLVMValue(declaration->variable, function_callee.getCallee());
     }
-    else if (dynamic_pointer_cast<StringType>(type))
-    {
-        auto literal = dynamic_pointer_cast<StringLiteral>(declaration->initializer);
-        auto global = builder_.CreateGlobalStringPtr(literal->value, declaration->variable, 0, &llvm_module_);
-
-        declaration->scope->SetLLVMValue(declaration->variable, global);
-    }
     else if (dynamic_pointer_cast<IntegerType>(type))
     {
         auto literal = dynamic_pointer_cast<IntegerLiteral>(declaration->initializer);
@@ -556,6 +549,13 @@ void Generator::Visit(const BooleanLiteral& literal)
 void Generator::Visit(const IntegerLiteral& literal)
 {
     llvm::Type* type = llvm::Type::getInt64Ty(context_);
+    result_ = llvm::ConstantInt::get(type, literal.value);
+    GenerateResultAddress();
+}
+
+void Generator::Visit(const CharacterLiteral& literal)
+{
+    llvm::Type* type = llvm::Type::getInt8Ty(context_);
     result_ = llvm::ConstantInt::get(type, literal.value);
     GenerateResultAddress();
 }

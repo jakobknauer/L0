@@ -2,7 +2,6 @@
 #define L0_SEMANTICS_TYPECHECKER_H
 
 #include <memory>
-#include <unordered_map>
 
 #include "l0/ast/expression.h"
 #include "l0/ast/module.h"
@@ -24,7 +23,6 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
 
    private:
     Module& module_;
-    std::unordered_map<std::string, const std::shared_ptr<Type>> simple_types_{};
     TypeResolver type_resolver_;
     detail::OperatorOverloadResolver operator_overload_resolver_{};
     detail::ConversionChecker conversion_checker_{};
@@ -46,6 +44,7 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
     void Visit(const UnitLiteral& literal) override;
     void Visit(const BooleanLiteral& literal) override;
     void Visit(const IntegerLiteral& literal) override;
+    void Visit(const CharacterLiteral& literal) override;
     void Visit(const StringLiteral& literal) override;
     void Visit(const Function& function) override;
     void Visit(const Initializer& initializer) override;

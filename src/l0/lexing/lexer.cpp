@@ -69,10 +69,12 @@ Lexer::Lexer(std::shared_ptr<std::istream> input)
     }
 
     escape_sequences_ = {
-        {'\\', "\\"},
-        {'"', "\""},
-        {'n', "\n"},
-        {'t', "\t"},
+        {'\\', '\\'},
+        {'"', '\"'},
+        {'\'', '\''},
+        {'n', '\n'},
+        {'t', '\t'},
+        {'0', '\0'},
     };
 
     ReadAndSkip();
@@ -178,6 +180,11 @@ Token Lexer::Next()
         return ReadStringLiteral();
     }
 
+    if (current_ == '\'')
+    {
+        return ReadCharacterLiteral();
+    }
+
     throw LexerError(std::format("Unexpected character '{}'.", current_));
 }
 
@@ -217,6 +224,36 @@ Token Lexer::ReadIntegerLiteral()
         .type = TokenType::IntegerLiteral,
         .lexeme = number,
         .data = std::stol(number),
+    };
+}
+
+Token Lexer::ReadCharacterLiteral()
+{
+    if (current_ != '\'')
+    {
+        throw LexerError(std::format("Character literal must begin with single quotes ('), got {} instead.", current_));
+    }
+    Read();
+
+    char8_t character = current_;
+    if (character == '\\')
+    {
+        Read();
+        char8_t escape_character = current_;
+        character = escape_sequences_.at(escape_character);
+    }
+    Read();
+
+    if (current_ != '\'')
+    {
+        throw LexerError(std::format("Character literal must end with single quotes ('), got {} instead.", current_));
+    }
+    Read();
+    Skip();
+    return Token{
+        .type = TokenType::CharacterLiteral,
+        .lexeme = std::format("'{}'", character),
+        .data = character,
     };
 }
 

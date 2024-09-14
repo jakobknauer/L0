@@ -65,9 +65,9 @@ void TypeConverter::Visit(const IntegerType& integer_type)
     result_ = llvm::IntegerType::getInt64Ty(context_);
 }
 
-void TypeConverter::Visit(const StringType& string_type)
+void TypeConverter::Visit(const CharacterType& character_type)
 {
-    result_ = llvm::PointerType::get(llvm::Type::getInt8Ty(context_), 0);
+    result_ = llvm::IntegerType::getInt8Ty(context_);
 }
 
 void TypeConverter::Visit(const FunctionType& function_type)

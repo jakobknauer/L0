@@ -1,6 +1,7 @@
 #ifndef L0_AST_EXPRESSION_H
 #define L0_AST_EXPRESSION_H
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -153,6 +154,17 @@ class IntegerLiteral : public Expression
     std::int64_t value;
 };
 
+class CharacterLiteral : public Expression
+{
+   public:
+    CharacterLiteral(char8_t value);
+
+    void Accept(IConstExpressionVisitor& visitor) const override;
+    void Accept(IExpressionVisitor& visitor) override;
+
+    char8_t value;
+};
+
 class StringLiteral : public Expression
 {
    public:
@@ -252,6 +264,7 @@ class IConstExpressionVisitor
     virtual void Visit(const UnitLiteral& literal) = 0;
     virtual void Visit(const BooleanLiteral& literal) = 0;
     virtual void Visit(const IntegerLiteral& literal) = 0;
+    virtual void Visit(const CharacterLiteral& literal) = 0;
     virtual void Visit(const StringLiteral& literal) = 0;
     virtual void Visit(const Function& function) = 0;
     virtual void Visit(const Initializer& initializer) = 0;
@@ -272,6 +285,7 @@ class IExpressionVisitor
     virtual void Visit(UnitLiteral& literal) = 0;
     virtual void Visit(BooleanLiteral& literal) = 0;
     virtual void Visit(IntegerLiteral& literal) = 0;
+    virtual void Visit(CharacterLiteral& literal) = 0;
     virtual void Visit(StringLiteral& literal) = 0;
     virtual void Visit(Function& function) = 0;
     virtual void Visit(Initializer& initializer) = 0;

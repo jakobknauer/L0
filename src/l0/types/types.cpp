@@ -109,22 +109,22 @@ bool IntegerType::Equals(const Type& other) const
     return true;
 }
 
-StringType::StringType(TypeQualifier mutability)
+CharacterType::CharacterType(TypeQualifier mutability)
     : Type{mutability}
 {
 }
 
-std::string StringType::ToString() const
+std::string CharacterType::ToString() const
 {
-    return str(mutability) + "String";
+    return str(mutability) + "C8";
 }
 
-void StringType::Accept(IConstTypeVisitor& visitor) const
+void CharacterType::Accept(IConstTypeVisitor& visitor) const
 {
     visitor.Visit(*this);
 }
 
-bool StringType::Equals(const Type& other) const
+bool CharacterType::Equals(const Type& other) const
 {
     return true;
 }
@@ -243,9 +243,9 @@ class ModifyQualifierVisitor : private IConstTypeVisitor
         result_ = std::make_shared<IntegerType>(qualifier_);
     }
 
-    void Visit(const StringType& string_type)
+    void Visit(const CharacterType& character_type)
     {
-        result_ = std::make_shared<StringType>(qualifier_);
+        result_ = std::make_shared<CharacterType>(qualifier_);
     }
 
     void Visit(const FunctionType& function_type)
