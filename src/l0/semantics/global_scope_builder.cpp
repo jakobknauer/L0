@@ -1,5 +1,7 @@
 #include "l0/semantics/global_scope_builder.h"
 
+#include <format>
+
 #include "l0/ast/statement.h"
 #include "l0/ast/type_expression.h"
 #include "l0/semantics/semantic_error.h"
@@ -92,6 +94,11 @@ void GlobalScopeBuilder::FillTypeDetails(std::shared_ptr<TypeDeclaration> type_d
         else
         {
             member->type = type_resolver_.Convert(*member_declaration->annotation);
+        }
+
+        if (auto function = std::dynamic_pointer_cast<Function>(member->default_initializer))
+        {
+            function->global_name = std::format("__memberfct_{}::{}", struct_type->name, member->name);
         }
 
         struct_type->members->push_back(member);

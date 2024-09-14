@@ -196,6 +196,7 @@ class Function : public Expression
     std::shared_ptr<StatementBlock> statements;
 
     mutable std::shared_ptr<Scope> locals = std::make_shared<Scope>();
+    mutable std::optional<std::string> global_name{};
 };
 
 struct MemberInitializer
