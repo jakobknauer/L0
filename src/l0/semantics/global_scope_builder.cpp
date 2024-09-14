@@ -18,12 +18,15 @@ GlobalScopeBuilder::GlobalScopeBuilder(Module& module)
     module_.globals->DeclareType("()");
     module_.globals->DeclareType("Boolean");
     module_.globals->DeclareType("Integer");
-    module_.globals->DeclareType("String");
+    module_.globals->DeclareType("C8");
+    module_.globals->DeclareType("CString");
 
     module_.globals->DefineType("()", std::make_shared<UnitType>(TypeQualifier::Constant));
     module_.globals->DefineType("Boolean", std::make_shared<BooleanType>(TypeQualifier::Constant));
     module_.globals->DefineType("Integer", std::make_shared<IntegerType>(TypeQualifier::Constant));
-    module_.globals->DefineType("String", std::make_shared<StringType>(TypeQualifier::Constant));
+    auto C8 = std::make_shared<CharacterType>(TypeQualifier::Constant);
+    module_.globals->DefineType("C8", C8);
+    module_.globals->DefineType("CString", std::make_shared<ReferenceType>(C8, TypeQualifier::Constant));
 }
 
 void GlobalScopeBuilder::Run()
@@ -115,7 +118,6 @@ void GlobalScopeBuilder::DeclareVariable(std::shared_ptr<Declaration> declaratio
 
     auto initializer = declaration->initializer;
     bool initializer_is_literal = dynamic_pointer_cast<IntegerLiteral>(initializer)
-                               || dynamic_pointer_cast<StringLiteral>(initializer)
                                || dynamic_pointer_cast<Function>(initializer);
     if (!initializer_is_literal)
     {
@@ -138,10 +140,6 @@ void GlobalScopeBuilder::DeclareVariable(std::shared_ptr<Declaration> declaratio
         if (dynamic_pointer_cast<IntegerLiteral>(declaration->initializer))
         {
             type = module_.globals->GetTypeDefinition("Integer");
-        }
-        else if (dynamic_pointer_cast<StringLiteral>(declaration->initializer))
-        {
-            type = module_.globals->GetTypeDefinition("String");
         }
         else if (auto function = dynamic_pointer_cast<Function>(declaration->initializer))
         {

@@ -11,10 +11,6 @@ Typechecker::Typechecker(Module& module)
     : module_{module},
       type_resolver_{module}
 {
-    simple_types_.insert(std::make_pair("Unit", std::make_shared<UnitType>(TypeQualifier::Constant)));
-    simple_types_.insert(std::make_pair("Integer", std::make_shared<IntegerType>(TypeQualifier::Constant)));
-    simple_types_.insert(std::make_pair("String", std::make_shared<StringType>(TypeQualifier::Constant)));
-    simple_types_.insert(std::make_pair("Boolean", std::make_shared<BooleanType>(TypeQualifier::Constant)));
 }
 
 void Typechecker::Check()
@@ -105,7 +101,9 @@ void Typechecker::Visit(const ReturnStatement& return_statement)
 void Typechecker::Visit(const ConditionalStatement& conditional_statement)
 {
     conditional_statement.condition->Accept(*this);
-    if (!conversion_checker_.CheckCompatibility(conditional_statement.condition->type, simple_types_.at("Boolean")))
+    if (!conversion_checker_.CheckCompatibility(
+            conditional_statement.condition->type, module_.globals->GetTypeDefinition("Boolean")
+        ))
     {
         throw SemanticError(std::format(
             "Condition must be of type Boolean, but is of type '{}'.", conditional_statement.condition->type->ToString()
@@ -130,7 +128,9 @@ void Typechecker::Visit(const ConditionalStatement& conditional_statement)
 void Typechecker::Visit(const WhileLoop& while_loop)
 {
     while_loop.condition->Accept(*this);
-    if (!conversion_checker_.CheckCompatibility(while_loop.condition->type, simple_types_.at("Boolean")))
+    if (!conversion_checker_.CheckCompatibility(
+            while_loop.condition->type, module_.globals->GetTypeDefinition("Boolean")
+        ))
     {
         throw SemanticError(std::format(
             "Condition must be of type Boolean, but is of type '{}'.", while_loop.condition->type->ToString()
@@ -252,26 +252,27 @@ void Typechecker::Visit(const Call& call)
 
 void Typechecker::Visit(const UnitLiteral& literal)
 {
-    auto unit_type = simple_types_.at("Unit");
-    literal.type = unit_type;
+    literal.type = module_.globals->GetTypeDefinition("Unit");
 }
 
 void Typechecker::Visit(const BooleanLiteral& literal)
 {
-    auto boolean_type = simple_types_.at("Boolean");
-    literal.type = boolean_type;
+    literal.type = module_.globals->GetTypeDefinition("Boolean");
 }
 
 void Typechecker::Visit(const IntegerLiteral& literal)
 {
-    auto integer_type = simple_types_.at("Integer");
-    literal.type = integer_type;
+    literal.type = module_.globals->GetTypeDefinition("Integer");
+}
+
+void Typechecker::Visit(const CharacterLiteral& literal)
+{
+    literal.type = module_.globals->GetTypeDefinition("C8");
 }
 
 void Typechecker::Visit(const StringLiteral& literal)
 {
-    auto string_type = simple_types_.at("String");
-    literal.type = string_type;
+    literal.type = module_.globals->GetTypeDefinition("CString");
 }
 
 void Typechecker::Visit(const Function& function)
@@ -355,7 +356,7 @@ void Typechecker::Visit(const Allocation& allocation)
     if (allocation.size)
     {
         allocation.size->Accept(*this);
-        auto integer_type = simple_types_.at("Integer");
+        auto integer_type = module_.globals->GetTypeDefinition("Integer");
         if (*allocation.size->type != *integer_type)
         {
             throw SemanticError(std::format(
@@ -396,9 +397,9 @@ std::shared_ptr<Expression> Typechecker::GetInitialValue(std::shared_ptr<Type> t
     {
         return std::make_shared<IntegerLiteral>(0);
     }
-    if (dynamic_pointer_cast<StringType>(type))
+    if (dynamic_pointer_cast<CharacterType>(type))
     {
-        return std::make_shared<StringLiteral>("");
+        return std::make_shared<CharacterLiteral>('\0');
     }
 
     throw SemanticError(std::format("Cannot create initial value of type '{}'.", type->ToString()));

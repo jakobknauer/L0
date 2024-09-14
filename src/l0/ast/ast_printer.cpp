@@ -212,6 +212,11 @@ void AstPrinter::Visit(const IntegerLiteral& literal)
     out_ << literal.value;
 }
 
+void AstPrinter::Visit(const CharacterLiteral& literal)
+{
+    out_ << "'" << static_cast<char>(literal.value) << "'";
+}
+
 void AstPrinter::Visit(const StringLiteral& literal)
 {
     out_ << "\"" << literal.value << "\"";

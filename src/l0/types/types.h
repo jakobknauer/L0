@@ -90,10 +90,10 @@ class IntegerType : public Type
     bool Equals(const Type& other) const override;
 };
 
-class StringType : public Type
+class CharacterType : public Type
 {
    public:
-    StringType(TypeQualifier mutability);
+    CharacterType(TypeQualifier mutability);
 
     std::string ToString() const override;
 
@@ -166,7 +166,7 @@ class IConstTypeVisitor
     virtual void Visit(const UnitType& unit_type) = 0;
     virtual void Visit(const BooleanType& boolean_type) = 0;
     virtual void Visit(const IntegerType& integer_type) = 0;
-    virtual void Visit(const StringType& string_type) = 0;
+    virtual void Visit(const CharacterType& integer_type) = 0;
     virtual void Visit(const FunctionType& function_type) = 0;
     virtual void Visit(const StructType& struct_type) = 0;
 };

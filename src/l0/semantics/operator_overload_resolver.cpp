@@ -10,7 +10,6 @@ OperatorOverloadResolver::OperatorOverloadResolver()
 {
     auto boolean = std::make_shared<BooleanType>(TypeQualifier::Constant);
     auto integer = std::make_shared<IntegerType>(TypeQualifier::Constant);
-    auto string = std::make_shared<StringType>(TypeQualifier::Constant);
 
     unary_operator_overloads_ = {
         {UnaryOp::Operator::Plus, {{integer, integer}}},
@@ -22,7 +21,7 @@ OperatorOverloadResolver::OperatorOverloadResolver()
         {BinaryOp::Operator::EqualsEquals, {{boolean, boolean, boolean}, {integer, integer, boolean}}},
         {BinaryOp::Operator::BangEquals, {{boolean, boolean, boolean}, {integer, integer, boolean}}},
 
-        {BinaryOp::Operator::Plus, {{integer, integer, integer}, {string, string, string}}},
+        {BinaryOp::Operator::Plus, {{integer, integer, integer}}},
         {BinaryOp::Operator::Minus, {{integer, integer, integer}}},
         {BinaryOp::Operator::Asterisk, {{integer, integer, integer}}},
 

@@ -113,6 +113,7 @@ void ReturnStatementPass::Visit(Call& call)
 void ReturnStatementPass::Visit(UnitLiteral& literal) {}
 void ReturnStatementPass::Visit(BooleanLiteral& literal) {}
 void ReturnStatementPass::Visit(IntegerLiteral& literal) {}
+void ReturnStatementPass::Visit(CharacterLiteral& literal) {}
 void ReturnStatementPass::Visit(StringLiteral& literal) {}
 
 void ReturnStatementPass::Visit(Function& function)

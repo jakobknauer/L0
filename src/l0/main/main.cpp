@@ -56,9 +56,10 @@ int main(int argc, char* argv[])
 
     module->name = "MainModule";
 
-    auto parameters = std::make_shared<ParameterList>(
-        std::initializer_list<std::shared_ptr<Type>>{std::make_shared<StringType>(TypeQualifier::Constant)}
-    );
+    auto parameters =
+        std::make_shared<ParameterList>(std::initializer_list<std::shared_ptr<Type>>{std::make_shared<ReferenceType>(
+            std::make_shared<CharacterType>(TypeQualifier::Constant), TypeQualifier::Constant
+        )});
     auto integer_type = std::make_shared<IntegerType>(TypeQualifier::Constant);
     auto string_to_int = std::make_shared<FunctionType>(parameters, integer_type, TypeQualifier::Constant);
     module->externals->DeclareVariable("printf", string_to_int);

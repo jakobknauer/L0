@@ -122,6 +122,7 @@ void ReferencePass::Visit(Call& call)
 void ReferencePass::Visit(UnitLiteral& literal) {}
 void ReferencePass::Visit(BooleanLiteral& literal) {}
 void ReferencePass::Visit(IntegerLiteral& literal) {}
+void ReferencePass::Visit(CharacterLiteral& literal) {}
 void ReferencePass::Visit(StringLiteral& literal) {}
 
 void ReferencePass::Visit(Function& function)
