@@ -424,6 +424,18 @@ void Generator::Visit(const BinaryOp& binary_op)
             GenerateResultAddress();
             break;
         }
+        case BinaryOp::Operator::Slash:
+        {
+            result_ = builder_.CreateSDiv(left, right, "sdivtmp");
+            GenerateResultAddress();
+            break;
+        }
+        case BinaryOp::Operator::Percent:
+        {
+            result_ = builder_.CreateURem(left, right, "uremtmp");
+            GenerateResultAddress();
+            break;
+        }
         case BinaryOp::Operator::AmpersandAmpersand:
         {
             result_ = builder_.CreateLogicalAnd(left, right, "andtmp");
@@ -445,6 +457,30 @@ void Generator::Visit(const BinaryOp& binary_op)
         case BinaryOp::Operator::BangEquals:
         {
             result_ = builder_.CreateICmpNE(left, right, "netmp");
+            GenerateResultAddress();
+            break;
+        }
+        case BinaryOp::Operator::Less:
+        {
+            result_ = builder_.CreateICmpSLT(left, right, "slttmp");
+            GenerateResultAddress();
+            break;
+        }
+        case BinaryOp::Operator::Greater:
+        {
+            result_ = builder_.CreateICmpSGT(left, right, "sgttmp");
+            GenerateResultAddress();
+            break;
+        }
+        case BinaryOp::Operator::LessEquals:
+        {
+            result_ = builder_.CreateICmpSLE(left, right, "sletmp");
+            GenerateResultAddress();
+            break;
+        }
+        case BinaryOp::Operator::GreaterEquals:
+        {
+            result_ = builder_.CreateICmpSGE(left, right, "sgetmp");
             GenerateResultAddress();
             break;
         }

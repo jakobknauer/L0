@@ -29,6 +29,8 @@ std::string str(TokenType type)
             return "Asterisk";
         case TokenType::Slash:
             return "Slash";
+        case TokenType::Percent:
+            return "Percent";
         case TokenType::Bang:
             return "Bang";
         case TokenType::Ampersand:
@@ -43,6 +45,14 @@ std::string str(TokenType type)
             return "AmpersandAmpersand";
         case TokenType::PipePipe:
             return "PipePipe";
+        case TokenType::Less:
+            return "Less";
+        case TokenType::Greater:
+            return "Greater";
+        case TokenType::LessEquals:
+            return "LessEquals";
+        case TokenType::GreaterEquals:
+            return "GreaterEquals";
         case TokenType::OpeningParen:
             return "OpeningParen";
         case TokenType::ClosingParen:

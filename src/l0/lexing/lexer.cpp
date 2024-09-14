@@ -41,13 +41,28 @@ Lexer::Lexer(std::shared_ptr<std::istream> input)
       }
 {
     single_character_operators_ = {
-        {'(', TokenType::OpeningParen},   {')', TokenType::ClosingParen}, {'[', TokenType::OpeningBracket},
-        {']', TokenType::ClosingBracket}, {'{', TokenType::OpeningBrace}, {'}', TokenType::ClosingBrace},
-        {'+', TokenType::Plus},           {'-', TokenType::Minus},        {'*', TokenType::Asterisk},
-        {'/', TokenType::Slash},          {'!', TokenType::Bang},         {'.', TokenType::Dot},
-        {',', TokenType::Comma},          {':', TokenType::Colon},        {';', TokenType::Semicolon},
-        {'=', TokenType::Equals},         {'$', TokenType::Dollar},       {'&', TokenType::Ampersand},
+        {'(', TokenType::OpeningParen},
+        {')', TokenType::ClosingParen},
+        {'[', TokenType::OpeningBracket},
+        {']', TokenType::ClosingBracket},
+        {'{', TokenType::OpeningBrace},
+        {'}', TokenType::ClosingBrace},
+        {'+', TokenType::Plus},
+        {'-', TokenType::Minus},
+        {'*', TokenType::Asterisk},
+        {'/', TokenType::Slash},
+        {'%', TokenType::Percent},
+        {'!', TokenType::Bang},
+        {'.', TokenType::Dot},
+        {',', TokenType::Comma},
+        {':', TokenType::Colon},
+        {';', TokenType::Semicolon},
+        {'=', TokenType::Equals},
+        {'$', TokenType::Dollar},
+        {'&', TokenType::Ampersand},
         {'^', TokenType::Caret},
+        {'<', TokenType::Less},
+        {'>', TokenType::Greater},
     };
 
     two_character_operators_ = {
@@ -57,6 +72,8 @@ Lexer::Lexer(std::shared_ptr<std::istream> input)
         {"&&", TokenType::AmpersandAmpersand},
         {"||", TokenType::PipePipe},
         {":=", TokenType::ColonEquals},
+        {"<=", TokenType::LessEquals},
+        {">=", TokenType::GreaterEquals},
     };
 
     for (auto c : single_character_operators_ | std::views::keys)

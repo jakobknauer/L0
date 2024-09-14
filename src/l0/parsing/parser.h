@@ -58,6 +58,7 @@ class Parser : public IParser
     std::shared_ptr<Expression> ParseDisjunction();
     std::shared_ptr<Expression> ParseConjunction();
     std::shared_ptr<Expression> ParseEquality();
+    std::shared_ptr<Expression> ParseComparison();
     std::shared_ptr<Expression> ParseSum();
     std::shared_ptr<Expression> ParseTerm();
     std::shared_ptr<Expression> ParseUnary();

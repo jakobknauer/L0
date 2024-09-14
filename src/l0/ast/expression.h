@@ -65,10 +65,16 @@ class BinaryOp : public Expression
         Plus,
         Minus,
         Asterisk,
+        Slash,
+        Percent,
         AmpersandAmpersand,
         PipePipe,
         EqualsEquals,
         BangEquals,
+        Less,
+        Greater,
+        LessEquals,
+        GreaterEquals,
     };
 
     BinaryOp(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right, Operator op);

@@ -25,6 +25,7 @@ enum class TokenType
     Minus,
     Asterisk,
     Slash,
+    Percent,
     Bang,
     Ampersand,
     Caret,
@@ -32,6 +33,10 @@ enum class TokenType
     BangEquals,
     AmpersandAmpersand,
     PipePipe,
+    Less,
+    Greater,
+    LessEquals,
+    GreaterEquals,
 
     OpeningParen,
     ClosingParen,

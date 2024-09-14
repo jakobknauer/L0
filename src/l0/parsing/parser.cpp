@@ -347,12 +347,51 @@ std::shared_ptr<Expression> Parser::ParseConjunction()
 
 std::shared_ptr<Expression> Parser::ParseEquality()
 {
-    auto expression = ParseSum();
+    auto expression = ParseComparison();
     std::optional<Token> token;
     while ((token = ConsumeIf({TokenType::EqualsEquals, TokenType::BangEquals})))
     {
         BinaryOp::Operator op = (token.value().type == TokenType::EqualsEquals) ? BinaryOp::Operator::EqualsEquals
                                                                                 : BinaryOp::Operator::BangEquals;
+        expression = std::make_shared<BinaryOp>(expression, ParseComparison(), op);
+    }
+    return expression;
+}
+
+std::shared_ptr<Expression> Parser::ParseComparison()
+{
+    auto expression = ParseSum();
+    std::optional<Token> token;
+    while ((token = ConsumeIf({TokenType::Less, TokenType::Greater, TokenType::LessEquals, TokenType::GreaterEquals})))
+    {
+        BinaryOp::Operator op;
+        switch (token.value().type)
+        {
+            case TokenType::Less:
+            {
+                op = BinaryOp::Operator::Less;
+                break;
+            }
+            case TokenType::Greater:
+            {
+                op = BinaryOp::Operator::Greater;
+                break;
+            }
+            case TokenType::LessEquals:
+            {
+                op = BinaryOp::Operator::LessEquals;
+                break;
+            }
+            case TokenType::GreaterEquals:
+            {
+                op = BinaryOp::Operator::GreaterEquals;
+                break;
+            }
+            default:
+            {
+                throw ParserError("ParseComparison()");
+            }
+        }
         expression = std::make_shared<BinaryOp>(expression, ParseSum(), op);
     }
     return expression;
@@ -374,9 +413,33 @@ std::shared_ptr<Expression> Parser::ParseSum()
 std::shared_ptr<Expression> Parser::ParseTerm()
 {
     auto term = ParseUnary();
-    while (ConsumeIf(TokenType::Asterisk))
+    std::optional<Token> token;
+    while ((token = ConsumeIf({TokenType::Asterisk, TokenType::Slash, TokenType::Percent})))
     {
-        term = std::make_shared<BinaryOp>(term, ParseFactor(), BinaryOp::Operator::Asterisk);
+        BinaryOp::Operator op;
+        switch (token.value().type)
+        {
+            case TokenType::Asterisk:
+            {
+                op = BinaryOp::Operator::Asterisk;
+                break;
+            }
+            case TokenType::Slash:
+            {
+                op = BinaryOp::Operator::Slash;
+                break;
+            }
+            case TokenType::Percent:
+            {
+                op = BinaryOp::Operator::Percent;
+                break;
+            }
+            default:
+            {
+                throw ParserError("ParseTerm()");
+            }
+        }
+        term = std::make_shared<BinaryOp>(term, ParseFactor(), op);
     }
     return term;
 }
