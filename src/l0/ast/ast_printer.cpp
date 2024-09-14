@@ -396,6 +396,10 @@ std::string str(BinaryOp::Operator op)
             return "-";
         case BinaryOp::Operator::Asterisk:
             return "*";
+        case BinaryOp::Operator::Slash:
+            return "/";
+        case BinaryOp::Operator::Percent:
+            return "%";
         case l0::BinaryOp::Operator::AmpersandAmpersand:
             return "&&";
         case l0::BinaryOp::Operator::PipePipe:
@@ -404,6 +408,14 @@ std::string str(BinaryOp::Operator op)
             return "==";
         case l0::BinaryOp::Operator::BangEquals:
             return "!=";
+        case l0::BinaryOp::Operator::Less:
+            return "<";
+        case l0::BinaryOp::Operator::Greater:
+            return ">";
+        case l0::BinaryOp::Operator::LessEquals:
+            return "<=";
+        case l0::BinaryOp::Operator::GreaterEquals:
+            return ">=";
     }
 }
 

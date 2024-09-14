@@ -10,6 +10,7 @@ OperatorOverloadResolver::OperatorOverloadResolver()
 {
     auto boolean = std::make_shared<BooleanType>(TypeQualifier::Constant);
     auto integer = std::make_shared<IntegerType>(TypeQualifier::Constant);
+    auto character = std::make_shared<CharacterType>(TypeQualifier::Constant);
 
     unary_operator_overloads_ = {
         {UnaryOp::Operator::Plus, {{integer, integer}}},
@@ -18,15 +19,24 @@ OperatorOverloadResolver::OperatorOverloadResolver()
     };
 
     binary_operator_overloads_ = {
-        {BinaryOp::Operator::EqualsEquals, {{boolean, boolean, boolean}, {integer, integer, boolean}}},
-        {BinaryOp::Operator::BangEquals, {{boolean, boolean, boolean}, {integer, integer, boolean}}},
+        {BinaryOp::Operator::EqualsEquals,
+         {{boolean, boolean, boolean}, {integer, integer, boolean}, {character, character, boolean}}},
+        {BinaryOp::Operator::BangEquals,
+         {{boolean, boolean, boolean}, {integer, integer, boolean}, {character, character, boolean}}},
 
         {BinaryOp::Operator::Plus, {{integer, integer, integer}}},
         {BinaryOp::Operator::Minus, {{integer, integer, integer}}},
         {BinaryOp::Operator::Asterisk, {{integer, integer, integer}}},
+        {BinaryOp::Operator::Slash, {{integer, integer, integer}}},
+        {BinaryOp::Operator::Percent, {{integer, integer, integer}}},
 
         {BinaryOp::Operator::PipePipe, {{boolean, boolean, boolean}}},
         {BinaryOp::Operator::AmpersandAmpersand, {{boolean, boolean, boolean}}},
+
+        {BinaryOp::Operator::Less, {{integer, integer, boolean}}},
+        {BinaryOp::Operator::Greater, {{integer, integer, boolean}}},
+        {BinaryOp::Operator::LessEquals, {{integer, integer, boolean}}},
+        {BinaryOp::Operator::GreaterEquals, {{integer, integer, boolean}}},
     };
 }
 
