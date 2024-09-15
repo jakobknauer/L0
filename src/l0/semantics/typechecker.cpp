@@ -252,7 +252,7 @@ void Typechecker::Visit(const Call& call)
 
 void Typechecker::Visit(const UnitLiteral& literal)
 {
-    literal.type = module_.globals->GetTypeDefinition("Unit");
+    literal.type = module_.globals->GetTypeDefinition("()");
 }
 
 void Typechecker::Visit(const BooleanLiteral& literal)
