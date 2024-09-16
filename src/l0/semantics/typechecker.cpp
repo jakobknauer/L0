@@ -262,7 +262,7 @@ void Typechecker::Visit(const BooleanLiteral& literal)
 
 void Typechecker::Visit(const IntegerLiteral& literal)
 {
-    literal.type = module_.globals->GetTypeDefinition("Integer");
+    literal.type = module_.globals->GetTypeDefinition("I64");
 }
 
 void Typechecker::Visit(const CharacterLiteral& literal)
@@ -356,7 +356,7 @@ void Typechecker::Visit(const Allocation& allocation)
     if (allocation.size)
     {
         allocation.size->Accept(*this);
-        auto integer_type = module_.globals->GetTypeDefinition("Integer");
+        auto integer_type = module_.globals->GetTypeDefinition("I64");
         if (*allocation.size->type != *integer_type)
         {
             throw SemanticError(std::format(
