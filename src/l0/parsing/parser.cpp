@@ -284,11 +284,26 @@ std::shared_ptr<Statement> Parser::ParseConditionalStatement()
     }
 
     Consume();
-    Expect(TokenType::Colon);
-    Expect(TokenType::OpeningBrace);
-    auto else_block = ParseStatementBlock(TokenType::ClosingBrace);
-    Expect(TokenType::ClosingBrace);
-    return std::make_shared<ConditionalStatement>(condition, if_block, else_block);
+    if (ConsumeIf(TokenType::Colon))
+    {
+        Expect(TokenType::OpeningBrace);
+        auto else_block = ParseStatementBlock(TokenType::ClosingBrace);
+        Expect(TokenType::ClosingBrace);
+        return std::make_shared<ConditionalStatement>(condition, if_block, else_block);
+    }
+    else if (PeekIsKeyword("if"))
+    {
+        auto else_block = std::make_shared<StatementBlock>();
+        auto else_if = ParseConditionalStatement();
+        else_block->push_back(else_if);
+        return std::make_shared<ConditionalStatement>(condition, if_block, else_block);
+    }
+    else
+    {
+        throw ParserError(std::format(
+            "Expected ':' or 'if' after 'else', got token '{}' of type '{}' instead", Peek().lexeme, str(Peek().type)
+        ));
+    }
 }
 
 std::shared_ptr<Statement> Parser::ParseWhileLoop()
