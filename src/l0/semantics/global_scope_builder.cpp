@@ -17,13 +17,13 @@ GlobalScopeBuilder::GlobalScopeBuilder(Module& module)
     // TODO declare basic types as external types - requires 'type resolution' in type_annotation_converter
     module_.globals->DeclareType("()");
     module_.globals->DeclareType("Boolean");
-    module_.globals->DeclareType("Integer");
+    module_.globals->DeclareType("I64");
     module_.globals->DeclareType("C8");
     module_.globals->DeclareType("CString");
 
     module_.globals->DefineType("()", std::make_shared<UnitType>(TypeQualifier::Constant));
     module_.globals->DefineType("Boolean", std::make_shared<BooleanType>(TypeQualifier::Constant));
-    module_.globals->DefineType("Integer", std::make_shared<IntegerType>(TypeQualifier::Constant));
+    module_.globals->DefineType("I64", std::make_shared<IntegerType>(TypeQualifier::Constant));
     auto C8 = std::make_shared<CharacterType>(TypeQualifier::Constant);
     module_.globals->DefineType("C8", C8);
     module_.globals->DefineType("CString", std::make_shared<ReferenceType>(C8, TypeQualifier::Constant));
@@ -139,7 +139,7 @@ void GlobalScopeBuilder::DeclareVariable(std::shared_ptr<Declaration> declaratio
     {
         if (dynamic_pointer_cast<IntegerLiteral>(declaration->initializer))
         {
-            type = module_.globals->GetTypeDefinition("Integer");
+            type = module_.globals->GetTypeDefinition("I64");
         }
         else if (auto function = dynamic_pointer_cast<Function>(declaration->initializer))
         {

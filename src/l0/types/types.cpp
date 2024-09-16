@@ -96,7 +96,7 @@ IntegerType::IntegerType(TypeQualifier mutability)
 
 std::string IntegerType::ToString() const
 {
-    return str(mutability) + "Integer";
+    return str(mutability) + "I64";
 }
 
 void IntegerType::Accept(IConstTypeVisitor& visitor) const
