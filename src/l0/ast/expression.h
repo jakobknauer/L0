@@ -1,6 +1,8 @@
 #ifndef L0_AST_EXPRESSION_H
 #define L0_AST_EXPRESSION_H
 
+#include <llvm/IR/Intrinsics.h>
+
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -48,6 +50,15 @@ class UnaryOp : public Expression
         Caret,
     };
 
+    enum class Overload
+    {
+        AddressOf,
+        BooleanNegation,
+        Dereferenciation,
+        IntegerNegation,
+        IntegerIdentity,
+    };
+
     UnaryOp(std::shared_ptr<Expression> operand, Operator op);
 
     void Accept(IConstExpressionVisitor& visitor) const override;
@@ -55,6 +66,8 @@ class UnaryOp : public Expression
 
     std::shared_ptr<Expression> operand;
     Operator op;
+
+    mutable Overload overload;
 };
 
 class BinaryOp : public Expression
@@ -77,6 +90,28 @@ class BinaryOp : public Expression
         GreaterEquals,
     };
 
+    enum class Overload
+    {
+        BooleanConjunction,
+        BooleanDisjunction,
+        BooleanEquality,
+        BooleanInequality,
+        CharacterEquality,
+        CharacterInequality,
+        IntegerAddition,
+        IntegerDivision,
+        IntegerEquality,
+        IntegerGreater,
+        IntegerGreaterOrEquals,
+        IntegerInequality,
+        IntegerLess,
+        IntegerLessOrEquals,
+        IntegerMultiplication,
+        IntegerRemainder,
+        IntegerSubtraction,
+        ReferenceIndexation,
+    };
+
     BinaryOp(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right, Operator op);
 
     void Accept(IConstExpressionVisitor& visitor) const override;
@@ -85,6 +120,8 @@ class BinaryOp : public Expression
     std::shared_ptr<Expression> left;
     std::shared_ptr<Expression> right;
     Operator op;
+
+    mutable Overload overload;
 };
 
 class Variable : public Expression

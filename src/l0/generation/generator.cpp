@@ -345,15 +345,15 @@ void Generator::Visit(const Assignment& assignment)
 
 void Generator::Visit(const UnaryOp& unary_op)
 {
-    switch (unary_op.op)
+    switch (unary_op.overload)
     {
-        case UnaryOp::Operator::Plus:
+        case UnaryOp::Overload::IntegerIdentity:
         {
             unary_op.operand->Accept(*this);
             // leave result_ and result_address
             break;
         }
-        case l0::UnaryOp::Operator::Minus:
+        case UnaryOp::Overload::IntegerNegation:
         {
             unary_op.operand->Accept(*this);
             llvm::Value* operand = result_;
@@ -361,7 +361,7 @@ void Generator::Visit(const UnaryOp& unary_op)
             result_address_ = nullptr;
             break;
         }
-        case l0::UnaryOp::Operator::Bang:
+        case UnaryOp::Overload::BooleanNegation:
         {
             unary_op.operand->Accept(*this);
             llvm::Value* operand = result_;
@@ -369,7 +369,7 @@ void Generator::Visit(const UnaryOp& unary_op)
             result_address_ = nullptr;
             break;
         }
-        case l0::UnaryOp::Operator::Ampersand:
+        case UnaryOp::Overload::AddressOf:
         {
             unary_op.operand->Accept(*this);
             GenerateResultAddress();
@@ -377,7 +377,7 @@ void Generator::Visit(const UnaryOp& unary_op)
             result_address_ = nullptr;
             break;
         }
-        case l0::UnaryOp::Operator::Caret:
+        case UnaryOp::Overload::Dereferenciation:
         {
             unary_op.operand->Accept(*this);
             auto address = result_;
@@ -397,91 +397,94 @@ void Generator::Visit(const BinaryOp& binary_op)
     binary_op.right->Accept(*this);
     llvm::Value* right = result_;
 
-    switch (binary_op.op)
+    switch (binary_op.overload)
     {
-        case BinaryOp::Operator::Plus:
+        case BinaryOp::Overload::ReferenceIndexation:
         {
-            if (auto reference_type = dynamic_pointer_cast<ReferenceType>(binary_op.left->type))
-            {
-                auto llvm_type = type_converter_.Convert(*reference_type->base_type);
-                std::vector<llvm::Value*> indices = {right};
-                result_ = builder_.CreateGEP(llvm_type, left, indices, "geptmp");
-                result_address_ = nullptr;
-            }
-            else
-            {
-                result_ = builder_.CreateAdd(left, right, "addtmp");
-                result_address_ = nullptr;
-            }
+            auto reference_type = dynamic_pointer_cast<ReferenceType>(binary_op.left->type);
+            auto llvm_type = type_converter_.Convert(*reference_type->base_type);
+            std::vector<llvm::Value*> indices = {right};
+            result_ = builder_.CreateGEP(llvm_type, left, indices, "indextmp");
+            result_address_ = nullptr;
             break;
         }
-        case BinaryOp::Operator::Minus:
+        case BinaryOp::Overload::IntegerAddition:
+        {
+            result_ = builder_.CreateAdd(left, right, "addtmp");
+            result_address_ = nullptr;
+            break;
+        }
+        case BinaryOp::Overload::IntegerSubtraction:
         {
             result_ = builder_.CreateSub(left, right, "subtmp");
             result_address_ = nullptr;
             break;
         }
-        case BinaryOp::Operator::Asterisk:
+        case BinaryOp::Overload::IntegerMultiplication:
         {
             result_ = builder_.CreateMul(left, right, "multmp");
             result_address_ = nullptr;
             break;
         }
-        case BinaryOp::Operator::Slash:
+        case BinaryOp::Overload::IntegerDivision:
         {
             result_ = builder_.CreateSDiv(left, right, "sdivtmp");
             result_address_ = nullptr;
             break;
         }
-        case BinaryOp::Operator::Percent:
+        case BinaryOp::Overload::IntegerRemainder:
         {
             result_ = builder_.CreateURem(left, right, "uremtmp");
             result_address_ = nullptr;
             break;
         }
-        case BinaryOp::Operator::AmpersandAmpersand:
+        case BinaryOp::Overload::BooleanConjunction:
         {
             result_ = builder_.CreateLogicalAnd(left, right, "andtmp");
             result_address_ = nullptr;
             break;
         }
-        case BinaryOp::Operator::PipePipe:
+        case BinaryOp::Overload::BooleanDisjunction:
         {
             result_ = builder_.CreateLogicalOr(left, right, "ortmp");
             result_address_ = nullptr;
             break;
         }
-        case BinaryOp::Operator::EqualsEquals:
+        case BinaryOp::Overload::BooleanEquality:
+        case BinaryOp::Overload::IntegerEquality:
+        case BinaryOp::Overload::CharacterEquality:
         {
             result_ = builder_.CreateICmpEQ(left, right, "eqtmp");
             result_address_ = nullptr;
             break;
         }
-        case BinaryOp::Operator::BangEquals:
+        case BinaryOp::Overload::BooleanInequality:
+        case BinaryOp::Overload::IntegerInequality:
+        case BinaryOp::Overload::CharacterInequality:
         {
             result_ = builder_.CreateICmpNE(left, right, "netmp");
             result_address_ = nullptr;
             break;
         }
-        case BinaryOp::Operator::Less:
+        case BinaryOp::Overload::IntegerLess:
         {
             result_ = builder_.CreateICmpSLT(left, right, "slttmp");
             result_address_ = nullptr;
             break;
         }
-        case BinaryOp::Operator::Greater:
+        case BinaryOp::Overload::IntegerGreater:
         {
             result_ = builder_.CreateICmpSGT(left, right, "sgttmp");
             result_address_ = nullptr;
             break;
         }
-        case BinaryOp::Operator::LessEquals:
+        case BinaryOp::Overload::IntegerLessOrEquals:
         {
             result_ = builder_.CreateICmpSLE(left, right, "sletmp");
             result_address_ = nullptr;
             break;
         }
-        case BinaryOp::Operator::GreaterEquals:
+        case BinaryOp::Overload::IntegerGreaterOrEquals:
         {
             result_ = builder_.CreateICmpSGE(left, right, "sgetmp");
             result_address_ = nullptr;

@@ -13,46 +13,60 @@ OperatorOverloadResolver::OperatorOverloadResolver()
     auto character = std::make_shared<CharacterType>(TypeQualifier::Constant);
 
     unary_operator_overloads_ = {
-        {UnaryOp::Operator::Plus, {{integer, integer}}},
-        {UnaryOp::Operator::Minus, {{integer, integer}}},
-        {UnaryOp::Operator::Bang, {{boolean, boolean}}},
+        {UnaryOp::Operator::Plus, {{integer, {integer, UnaryOp::Overload::IntegerIdentity}}}},
+        {UnaryOp::Operator::Minus, {{integer, {integer, UnaryOp::Overload::IntegerNegation}}}},
+        {UnaryOp::Operator::Bang, {{boolean, {boolean, UnaryOp::Overload::BooleanNegation}}}},
     };
 
     binary_operator_overloads_ = {
-        {BinaryOp::Operator::EqualsEquals,
-         {{boolean, boolean, boolean}, {integer, integer, boolean}, {character, character, boolean}}},
-        {BinaryOp::Operator::BangEquals,
-         {{boolean, boolean, boolean}, {integer, integer, boolean}, {character, character, boolean}}},
+        {
+            BinaryOp::Operator::EqualsEquals,
+            {
+                {boolean, boolean, {boolean, BinaryOp::Overload::BooleanEquality}},
+                {integer, integer, {boolean, BinaryOp::Overload::IntegerEquality}},
+                {character, character, {boolean, BinaryOp::Overload::CharacterEquality}},
+            },
+        },
+        {
+            BinaryOp::Operator::BangEquals,
+            {
+                {boolean, boolean, {boolean, BinaryOp::Overload::BooleanInequality}},
+                {integer, integer, {boolean, BinaryOp::Overload::IntegerInequality}},
+                {character, character, {boolean, BinaryOp::Overload::CharacterInequality}},
+            },
+        },
 
-        {BinaryOp::Operator::Plus, {{integer, integer, integer}}},
-        {BinaryOp::Operator::Minus, {{integer, integer, integer}}},
-        {BinaryOp::Operator::Asterisk, {{integer, integer, integer}}},
-        {BinaryOp::Operator::Slash, {{integer, integer, integer}}},
-        {BinaryOp::Operator::Percent, {{integer, integer, integer}}},
+        {BinaryOp::Operator::Plus, {{integer, integer, {integer, BinaryOp::Overload::IntegerAddition}}}},
+        {BinaryOp::Operator::Minus, {{integer, integer, {integer, BinaryOp::Overload::IntegerSubtraction}}}},
+        {BinaryOp::Operator::Asterisk, {{integer, integer, {integer, BinaryOp::Overload::IntegerMultiplication}}}},
+        {BinaryOp::Operator::Slash, {{integer, integer, {integer, BinaryOp::Overload::IntegerDivision}}}},
+        {BinaryOp::Operator::Percent, {{integer, integer, {integer, BinaryOp::Overload::IntegerRemainder}}}},
 
-        {BinaryOp::Operator::PipePipe, {{boolean, boolean, boolean}}},
-        {BinaryOp::Operator::AmpersandAmpersand, {{boolean, boolean, boolean}}},
+        {BinaryOp::Operator::PipePipe, {{boolean, boolean, {boolean, BinaryOp::Overload::BooleanDisjunction}}}},
+        {BinaryOp::Operator::AmpersandAmpersand, {{boolean, boolean, {boolean, BinaryOp::Overload::BooleanConjunction}}}
+        },
 
-        {BinaryOp::Operator::Less, {{integer, integer, boolean}}},
-        {BinaryOp::Operator::Greater, {{integer, integer, boolean}}},
-        {BinaryOp::Operator::LessEquals, {{integer, integer, boolean}}},
-        {BinaryOp::Operator::GreaterEquals, {{integer, integer, boolean}}},
+        {BinaryOp::Operator::Less, {{integer, integer, {boolean, BinaryOp::Overload::IntegerLess}}}},
+        {BinaryOp::Operator::Greater, {{integer, integer, {boolean, BinaryOp::Overload::IntegerGreater}}}},
+        {BinaryOp::Operator::LessEquals, {{integer, integer, {boolean, BinaryOp::Overload::IntegerLessOrEquals}}}},
+        {BinaryOp::Operator::GreaterEquals, {{integer, integer, {boolean, BinaryOp::Overload::IntegerGreaterOrEquals}}}
+        },
     };
 }
 
-std::shared_ptr<Type> OperatorOverloadResolver::ResolveUnaryOperator(
+OperatorOverloadResolver::UnaryOpResolution OperatorOverloadResolver::ResolveUnaryOperator(
     UnaryOp::Operator op, std::shared_ptr<Type> operand
 ) const
 {
     if (op == UnaryOp::Operator::Ampersand)
     {
-        return std::make_shared<ReferenceType>(operand, TypeQualifier::Constant);
+        return {std::make_shared<ReferenceType>(operand, TypeQualifier::Constant), UnaryOp::Overload::AddressOf};
     }
     if (op == UnaryOp::Operator::Caret)
     {
         if (auto reference_type = dynamic_pointer_cast<ReferenceType>(operand))
         {
-            return reference_type->base_type;
+            return {reference_type->base_type, UnaryOp::Overload::Dereferenciation};
         }
         else
         {
@@ -74,7 +88,7 @@ std::shared_ptr<Type> OperatorOverloadResolver::ResolveUnaryOperator(
 
     if (matching_signature != candidates.cend())
     {
-        return matching_signature->result;
+        return matching_signature->resolution;
     }
 
     throw SemanticError(std::format(
@@ -82,7 +96,7 @@ std::shared_ptr<Type> OperatorOverloadResolver::ResolveUnaryOperator(
     ));
 }
 
-std::shared_ptr<Type> OperatorOverloadResolver::ResolveBinaryOperator(
+OperatorOverloadResolver::BinaryOpResolution OperatorOverloadResolver::ResolveBinaryOperator(
     BinaryOp::Operator op, std::shared_ptr<Type> lhs, std::shared_ptr<Type> rhs
 ) const
 {
@@ -91,7 +105,7 @@ std::shared_ptr<Type> OperatorOverloadResolver::ResolveBinaryOperator(
         auto reference_type = dynamic_pointer_cast<ReferenceType>(lhs);
         if (reference_type && *rhs == IntegerType{TypeQualifier::Constant})
         {
-            return lhs;
+            return {lhs, BinaryOp::Overload::ReferenceIndexation};
         }
     }
 
@@ -109,7 +123,7 @@ std::shared_ptr<Type> OperatorOverloadResolver::ResolveBinaryOperator(
 
     if (matching_signature != candidates.cend())
     {
-        return matching_signature->result;
+        return matching_signature->resolution;
     }
 
     throw SemanticError(std::format(

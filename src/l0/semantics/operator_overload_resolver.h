@@ -15,8 +15,20 @@ class OperatorOverloadResolver
 {
    public:
     OperatorOverloadResolver();
-    std::shared_ptr<Type> ResolveUnaryOperator(UnaryOp::Operator op, std::shared_ptr<Type> operand) const;
-    std::shared_ptr<Type> ResolveBinaryOperator(
+
+    struct UnaryOpResolution
+    {
+        std::shared_ptr<Type> result_type;
+        UnaryOp::Overload overload;
+    };
+    UnaryOpResolution ResolveUnaryOperator(UnaryOp::Operator op, std::shared_ptr<Type> operand) const;
+
+    struct BinaryOpResolution
+    {
+        std::shared_ptr<Type> result_type;
+        BinaryOp::Overload overload;
+    };
+    BinaryOpResolution ResolveBinaryOperator(
         BinaryOp::Operator op, std::shared_ptr<Type> lhs, std::shared_ptr<Type> rhs
     ) const;
 
@@ -24,14 +36,14 @@ class OperatorOverloadResolver
     struct UnaryOpSignature
     {
         std::shared_ptr<Type> operand;
-        std::shared_ptr<Type> result;
+        UnaryOpResolution resolution;
     };
 
     struct BinaryOpSignature
     {
         std::shared_ptr<Type> lhs;
         std::shared_ptr<Type> rhs;
-        std::shared_ptr<Type> result;
+        BinaryOpResolution resolution;
     };
 
     std::unordered_map<UnaryOp::Operator, std::vector<UnaryOpSignature>> unary_operator_overloads_;
