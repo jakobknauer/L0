@@ -1,0 +1,264 @@
+fn main () -> I64
+{
+    while true:
+    {
+        line := read_ln();
+        n := string_to_i64(&line);
+        fac_n := fac(n);
+
+        s : mut String = from_cstring("Faculty of ");
+        s.append_i64(n);
+        s.append_cstring(" is ");
+        s.append_i64(fac_n);
+        s.append_c8('\n');
+        print_string(&s);
+
+        line.free();
+        s.free();
+    };
+
+    return 0;
+};
+
+fn print_ln () -> ()
+{
+    printf("\n");
+};
+
+fn print_string (string : &String) -> ()
+{
+    printf(string^.cstring());
+};
+
+fn print_i64 (i64 : I64) -> ()
+{
+    s := from_i64(i64);
+    print_string(&s);
+    s.free();
+};
+
+fn read_ln () -> String
+{
+    s : mut String = String{};
+    c : mut C8 = getchar();
+    while c != '\n':
+    {
+        s.append_c8(c);
+        c = getchar();
+    };
+    return s;
+};
+
+fn fac (n : I64) -> I64
+{
+    if n == 0:
+    {
+        return 1;
+    };
+    return n * fac(n-1);
+};
+
+fn cstring_len (cstring : CString) -> I64
+{
+    length : mut I64 = 0;
+    while (cstring + length)^ != '\0':
+    {
+        length = length + 1;
+    };
+    return length;
+};
+
+fn from_cstring (cstring : CString) -> String
+{
+    length := cstring_len(cstring) + 1;
+    s : mut String = String
+    {
+        _buffer = new [length] C8;
+        _length = 0;
+        _capacity = length;
+    };
+    s.append_cstring(cstring);
+    return s;
+};
+
+fn from_i64 (i64 : I64) -> String
+{
+    digits := n_digits(i64);
+    s : mut String = String
+    {
+        _buffer = new [digits+1] C8;
+        _length = 0;
+        _capacity = digits + 1;
+    };
+
+    div : mut I64 = pow(10, digits-1);
+    while div > 0:
+    {
+        digit := (i64 / div) % 10;
+        s.append_c8(digit_to_c8(digit));
+
+        div = div / 10;
+    };
+
+    return s;
+};
+
+fn string_to_i64 (string : &String) -> I64
+{
+    result : mut I64 = 0;
+    i : mut I64 = 0;
+    while i < string^.length():
+    {
+        result = result * 10;
+        result = result + c8_to_digit(string^.at(i));
+        i = i + 1;
+    };
+    return result;
+};
+
+fn digit_to_c8 (digit : I64) -> C8
+{
+    if digit == 0: { return '0'; }
+    else if digit == 1: { return '1'; }
+    else if digit == 2: { return '2'; }
+    else if digit == 3: { return '3'; }
+    else if digit == 4: { return '4'; }
+    else if digit == 5: { return '5'; }
+    else if digit == 6: { return '6'; }
+    else if digit == 7: { return '7'; }
+    else if digit == 8: { return '8'; }
+    else if digit == 9: { return '9'; }
+    else: { return '?'; };
+};
+
+fn c8_to_digit (c8 : C8) -> I64
+{
+    if c8 == '0': { return 0; }
+    else if c8 == '1': { return 1; }
+    else if c8 == '2': { return 2; }
+    else if c8 == '3': { return 3; }
+    else if c8 == '4': { return 4; }
+    else if c8 == '5': { return 5; }
+    else if c8 == '6': { return 6; }
+    else if c8 == '7': { return 7; }
+    else if c8 == '8': { return 8; }
+    else if c8 == '9': { return 9; }
+    else: { return -1; };
+};
+
+fn pow (a : I64, b : I64) -> I64
+{
+    result : mut I64 = 1;
+    i : mut I64 = 0;
+    while i < b:
+    {
+        result = result * a;
+        i = i + 1;
+    };
+    return result;
+};
+
+fn n_digits (n : I64) -> I64
+{
+    result : mut I64 = 1;
+    remainder : mut I64 = n;
+    while remainder >= 10:
+    {
+        result = result + 1;
+        remainder = remainder / 10;
+    };
+    return result;
+};
+
+struct String
+{
+    _buffer : mut &mut C8 = new [1] C8;  # Initializes to '\0';
+    _length : mut I64 = 0;
+    _capacity : mut I64 = 1;
+
+    method cstring (this : &String) -> CString
+    {
+        return this^._buffer;
+    };
+
+    method length (this : &String) -> I64 { return this^._length; };
+
+    method at (this : &String, index : I64) -> C8 { return (this^._buffer + index)^; };
+
+    method append_c8 (this : &mut String, char : C8) -> ()
+    {
+        this^.ensure_capacity(this^._length + 2);
+
+        (this^._buffer + this^._length)^ = char;
+        (this^._buffer + this^._length + 1)^ = '\0';
+
+        this^._length = this^._length + 1;
+    };
+
+    method append_i64 (this : &mut String, i64 : I64) -> ()
+    {
+        s := from_i64(i64);
+        this^.append(&s);
+        s.free();
+    };
+
+    method append (this : &mut String, other : &String) -> ()
+    {
+        this^.append_cstring(other^.cstring());
+    };
+
+    method append_cstring (this : &mut String, other : CString) -> ()
+    {
+        length := cstring_len(other);
+        this^.ensure_capacity(this^._length + length + 1);
+
+        i : mut I64 = 0;
+        while i < cstring_len(other):
+        {
+            (this^._buffer + this^._length + i)^ = (other + i)^;
+            i = i + 1;
+        };
+
+        this^._length = this^._length + length;
+        (this^._buffer + this^._length)^ = '\0';
+    };
+
+    method ensure_capacity (this : &mut String, capacity : I64) -> ()
+    {
+        if this^._capacity >= capacity:
+        {
+            return;
+        };
+
+        new_data := new [capacity] C8;
+        i : mut I64 = 0;
+        while i < this^._length:
+        {
+            (new_data + i)^ = (this^._buffer + i)^;
+            i = i + 1;
+        };
+
+        if this^._capacity > 0:
+        {
+            delete this^._buffer;
+        };
+
+        this^._buffer = new_data;
+        this^._capacity = capacity;
+    };
+
+    method clear (this : &mut String) -> ()
+    {
+        this^.free();
+        this^._capacity = 0;
+        this^._length = 0;
+    };
+
+    method free (this : &String) -> ()
+    {
+        if this^._capacity > 0:
+        {
+            delete this^._buffer;
+        };
+    };
+};
