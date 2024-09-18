@@ -68,12 +68,12 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     void Visit(const Allocation& allocation) override;
 
     void GenerateFunctionBody(const Function& function, llvm::Function& llvm_function);
+    llvm::AllocaInst* GenerateAlloca(llvm::Type* type, std::string name);
+    void GenerateResultAddress();
 
     std::vector<std::tuple<std::string, llvm::Value*>> GetActualMemberInitializers(
         const MemberInitializerList& explicit_initializers, const StructType& struct_type
     );
-
-    void GenerateResultAddress();
 };
 
 }  // namespace l0
