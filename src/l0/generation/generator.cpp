@@ -182,32 +182,11 @@ void Generator::Visit(const Declaration& declaration)
     declaration.initializer->Accept(*this);
     llvm::Value* initializer = result_;
 
-    auto type = declaration.scope->GetVariableType(declaration.variable);
+    std::shared_ptr<Type> type = declaration.scope->GetVariableType(declaration.variable);
     llvm::Type* llvm_type = type_converter_.GetValueDeclarationType(*type);
-
-    llvm::Function* llvm_function = builder_.GetInsertBlock()->getParent();
-    auto previous_block = builder_.GetInsertBlock();
-
-    auto alloca_block = std::find_if(
-        llvm_function->begin(),
-        llvm_function->end(),
-        [](const llvm::BasicBlock& block) { return block.getName() == kAllocationBlockName; }
-    );
-    if (alloca_block == llvm_function->end())
-    {
-        throw GeneratorError(std::format(
-            "Function '{}' does not have '{}' block. This should never happen.",
-            llvm_function->getName().str(),
-            kAllocationBlockName
-        ));
-    }
-
-    builder_.SetInsertPoint(&*alloca_block);
-    llvm::AllocaInst* alloca = builder_.CreateAlloca(llvm_type, nullptr, declaration.variable);
+    llvm::AllocaInst* alloca = GenerateAlloca(llvm_type, declaration.variable);
 
     declaration.scope->SetLLVMValue(declaration.variable, alloca);
-
-    builder_.SetInsertPoint(previous_block);
     builder_.CreateStore(initializer, alloca);
 
     result_ = nullptr;
@@ -658,7 +637,7 @@ void Generator::Visit(const Initializer& initializer)
     }
 
     llvm::Type* llvm_type = type_converter_.Convert(*initializer.type);
-    auto alloca = builder_.CreateAlloca(llvm_type, nullptr, std::format("structinit_address__{}", struct_type->name));
+    auto alloca = GenerateAlloca(llvm_type, std::format("structinit_address__{}", struct_type->name));
 
     auto actual_initializers = GetActualMemberInitializers(*initializer.member_initializers, *struct_type);
 
@@ -749,6 +728,42 @@ void Generator::GenerateFunctionBody(const Function& function, llvm::Function& l
     llvm::verifyFunction(llvm_function);
 }
 
+llvm::AllocaInst* Generator::GenerateAlloca(llvm::Type* type, std::string name)
+{
+    llvm::Function& llvm_function = *builder_.GetInsertBlock()->getParent();
+
+    auto alloca_block = std::ranges::find(
+        llvm_function, kAllocationBlockName, [](const llvm::BasicBlock& block) { return block.getName(); }
+    );
+
+    if (alloca_block == llvm_function.end())
+    {
+        throw GeneratorError(std::format(
+            "Function '{}' does not have '{}' block. This should never happen.",
+            llvm_function.getName().str(),
+            kAllocationBlockName
+        ));
+    }
+
+    auto previous_block = builder_.GetInsertBlock();
+    builder_.SetInsertPoint(&*alloca_block);
+    auto alloca = builder_.CreateAlloca(type, nullptr, name);
+    builder_.SetInsertPoint(previous_block);
+
+    return alloca;
+}
+
+void Generator::GenerateResultAddress()
+{
+    if (result_address_)
+    {
+        return;
+    }
+
+    result_address_ = GenerateAlloca(result_->getType(), std::format("address_{}", std::string{result_->getName()}));
+    builder_.CreateStore(result_, result_address_);
+}
+
 std::vector<std::tuple<std::string, llvm::Value*>> Generator::GetActualMemberInitializers(
     const MemberInitializerList& explicit_initializers, const StructType& struct_type
 )
@@ -785,38 +800,6 @@ std::vector<std::tuple<std::string, llvm::Value*>> Generator::GetActualMemberIni
     }
 
     return actual_initializers;
-}
-
-void Generator::GenerateResultAddress()
-{
-    if (result_address_)
-    {
-        return;
-    }
-
-    llvm::Function* llvm_function = builder_.GetInsertBlock()->getParent();
-    auto previous_block = builder_.GetInsertBlock();
-
-    auto alloca_block = std::find_if(
-        llvm_function->begin(),
-        llvm_function->end(),
-        [](const llvm::BasicBlock& block) { return block.getName() == kAllocationBlockName; }
-    );
-    if (alloca_block == llvm_function->end())
-    {
-        throw GeneratorError(std::format(
-            "Function '{}' does not have '{}' block. This should never happen.",
-            llvm_function->getName().str(),
-            kAllocationBlockName
-        ));
-    }
-
-    builder_.SetInsertPoint(&*alloca_block);
-    result_address_ =
-        builder_.CreateAlloca(result_->getType(), nullptr, std::format("address_{}", std::string{result_->getName()}));
-
-    builder_.SetInsertPoint(previous_block);
-    builder_.CreateStore(result_, result_address_);
 }
 
 }  // namespace l0
