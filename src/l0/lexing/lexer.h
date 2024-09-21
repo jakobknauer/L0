@@ -44,7 +44,7 @@ class Lexer : public ILexer
     std::unordered_map<char, TokenType> single_character_operators_;
     std::unordered_map<std::string, TokenType> two_character_operators_;
     std::unordered_set<char> operator_characters_;
-    std::unordered_set<std::string> keywords_;
+    std::unordered_set<std::string_view> keywords_;
     std::unordered_map<char, char> escape_sequences_;
 };
 

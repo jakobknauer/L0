@@ -3,6 +3,8 @@
 #include <format>
 #include <ranges>
 
+#include "l0/common/constants.h"
+
 namespace l0
 {
 
@@ -23,21 +25,21 @@ bool IsValidIdentifierCharacter(char c)
 Lexer::Lexer(std::shared_ptr<std::istream> input)
     : input_{input},
       keywords_{
-          "return",
-          "unit",
-          "true",
-          "false",
-          "if",
-          "else",
-          "while",
-          "new",
-          "delete",
-          "const",
-          "mut",
-          "type",
-          "struct",
-          "method",
-          "fn",
+          Keyword::Constant,
+          Keyword::Delete,
+          Keyword::Else,
+          Keyword::False,
+          Keyword::Function,
+          Keyword::If,
+          Keyword::Method,
+          Keyword::Mutable,
+          Keyword::New,
+          Keyword::Return,
+          Keyword::Structure,
+          Keyword::True,
+          Keyword::Type,
+          Keyword::UnitLiteral,
+          Keyword::While,
       }
 {
     single_character_operators_ = {

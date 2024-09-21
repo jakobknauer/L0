@@ -37,7 +37,8 @@ class Parser : public IParser
     Token Consume();
     bool ConsumeIf(TokenType type);
     std::optional<Token> ConsumeIf(std::initializer_list<TokenType> type);
-    std::optional<std::string> ConsumeIfKeyword(std::initializer_list<std::string> keywords);
+    bool ConsumeIfKeyword(std::string_view keyword);
+    std::optional<std::string> ConsumeIfKeyword(std::initializer_list<std::string_view> keywords);
     Token ConsumeAll(TokenType type);
     Token Expect(TokenType type);
     Token Expect(std::initializer_list<TokenType> types);

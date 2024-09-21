@@ -1,7 +1,10 @@
 #include "l0/types/types.h"
 
 #include <algorithm>
+#include <format>
 #include <sstream>
+
+#include "l0/common/constants.h"
 
 namespace l0
 {
@@ -13,7 +16,7 @@ std::string str(TypeQualifier qualifier)
         case TypeQualifier::Constant:
             return "";
         case TypeQualifier::Mutable:
-            return "mut ";
+            return std::format("{} ", Keyword::Mutable);
     }
 }
 
@@ -76,7 +79,7 @@ BooleanType::BooleanType(TypeQualifier mutability)
 
 std::string BooleanType::ToString() const
 {
-    return str(mutability) + "Boolean";
+    return std::format("{}{}", str(mutability), Typename::Boolean);
 }
 
 void BooleanType::Accept(IConstTypeVisitor& visitor) const
@@ -96,7 +99,7 @@ IntegerType::IntegerType(TypeQualifier mutability)
 
 std::string IntegerType::ToString() const
 {
-    return str(mutability) + "I64";
+    return std::format("{}{}", str(mutability), Typename::Integer);
 }
 
 void IntegerType::Accept(IConstTypeVisitor& visitor) const
@@ -116,7 +119,7 @@ CharacterType::CharacterType(TypeQualifier mutability)
 
 std::string CharacterType::ToString() const
 {
-    return str(mutability) + "C8";
+    return std::format("{}{}", str(mutability), Typename::Character);
 }
 
 void CharacterType::Accept(IConstTypeVisitor& visitor) const

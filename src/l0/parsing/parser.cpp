@@ -3,6 +3,8 @@
 #include <optional>
 #include <ranges>
 
+#include "l0/common/constants.h"
+
 namespace l0
 {
 
@@ -73,7 +75,12 @@ std::optional<Token> Parser::ConsumeIf(std::initializer_list<TokenType> types)
     return std::nullopt;
 }
 
-std::optional<std::string> Parser::ConsumeIfKeyword(std::initializer_list<std::string> keywords)
+bool Parser::ConsumeIfKeyword(std::string_view keyword)
+{
+    return ConsumeIfKeyword({keyword}).has_value();
+}
+
+std::optional<std::string> Parser::ConsumeIfKeyword(std::initializer_list<std::string_view> keywords)
 {
     if (pos_ >= tokens_.size())
     {
@@ -188,31 +195,31 @@ std::shared_ptr<Statement> Parser::ParseStatement()
     {
         return ParseUnannotatedDeclaration();
     }
-    else if (PeekIsKeyword("return"))
+    else if (PeekIsKeyword(Keyword::Return))
     {
         return ParseReturnStatement();
     }
-    else if (PeekIsKeyword("if"))
+    else if (PeekIsKeyword(Keyword::If))
     {
         return ParseConditionalStatement();
     }
-    else if (PeekIsKeyword("while"))
+    else if (PeekIsKeyword(Keyword::While))
     {
         return ParseWhileLoop();
     }
-    else if (PeekIsKeyword("delete"))
+    else if (PeekIsKeyword(Keyword::Delete))
     {
         return ParseDeallocation();
     }
-    else if (PeekIsKeyword("fn"))
+    else if (PeekIsKeyword(Keyword::Function))
     {
         return ParseAlternativeFunctionDeclaration();
     }
-    else if (PeekIsKeyword("struct"))
+    else if (PeekIsKeyword(Keyword::Structure))
     {
         return ParseAlternativeStructDeclaration();
     }
-    else if (PeekIsKeyword("method"))
+    else if (PeekIsKeyword(Keyword::Method))
     {
         return ParseAlternativeMethodDeclaration();
     }
@@ -223,7 +230,7 @@ std::shared_ptr<Statement> Parser::ParseDeclaration()
 {
     auto identifier = Expect(TokenType::Identifier);
     Expect(TokenType::Colon);
-    if (ConsumeIfKeyword({"type"}))
+    if (ConsumeIfKeyword(Keyword::Type))
     {
         Expect(TokenType::Equals);
         auto definition = ParseStruct();
@@ -257,7 +264,7 @@ std::shared_ptr<Statement> Parser::ParseExpressionStatement()
 
 std::shared_ptr<Statement> Parser::ParseReturnStatement()
 {
-    ExpectKeyword("return");
+    ExpectKeyword(Keyword::Return);
     if (Peek().type == TokenType::Semicolon)
     {
         return std::make_shared<ReturnStatement>(std::make_shared<UnitLiteral>());
@@ -271,14 +278,14 @@ std::shared_ptr<Statement> Parser::ParseReturnStatement()
 
 std::shared_ptr<Statement> Parser::ParseConditionalStatement()
 {
-    ExpectKeyword("if");
+    ExpectKeyword(Keyword::If);
     auto condition = ParseExpression();
     Expect(TokenType::Colon);
     Expect(TokenType::OpeningBrace);
     auto if_block = ParseStatementBlock(TokenType::ClosingBrace);
     Expect(TokenType::ClosingBrace);
 
-    if (!PeekIsKeyword("else"))
+    if (!PeekIsKeyword(Keyword::Else))
     {
         return std::make_shared<ConditionalStatement>(condition, if_block);
     }
@@ -291,7 +298,7 @@ std::shared_ptr<Statement> Parser::ParseConditionalStatement()
         Expect(TokenType::ClosingBrace);
         return std::make_shared<ConditionalStatement>(condition, if_block, else_block);
     }
-    else if (PeekIsKeyword("if"))
+    else if (PeekIsKeyword(Keyword::If))
     {
         auto else_block = std::make_shared<StatementBlock>();
         auto else_if = ParseConditionalStatement();
@@ -308,7 +315,7 @@ std::shared_ptr<Statement> Parser::ParseConditionalStatement()
 
 std::shared_ptr<Statement> Parser::ParseWhileLoop()
 {
-    ExpectKeyword("while");
+    ExpectKeyword(Keyword::While);
     auto condition = ParseExpression();
     Expect(TokenType::Colon);
     Expect(TokenType::OpeningBrace);
@@ -319,7 +326,7 @@ std::shared_ptr<Statement> Parser::ParseWhileLoop()
 
 std::shared_ptr<Statement> Parser::ParseDeallocation()
 {
-    ExpectKeyword("delete");
+    ExpectKeyword(Keyword::Delete);
     auto operand = ParseExpression();
     return std::make_shared<Deallocation>(operand);
 }
@@ -499,7 +506,7 @@ std::shared_ptr<Expression> Parser::ParseUnary()
 
 std::shared_ptr<Expression> Parser::ParseFactor()
 {
-    if (PeekIsKeyword({"new"}))
+    if (PeekIsKeyword(Keyword::New))
     {
         return ParseAllocation();
     }
@@ -582,17 +589,17 @@ std::shared_ptr<Expression> Parser::ParseAtomicExpression()
         case TokenType::Keyword:
         {
             std::string keyword = std::any_cast<std::string>(token.data);
-            if (keyword == "true")
+            if (keyword == Keyword::True)
             {
                 Consume();
                 return std::make_shared<BooleanLiteral>(true);
             }
-            else if (keyword == "false")
+            else if (keyword == Keyword::False)
             {
                 Consume();
                 return std::make_shared<BooleanLiteral>(false);
             }
-            else if (keyword == "unit")
+            else if (keyword == Keyword::UnitLiteral)
             {
                 Consume();
                 return std::make_shared<UnitLiteral>();
@@ -632,7 +639,7 @@ std::shared_ptr<Expression> Parser::ParseInitializer()
 
 std::shared_ptr<Expression> Parser::ParseAllocation()
 {
-    ExpectKeyword("new");
+    ExpectKeyword(Keyword::New);
 
     std::shared_ptr<Expression> size{nullptr};
     if (ConsumeIf(TokenType::OpeningBracket))
@@ -750,7 +757,7 @@ std::shared_ptr<ParameterDeclaration> Parser::ParseParameterDeclaration()
 
 std::shared_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
 {
-    auto qualifier = ConsumeIfKeyword({"mut", "const"});
+    auto qualifier = ConsumeIfKeyword({Keyword::Mutable, Keyword::Constant});
     auto type_annotation = TryParseUnqualifiedTypeAnnotation();
 
     if (!type_annotation && !qualifier)
@@ -767,11 +774,11 @@ std::shared_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
         type_annotation = std::make_shared<MutabilityOnlyTypeAnnotation>();
     }
 
-    if (qualifier == "mut")
+    if (qualifier == Keyword::Mutable)
     {
         type_annotation->mutability = TypeAnnotationQualifier::Mutable;
     }
-    else if (qualifier == "const")
+    else if (qualifier == Keyword::Constant)
     {
         type_annotation->mutability = TypeAnnotationQualifier::Constant;
     }
@@ -799,7 +806,7 @@ std::shared_ptr<TypeAnnotation> Parser::TryParseUnqualifiedTypeAnnotation()
         }
         case TokenType::Keyword:
         {
-            if (PeekIsKeyword("method"))
+            if (PeekIsKeyword(Keyword::Method))
             {
                 return ParseMethodTypeAnnotation();
             }
@@ -844,7 +851,7 @@ std::shared_ptr<TypeAnnotation> Parser::ParseFunctionTypeAnnotation()
     }
     else if (arguments->empty())
     {
-        return std::make_shared<SimpleTypeAnnotation>("()");
+        return std::make_shared<SimpleTypeAnnotation>(std::string{Typename::Unit});
     }
     else
     {
@@ -859,7 +866,7 @@ std::shared_ptr<TypeAnnotation> Parser::ParseFunctionTypeAnnotation()
 
 std::shared_ptr<TypeAnnotation> Parser::ParseMethodTypeAnnotation()
 {
-    ExpectKeyword("method");
+    ExpectKeyword(Keyword::Method);
     auto inner = ParseFunctionTypeAnnotation();
     auto inner_as_function_type = dynamic_pointer_cast<FunctionTypeAnnotation>(inner);
     if (!inner)
@@ -914,7 +921,7 @@ std::shared_ptr<ParameterListAnnotation> Parser::ParseParameterListAnnotation()
 
 std::shared_ptr<TypeExpression> Parser::ParseStruct()
 {
-    ExpectKeyword("struct");
+    ExpectKeyword(Keyword::Structure);
     auto members = ParseMemberDeclarationList();
     return std::make_shared<StructExpression>(members);
 }
@@ -968,7 +975,7 @@ std::shared_ptr<MemberInitializerList> Parser::ParseMemberInitializerList()
 
 std::shared_ptr<Statement> Parser::ParseAlternativeFunctionDeclaration()
 {
-    ExpectKeyword("fn");
+    ExpectKeyword(Keyword::Function);
 
     auto identifier = Expect(TokenType::Identifier);
 
@@ -993,7 +1000,7 @@ std::shared_ptr<Statement> Parser::ParseAlternativeFunctionDeclaration()
 
 std::shared_ptr<Statement> Parser::ParseAlternativeStructDeclaration()
 {
-    ExpectKeyword("struct");
+    ExpectKeyword(Keyword::Structure);
     auto identifier = Expect(TokenType::Identifier);
 
     auto members = ParseMemberDeclarationList();
@@ -1004,7 +1011,7 @@ std::shared_ptr<Statement> Parser::ParseAlternativeStructDeclaration()
 
 std::shared_ptr<Statement> Parser::ParseAlternativeMethodDeclaration()
 {
-    ExpectKeyword("method");
+    ExpectKeyword(Keyword::Method);
 
     auto identifier = Expect(TokenType::Identifier);
 

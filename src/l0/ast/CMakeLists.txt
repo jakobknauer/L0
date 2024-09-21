@@ -16,4 +16,4 @@ add_library(
   type_expression.cpp
   type_expression.h)
 
-target_link_libraries(ast types)
+target_link_libraries(ast types common)

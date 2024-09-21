@@ -2,6 +2,8 @@
 
 #include <ranges>
 
+#include "l0/common/constants.h"
+
 namespace l0
 {
 
@@ -74,7 +76,7 @@ void AstPrinter::Visit(const Declaration& declaration)
 
 void AstPrinter::Visit(const TypeDeclaration& type_declaration)
 {
-    out_ << type_declaration.name << " : type = ";
+    out_ << type_declaration.name << " : " << Keyword::Type << " = ";
     type_declaration.definition->Accept(*this);
 }
 
@@ -85,13 +87,13 @@ void AstPrinter::Visit(const ExpressionStatement& expression_statement)
 
 void AstPrinter::Visit(const ReturnStatement& return_statement)
 {
-    out_ << "return ";
+    out_ << Keyword::Return << " ";
     return_statement.value->Accept(*this);
 }
 
 void AstPrinter::Visit(const ConditionalStatement& conditional_statement)
 {
-    out_ << "if ";
+    out_ << Keyword::If << " ";
     conditional_statement.condition->Accept(*this);
     out_ << ":\n";
 
@@ -109,7 +111,7 @@ void AstPrinter::Visit(const ConditionalStatement& conditional_statement)
         return;
     }
 
-    out_ << "\nelse\n";
+    out_ << "\n" << Keyword::Else << "\n";
     out_ << "{\n";
     ++indent_;
     for (const auto& statement : *conditional_statement.else_block)
@@ -122,7 +124,7 @@ void AstPrinter::Visit(const ConditionalStatement& conditional_statement)
 
 void AstPrinter::Visit(const WhileLoop& while_loop)
 {
-    out_ << "while ";
+    out_ << Keyword::While << " ";
     while_loop.condition->Accept(*this);
     out_ << ":\n";
 
@@ -138,7 +140,7 @@ void AstPrinter::Visit(const WhileLoop& while_loop)
 
 void AstPrinter::Visit(const Deallocation& deallocation)
 {
-    out_ << "delete ";
+    out_ << Keyword::Delete << " ";
     deallocation.reference->Accept(*this);
 }
 
@@ -199,12 +201,12 @@ void AstPrinter::Visit(const Call& call)
 
 void AstPrinter::Visit(const UnitLiteral& literal)
 {
-    out_ << "unit";
+    out_ << Keyword::UnitLiteral;
 }
 
 void AstPrinter::Visit(const BooleanLiteral& literal)
 {
-    out_ << (literal.value ? "true" : "false");
+    out_ << (literal.value ? Keyword::True : Keyword::False);
 }
 
 void AstPrinter::Visit(const IntegerLiteral& literal)
@@ -270,7 +272,7 @@ void AstPrinter::Visit(const Initializer& initializer)
 
 void AstPrinter::Visit(const Allocation& allocation)
 {
-    out_ << "new";
+    out_ << Keyword::New;
     if (allocation.size)
     {
         out_ << "[";
@@ -331,7 +333,7 @@ void AstPrinter::Visit(const FunctionTypeAnnotation& fta)
 
 void AstPrinter::Visit(const MethodTypeAnnotation& mta)
 {
-    out_ << "method ";
+    out_ << Keyword::Method << " ";
     mta.function_type->Accept(*this);
 }
 
@@ -342,7 +344,7 @@ void AstPrinter::Visit(const MutabilityOnlyTypeAnnotation& mota)
 
 void AstPrinter::Visit(const StructExpression& struct_expression)
 {
-    out_ << "struct";
+    out_ << Keyword::Structure;
     out_ << "\n{\n";
     ++indent_;
     for (const auto& statement : *struct_expression.members)
@@ -363,12 +365,12 @@ void AstPrinter::PrintQualifier(TypeAnnotationQualifier qualifier, std::string e
         }
         case TypeAnnotationQualifier::Mutable:
         {
-            out_ << "mut" << end;
+            out_ << Keyword::Mutable << end;
             return;
         }
         case TypeAnnotationQualifier::Constant:
         {
-            out_ << "const" << end;
+            out_ << Keyword::Constant << end;
             return;
         }
     }
