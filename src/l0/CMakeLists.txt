@@ -1,4 +1,5 @@
 add_subdirectory(ast)
+add_subdirectory(common)
 add_subdirectory(generation)
 add_subdirectory(lexing)
 add_subdirectory(main)

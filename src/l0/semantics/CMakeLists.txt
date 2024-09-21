@@ -19,4 +19,4 @@ add_library(
   typechecker.cpp
   typechecker.h)
 
-target_link_libraries(semantics ast types)
+target_link_libraries(semantics ast types common)

@@ -15,22 +15,22 @@ namespace l0
 class Scope
 {
    public:
-    void DeclareVariable(const std::string& name);
-    void DeclareVariable(const std::string& name, std::shared_ptr<Type> type);
-    bool IsVariableDeclared(const std::string& name) const;
+    void DeclareVariable(std::string_view name);
+    void DeclareVariable(std::string_view name, std::shared_ptr<Type> type);
+    bool IsVariableDeclared(std::string_view name) const;
 
-    void SetVariableType(const std::string& name, std::shared_ptr<Type> type);
-    bool IsVariableTypeSet(const std::string& name) const;
-    std::shared_ptr<Type> GetVariableType(const std::string& name) const;
+    void SetVariableType(std::string_view name, std::shared_ptr<Type> type);
+    bool IsVariableTypeSet(std::string_view name) const;
+    std::shared_ptr<Type> GetVariableType(std::string_view name) const;
 
-    void SetLLVMValue(const std::string& name, llvm::Value* llvm_value);
-    llvm::Value* GetLLVMValue(const std::string& name);
+    void SetLLVMValue(std::string_view name, llvm::Value* llvm_value);
+    llvm::Value* GetLLVMValue(std::string_view name);
 
-    void DeclareType(const std::string& name);
-    bool IsTypeDeclared(const std::string& name) const;
-    void DefineType(const std::string& name, std::shared_ptr<Type> type);
-    bool IsTypeDefined(const std::string& name) const;
-    std::shared_ptr<Type> GetTypeDefinition(const std::string& name) const;
+    void DeclareType(std::string_view name);
+    bool IsTypeDeclared(std::string_view name) const;
+    void DefineType(std::string_view name, std::shared_ptr<Type> type);
+    bool IsTypeDefined(std::string_view name) const;
+    std::shared_ptr<Type> GetTypeDefinition(std::string_view name) const;
 
     void Clear();
     const std::unordered_set<std::string>& GetVariables() const;

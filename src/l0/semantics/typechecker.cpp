@@ -2,6 +2,7 @@
 
 #include <ranges>
 
+#include "l0/common/constants.h"
 #include "l0/semantics/semantic_error.h"
 
 namespace l0
@@ -91,7 +92,7 @@ void Typechecker::Visit(const ConditionalStatement& conditional_statement)
 {
     conditional_statement.condition->Accept(*this);
     if (!conversion_checker_.CheckCompatibility(
-            conditional_statement.condition->type, module_.globals->GetTypeDefinition("Boolean")
+            conditional_statement.condition->type, module_.globals->GetTypeDefinition(Typename::Boolean)
         ))
     {
         throw SemanticError(std::format(
@@ -118,7 +119,7 @@ void Typechecker::Visit(const WhileLoop& while_loop)
 {
     while_loop.condition->Accept(*this);
     if (!conversion_checker_.CheckCompatibility(
-            while_loop.condition->type, module_.globals->GetTypeDefinition("Boolean")
+            while_loop.condition->type, module_.globals->GetTypeDefinition(Typename::Boolean)
         ))
     {
         throw SemanticError(std::format(
@@ -245,27 +246,27 @@ void Typechecker::Visit(const Call& call)
 
 void Typechecker::Visit(const UnitLiteral& literal)
 {
-    literal.type = module_.globals->GetTypeDefinition("()");
+    literal.type = module_.globals->GetTypeDefinition(Typename::Unit);
 }
 
 void Typechecker::Visit(const BooleanLiteral& literal)
 {
-    literal.type = module_.globals->GetTypeDefinition("Boolean");
+    literal.type = module_.globals->GetTypeDefinition(Typename::Boolean);
 }
 
 void Typechecker::Visit(const IntegerLiteral& literal)
 {
-    literal.type = module_.globals->GetTypeDefinition("I64");
+    literal.type = module_.globals->GetTypeDefinition(Typename::Integer);
 }
 
 void Typechecker::Visit(const CharacterLiteral& literal)
 {
-    literal.type = module_.globals->GetTypeDefinition("C8");
+    literal.type = module_.globals->GetTypeDefinition(Typename::Character);
 }
 
 void Typechecker::Visit(const StringLiteral& literal)
 {
-    literal.type = module_.globals->GetTypeDefinition("CString");
+    literal.type = module_.globals->GetTypeDefinition(Typename::CString);
 }
 
 void Typechecker::Visit(const Function& function)

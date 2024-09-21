@@ -1,12 +1,14 @@
 #include "l0/generation/type_converter.h"
 
+#include "l0/common/constants.h"
+
 namespace l0
 {
 
 TypeConverter::TypeConverter(llvm::LLVMContext& context)
     : context_{context}
 {
-    llvm::StructType::create(context_, {}, "Unit", true);
+    llvm::StructType::create(context_, {}, Typename::Unit, true);
 }
 
 llvm::Type* TypeConverter::Convert(const Type& type)
@@ -52,7 +54,7 @@ void TypeConverter::Visit(const ReferenceType& reference_type)
 
 void TypeConverter::Visit(const UnitType& unit_type)
 {
-    result_ = llvm::StructType::getTypeByName(context_, "Unit");
+    result_ = llvm::StructType::getTypeByName(context_, Typename::Unit);
 }
 
 void TypeConverter::Visit(const BooleanType& boolean_type)
