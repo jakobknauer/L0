@@ -335,6 +335,11 @@ void AstPrinter::Visit(const MethodTypeAnnotation& mta)
     mta.function_type->Accept(*this);
 }
 
+void AstPrinter::Visit(const MutabilityOnlyTypeAnnotation& mota)
+{
+    PrintQualifier(mota.mutability, "");
+}
+
 void AstPrinter::Visit(const StructExpression& struct_expression)
 {
     out_ << "struct";
@@ -348,7 +353,7 @@ void AstPrinter::Visit(const StructExpression& struct_expression)
     out_ << "}";
 }
 
-void AstPrinter::PrintQualifier(TypeAnnotationQualifier qualifier)
+void AstPrinter::PrintQualifier(TypeAnnotationQualifier qualifier, std::string end)
 {
     switch (qualifier)
     {
@@ -358,12 +363,12 @@ void AstPrinter::PrintQualifier(TypeAnnotationQualifier qualifier)
         }
         case TypeAnnotationQualifier::Mutable:
         {
-            out_ << "mut ";
+            out_ << "mut" << end;
             return;
         }
         case TypeAnnotationQualifier::Constant:
         {
-            out_ << "const ";
+            out_ << "const" << end;
             return;
         }
     }

@@ -23,9 +23,9 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
 
    private:
     Module& module_;
-    TypeResolver type_resolver_;
+    detail::TypeResolver type_resolver_{module_};
     detail::OperatorOverloadResolver operator_overload_resolver_{};
-    detail::ConversionChecker conversion_checker_{};
+    detail::ConversionChecker conversion_checker_{type_resolver_};
 
     void Visit(const Declaration& declaration) override;
     void Visit(const TypeDeclaration& type_declaration) override;

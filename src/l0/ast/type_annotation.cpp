@@ -46,4 +46,9 @@ void MethodTypeAnnotation::Accept(ITypeAnnotationVisitor& visitor) const
     visitor.Visit(*this);
 };
 
+void MutabilityOnlyTypeAnnotation::Accept(ITypeAnnotationVisitor& visitor) const
+{
+    visitor.Visit(*this);
+};
+
 }  // namespace l0

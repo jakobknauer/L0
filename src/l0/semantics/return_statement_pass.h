@@ -8,6 +8,7 @@
 #include "l0/ast/statement.h"
 #include "l0/ast/type_expression.h"
 #include "l0/semantics/conversion_checker.h"
+#include "l0/semantics/type_resolver.h"
 #include "l0/types/types.h"
 
 namespace l0
@@ -21,7 +22,8 @@ class ReturnStatementPass : private IStatementVisitor, private IExpressionVisito
 
    private:
     Module& module_;
-    detail::ConversionChecker conversion_checker_{};
+    detail::TypeResolver type_resolver_{module_};
+    detail::ConversionChecker conversion_checker_{type_resolver_};
 
     bool statement_returns_{false};
     std::stack<std::shared_ptr<Type>> expected_return_value_{};

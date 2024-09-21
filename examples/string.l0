@@ -6,7 +6,7 @@ fn main () -> I64
         n := string_to_i64(&line);
         fac_n := fac(n);
 
-        s : mut String = from_cstring("Faculty of ");
+        s : mut = from_cstring("Faculty of ");
         s.append_i64(n);
         s.append_cstring(" is ");
         s.append_i64(fac_n);
@@ -39,8 +39,8 @@ fn print_i64 (i64 : I64) -> ()
 
 fn read_ln () -> String
 {
-    s : mut String = String{};
-    c : mut C8 = getchar();
+    s : mut = String{};
+    c : mut = getchar();
     while c != '\n':
     {
         s.append_c8(c);
@@ -60,7 +60,7 @@ fn fac (n : I64) -> I64
 
 fn cstring_len (cstring : CString) -> I64
 {
-    length : mut I64 = 0;
+    length : mut = 0;
     while (cstring + length)^ != '\0':
     {
         length = length + 1;
@@ -71,7 +71,7 @@ fn cstring_len (cstring : CString) -> I64
 fn from_cstring (cstring : CString) -> String
 {
     length := cstring_len(cstring) + 1;
-    s : mut String = String
+    s : mut = String
     {
         _buffer = new [length] C8;
         _length = 0;
@@ -84,14 +84,14 @@ fn from_cstring (cstring : CString) -> String
 fn from_i64 (i64 : I64) -> String
 {
     digits := n_digits(i64);
-    s : mut String = String
+    s : mut = String
     {
         _buffer = new [digits+1] C8;
         _length = 0;
         _capacity = digits + 1;
     };
 
-    div : mut I64 = pow(10, digits-1);
+    div : mut = pow(10, digits-1);
     while div > 0:
     {
         digit := (i64 / div) % 10;
@@ -105,8 +105,8 @@ fn from_i64 (i64 : I64) -> String
 
 fn string_to_i64 (string : &String) -> I64
 {
-    result : mut I64 = 0;
-    i : mut I64 = 0;
+    result : mut = 0;
+    i : mut = 0;
     while i < string^.length():
     {
         result = result * 10;
@@ -148,8 +148,8 @@ fn c8_to_digit (c8 : C8) -> I64
 
 fn pow (a : I64, b : I64) -> I64
 {
-    result : mut I64 = 1;
-    i : mut I64 = 0;
+    result : mut = 1;
+    i : mut = 0;
     while i < b:
     {
         result = result * a;
@@ -160,8 +160,8 @@ fn pow (a : I64, b : I64) -> I64
 
 fn n_digits (n : I64) -> I64
 {
-    result : mut I64 = 1;
-    remainder : mut I64 = n;
+    result : mut = 1;
+    remainder : mut = n;
     while remainder >= 10:
     {
         result = result + 1;
@@ -212,7 +212,7 @@ struct String
         length := cstring_len(other);
         this^.ensure_capacity(this^._length + length + 1);
 
-        i : mut I64 = 0;
+        i : mut = 0;
         while i < cstring_len(other):
         {
             (this^._buffer + this^._length + i)^ = (other + i)^;
@@ -231,7 +231,7 @@ struct String
         };
 
         new_data := new [capacity] C8;
-        i : mut I64 = 0;
+        i : mut = 0;
         while i < this^._length:
         {
             (new_data + i)^ = (this^._buffer + i)^;
