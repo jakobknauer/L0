@@ -72,6 +72,11 @@ class MethodTypeAnnotation : public TypeAnnotation
     std::shared_ptr<FunctionTypeAnnotation> function_type;
 };
 
+class MutabilityOnlyTypeAnnotation : public TypeAnnotation
+{
+    void Accept(ITypeAnnotationVisitor& visitor) const override;
+};
+
 class ITypeAnnotationVisitor
 {
    public:
@@ -81,6 +86,7 @@ class ITypeAnnotationVisitor
     virtual void Visit(const ReferenceTypeAnnotation& rta) = 0;
     virtual void Visit(const FunctionTypeAnnotation& fta) = 0;
     virtual void Visit(const MethodTypeAnnotation& mta) = 0;
+    virtual void Visit(const MutabilityOnlyTypeAnnotation& mota) = 0;
 };
 
 }  // namespace l0

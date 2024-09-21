@@ -602,7 +602,7 @@ std::shared_ptr<Expression> Parser::ParseAtomicExpression()
         default:
         {
             throw ParserError(std::format(
-                "Expected identifier, literal, '!', or '(', got token '{}' of type {} instead.",
+                "Expected identifier, literal, '!', or '(', got token '{}' of type '{}' instead.",
                 token.lexeme,
                 str(token.type)
             ));
@@ -641,7 +641,7 @@ std::shared_ptr<Expression> Parser::ParseAllocation()
         Expect(TokenType::ClosingBracket);
     }
 
-    auto annotation = ParseUnqualifiedTypeAnnotation();
+    auto annotation = TryParseUnqualifiedTypeAnnotation();
 
     std::shared_ptr<MemberInitializerList> member_initializer_list{nullptr};
     if (Peek().type == TokenType::OpeningBrace)
@@ -687,9 +687,9 @@ std::shared_ptr<ArgumentList> Parser::ParseArgumentList()
             }
             default:
             {
-                throw ParserError(
-                    std::format("Expected ',' or ')', got token '{}' of type {} instead.", next.lexeme, str(next.type))
-                );
+                throw ParserError(std::format(
+                    "Expected ',' or ')', got token '{}' of type '{}' instead.", next.lexeme, str(next.type)
+                ));
             }
         }
     } while (true);
@@ -732,9 +732,9 @@ std::shared_ptr<ParameterDeclarationList> Parser::ParseParameterDeclarationList(
             }
             default:
             {
-                throw ParserError(
-                    std::format("Expected ',' or ')', got token '{}' of type {} instead.", next.lexeme, str(next.type))
-                );
+                throw ParserError(std::format(
+                    "Expected ',' or ')', got token '{}' of type '{}' instead.", next.lexeme, str(next.type)
+                ));
             }
         }
     } while (true);
@@ -751,7 +751,22 @@ std::shared_ptr<ParameterDeclaration> Parser::ParseParameterDeclaration()
 std::shared_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
 {
     auto qualifier = ConsumeIfKeyword({"mut", "const"});
-    auto type_annotation = ParseUnqualifiedTypeAnnotation();
+    auto type_annotation = TryParseUnqualifiedTypeAnnotation();
+
+    if (!type_annotation && !qualifier)
+    {
+        throw ParserError(std::format(
+            "Expected 'mut', 'const', or unqualified type annotation, got token '{}' of type '{}' instead.",
+            Peek().lexeme,
+            str(Peek().type)
+        ));
+    }
+
+    if (!type_annotation)
+    {
+        type_annotation = std::make_shared<MutabilityOnlyTypeAnnotation>();
+    }
+
     if (qualifier == "mut")
     {
         type_annotation->mutability = TypeAnnotationQualifier::Mutable;
@@ -760,10 +775,11 @@ std::shared_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
     {
         type_annotation->mutability = TypeAnnotationQualifier::Constant;
     }
+
     return type_annotation;
 }
 
-std::shared_ptr<TypeAnnotation> Parser::ParseUnqualifiedTypeAnnotation()
+std::shared_ptr<TypeAnnotation> Parser::TryParseUnqualifiedTypeAnnotation()
 {
     Token token = Peek();
     switch (token.type)
@@ -791,11 +807,7 @@ std::shared_ptr<TypeAnnotation> Parser::ParseUnqualifiedTypeAnnotation()
         }
         default:
         {
-            throw ParserError(std::format(
-                "Expected identifier, '&', '(', or 'method', got token '{}' of type {} instead.",
-                token.lexeme,
-                str(token.type)
-            ));
+            return nullptr;
         }
     }
 }
@@ -838,7 +850,9 @@ std::shared_ptr<TypeAnnotation> Parser::ParseFunctionTypeAnnotation()
     {
         Token token = Peek();
         throw ParserError(std::format(
-            "Expected '->' after non-empty type list, got token '{}' of type {} instead.", token.lexeme, str(token.type)
+            "Expected '->' after non-empty type list, got token '{}' of type '{}' instead.",
+            token.lexeme,
+            str(token.type)
         ));
     }
 }
@@ -890,9 +904,9 @@ std::shared_ptr<ParameterListAnnotation> Parser::ParseParameterListAnnotation()
             }
             default:
             {
-                throw ParserError(
-                    std::format("Expected ',' or ')', got token '{}' of type {} instead.", next.lexeme, str(next.type))
-                );
+                throw ParserError(std::format(
+                    "Expected ',' or ')', got token '{}' of type '{}' instead.", next.lexeme, str(next.type)
+                ));
             }
         }
     } while (true);

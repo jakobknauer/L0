@@ -11,8 +11,7 @@ namespace l0
 {
 
 GlobalScopeBuilder::GlobalScopeBuilder(Module& module)
-    : module_{module},
-      type_resolver_{module}
+    : module_{module}
 {
     // TODO declare basic types as external types - requires 'type resolution' in type_annotation_converter
     module_.globals->DeclareType("()");
@@ -117,8 +116,8 @@ void GlobalScopeBuilder::DeclareVariable(std::shared_ptr<Declaration> declaratio
     module_.globals->DeclareVariable(declaration->variable);
 
     auto initializer = declaration->initializer;
-    bool initializer_is_literal = dynamic_pointer_cast<IntegerLiteral>(initializer)
-                               || dynamic_pointer_cast<Function>(initializer);
+    bool initializer_is_literal =
+        dynamic_pointer_cast<IntegerLiteral>(initializer) || dynamic_pointer_cast<Function>(initializer);
     if (!initializer_is_literal)
     {
         throw SemanticError(

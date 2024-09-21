@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include "l0/ast/type_annotation.h"
+#include "l0/semantics/type_resolver.h"
 #include "l0/types/types.h"
 
 namespace l0::detail
@@ -11,9 +13,12 @@ namespace l0::detail
 class ConversionChecker : IConstTypeVisitor
 {
    public:
+    ConversionChecker(TypeResolver& resolver);
     bool CheckCompatibility(std::shared_ptr<Type> target, std::shared_ptr<Type> value);
+    std::shared_ptr<Type> Coerce(std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Type> actual);
 
    private:
+    TypeResolver& resolver_;
     bool result_;
     std::shared_ptr<Type> value_;
 

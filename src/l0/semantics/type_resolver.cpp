@@ -2,7 +2,7 @@
 
 #include "l0/semantics/semantic_error.h"
 
-namespace l0
+namespace l0::detail
 {
 
 TypeResolver::TypeResolver(const Module& module)
@@ -81,6 +81,11 @@ void TypeResolver::Visit(const FunctionTypeAnnotation& fta)
 void TypeResolver::Visit(const MethodTypeAnnotation& mta)
 {
     throw SemanticError(std::format("Unexpected method type annotation."));
+}
+
+void TypeResolver::Visit(const MutabilityOnlyTypeAnnotation& mota)
+{
+    throw SemanticError(std::format("Unexpected mutability-only type annotation."));
 }
 
 }  // namespace l0

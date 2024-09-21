@@ -8,7 +8,7 @@
 #include "l0/ast/type_annotation.h"
 #include "l0/types/types.h"
 
-namespace l0
+namespace l0::detail
 {
 
 class TypeResolver : private ITypeAnnotationVisitor
@@ -28,6 +28,7 @@ class TypeResolver : private ITypeAnnotationVisitor
     void Visit(const ReferenceTypeAnnotation& rta) override;
     void Visit(const FunctionTypeAnnotation& fta) override;
     void Visit(const MethodTypeAnnotation& mta) override;
+    void Visit(const MutabilityOnlyTypeAnnotation& mota) override;
 };
 
 }  // namespace l0

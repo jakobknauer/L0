@@ -2,14 +2,52 @@
 
 #include <ranges>
 
+#include "l0/semantics/semantic_error.h"
+
 namespace l0::detail
 {
+
+ConversionChecker::ConversionChecker(TypeResolver& resolver)
+    : resolver_{resolver}
+{
+}
 
 bool ConversionChecker::CheckCompatibility(std::shared_ptr<Type> target, std::shared_ptr<Type> value)
 {
     value_ = value;
     target->Accept(*this);
     return result_;
+}
+
+std::shared_ptr<Type> ConversionChecker::Coerce(
+    std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Type> actual
+)
+{
+    if (!annotation)
+    {
+        return ModifyQualifier(*actual, TypeQualifier::Constant);
+    }
+
+    if (dynamic_pointer_cast<MutabilityOnlyTypeAnnotation>(annotation))
+    {
+        switch (annotation->mutability)
+        {
+            case TypeAnnotationQualifier::Mutable:
+                return ModifyQualifier(*actual, TypeQualifier::Mutable);
+            case TypeAnnotationQualifier::Constant:
+                return ModifyQualifier(*actual, TypeQualifier::Constant);
+            case TypeAnnotationQualifier::None:
+                throw SemanticError("MutabilityOnlyTypeAnnotation cannot have 'None' mutability.");
+        }
+    }
+
+    auto annotated_type = resolver_.Convert(*annotation);
+    if (CheckCompatibility(annotated_type, actual))
+    {
+        return annotated_type;
+    }
+
+    return nullptr;
 }
 
 void ConversionChecker::Visit(const ReferenceType& reference_type)

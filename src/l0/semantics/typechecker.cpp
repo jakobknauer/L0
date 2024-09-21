@@ -8,8 +8,7 @@ namespace l0
 {
 
 Typechecker::Typechecker(Module& module)
-    : module_{module},
-      type_resolver_{module}
+    : module_{module}
 {
 }
 
@@ -35,26 +34,16 @@ void Typechecker::Visit(const Declaration& declaration)
         return;
     }
 
-    auto initializer_type = declaration.initializer->type;
-    if (declaration.annotation)
+    auto coerced_type = conversion_checker_.Coerce(declaration.annotation, declaration.initializer->type);
+
+    if (!coerced_type)
     {
-        auto annotated_type = type_resolver_.Convert(*declaration.annotation);
-        if (!conversion_checker_.CheckCompatibility(annotated_type, initializer_type))
-        {
-            throw SemanticError(std::format(
-                "Variable '{}' is declared with type '{}', but is initialized with value of incompatible type '{}'.",
-                declaration.variable,
-                annotated_type->ToString(),
-                initializer_type->ToString()
-            ));
-        }
-        declaration.scope->SetVariableType(declaration.variable, annotated_type);
+        throw SemanticError(std::format(
+            "Could not coerce type annotation and initializer type for variable '{}'.", declaration.variable
+        ));
     }
-    else
-    {
-        auto const_initializer_type = ModifyQualifier(*initializer_type, TypeQualifier::Constant);
-        declaration.scope->SetVariableType(declaration.variable, const_initializer_type);
-    }
+
+    declaration.scope->SetVariableType(declaration.variable, coerced_type);
 }
 
 void Typechecker::Visit(const TypeDeclaration& type_declaration)

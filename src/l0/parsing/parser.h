@@ -73,7 +73,7 @@ class Parser : public IParser
     std::shared_ptr<ParameterDeclaration> ParseParameterDeclaration();
     std::shared_ptr<MemberInitializerList> ParseMemberInitializerList();
     std::shared_ptr<TypeAnnotation> ParseTypeAnnotation();
-    std::shared_ptr<TypeAnnotation> ParseUnqualifiedTypeAnnotation();
+    std::shared_ptr<TypeAnnotation> TryParseUnqualifiedTypeAnnotation();
     std::shared_ptr<TypeAnnotation> ParseSimpleTypeAnnotation();
     std::shared_ptr<TypeAnnotation> ParseReferenceTypeAnnotation();
     std::shared_ptr<TypeAnnotation> ParseFunctionTypeAnnotation();
