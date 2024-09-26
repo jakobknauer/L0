@@ -28,6 +28,7 @@ class ReturnStatementPass : private IStatementVisitor, private IExpressionVisito
     bool statement_returns_{false};
     std::stack<std::shared_ptr<Type>> expected_return_value_{};
 
+    void Visit(StatementBlock& statement_block) override;
     void Visit(Declaration& declaration) override;
     void Visit(TypeDeclaration& type_declaration) override;
     void Visit(ExpressionStatement& expression_statement) override;
@@ -52,8 +53,6 @@ class ReturnStatementPass : private IStatementVisitor, private IExpressionVisito
     void Visit(Allocation& allocation) override;
 
     void Visit(StructExpression& struct_expression) override;
-
-    void Visit(StatementBlock& statement_block);
 };
 
 }  // namespace l0

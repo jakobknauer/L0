@@ -23,7 +23,16 @@ class Statement
     virtual void Accept(IStatementVisitor& visitor) = 0;
 };
 
-using StatementBlock = std::vector<std::shared_ptr<Statement>>;
+class StatementBlock : public Statement
+{
+   public:
+    StatementBlock(std::vector<std::shared_ptr<Statement>> statements);
+
+    void Accept(IConstStatementVisitor& visitor) const override;
+    void Accept(IStatementVisitor& visitor) override;
+
+    std::vector<std::shared_ptr<Statement>> statements;
+};
 
 class Declaration : public Statement
 {
@@ -125,6 +134,7 @@ class IConstStatementVisitor
    public:
     virtual ~IConstStatementVisitor() = default;
 
+    virtual void Visit(const StatementBlock& statement_block) = 0;
     virtual void Visit(const Declaration& declaration) = 0;
     virtual void Visit(const TypeDeclaration& type_declaration) = 0;
     virtual void Visit(const ExpressionStatement& expression_statement) = 0;
@@ -139,6 +149,7 @@ class IStatementVisitor
    public:
     virtual ~IStatementVisitor() = default;
 
+    virtual void Visit(StatementBlock& statement_block) = 0;
     virtual void Visit(Declaration& declaration) = 0;
     virtual void Visit(TypeDeclaration& type_declaration) = 0;
     virtual void Visit(ExpressionStatement& expression_statement) = 0;

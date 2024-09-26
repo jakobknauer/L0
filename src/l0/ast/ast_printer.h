@@ -21,6 +21,7 @@ class AstPrinter : IConstExpressionVisitor, IConstStatementVisitor, ITypeAnnotat
     void Print(Expression& expression);
 
    private:
+    void Visit(const StatementBlock& statement_block) override;
     void Visit(const Declaration& declaration) override;
     void Visit(const TypeDeclaration& type_declaration) override;
     void Visit(const ExpressionStatement& expression_statement) override;

@@ -3,6 +3,21 @@
 namespace l0
 {
 
+StatementBlock::StatementBlock(std::vector<std::shared_ptr<Statement>> statements)
+    : statements{statements}
+{
+}
+
+void StatementBlock::Accept(IConstStatementVisitor& visitor) const
+{
+    visitor.Visit(*this);
+}
+
+void StatementBlock::Accept(IStatementVisitor& visitor)
+{
+    visitor.Visit(*this);
+}
+
 Declaration::Declaration(std::string variable, std::shared_ptr<Expression> initializer)
     : Declaration{variable, nullptr, initializer}
 {
@@ -75,11 +90,11 @@ void ReturnStatement::Accept(IStatementVisitor& visitor)
 
 ConditionalStatement::ConditionalStatement(
     std::shared_ptr<Expression> condition,
-    std::shared_ptr<StatementBlock> if_block,
+    std::shared_ptr<StatementBlock> then_block,
     std::shared_ptr<StatementBlock> else_block
 )
     : condition{condition},
-      then_block{if_block},
+      then_block{then_block},
       else_block{else_block}
 {
 }

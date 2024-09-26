@@ -34,7 +34,7 @@ AstPrinter::AstPrinter(std::ostream& out)
 
 void AstPrinter::Print(Module& module)
 {
-    for (const auto& statement : *module.statements)
+    for (const auto& statement : module.statements->statements)
     {
         Print(*statement);
     }
@@ -49,6 +49,18 @@ void AstPrinter::Print(Statement& statement)
 void AstPrinter::Print(Expression& expression)
 {
     expression.Accept(*this);
+}
+
+void AstPrinter::Visit(const StatementBlock& statement_block)
+{
+    out_ << "{\n";
+    ++indent_;
+    for (const auto& statement : statement_block.statements)
+    {
+        Print(*statement);
+    }
+    --indent_;
+    out_ << "}";
 }
 
 void AstPrinter::Visit(const Declaration& declaration)
@@ -97,29 +109,14 @@ void AstPrinter::Visit(const ConditionalStatement& conditional_statement)
     conditional_statement.condition->Accept(*this);
     out_ << ":\n";
 
-    out_ << "{\n";
-    ++indent_;
-    for (const auto& statement : *conditional_statement.then_block)
-    {
-        Print(*statement);
-    }
-    --indent_;
-    out_ << "}";
+    conditional_statement.then_block->Accept(*this);
 
-    if (!conditional_statement.else_block)
+    if (conditional_statement.else_block)
     {
         return;
+        out_ << "\n" << Keyword::Else << "\n";
+        conditional_statement.else_block->Accept(*this);
     }
-
-    out_ << "\n" << Keyword::Else << "\n";
-    out_ << "{\n";
-    ++indent_;
-    for (const auto& statement : *conditional_statement.else_block)
-    {
-        Print(*statement);
-    }
-    --indent_;
-    out_ << "}";
 }
 
 void AstPrinter::Visit(const WhileLoop& while_loop)
@@ -128,14 +125,7 @@ void AstPrinter::Visit(const WhileLoop& while_loop)
     while_loop.condition->Accept(*this);
     out_ << ":\n";
 
-    out_ << "{\n";
-    ++indent_;
-    for (const auto& statement : *while_loop.body)
-    {
-        Print(*statement);
-    }
-    --indent_;
-    out_ << "}";
+    while_loop.body->Accept(*this);
 }
 
 void AstPrinter::Visit(const Deallocation& deallocation)
@@ -238,15 +228,8 @@ void AstPrinter::Visit(const Function& function)
     );
     out_ << ") -> ";
     function.return_type_annotation->Accept(*this);
-    out_ << "\n{\n";
-    ++indent_;
-    for (auto& statement : *function.statements)
-    {
-        statement->Accept(*this);
-        out_ << ";\n";
-    }
-    --indent_;
-    out_ << "}";
+    out_ << "\n";
+    function.body->Accept(*this);
 }
 
 void AstPrinter::Visit(const Initializer& initializer)

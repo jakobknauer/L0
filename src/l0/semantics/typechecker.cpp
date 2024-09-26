@@ -15,7 +15,12 @@ Typechecker::Typechecker(Module& module)
 
 void Typechecker::Check()
 {
-    for (const auto& statement : *module_.statements)
+    module_.statements->Accept(*this);
+}
+
+void Typechecker::Visit(const StatementBlock& statement_block)
+{
+    for (const auto& statement : statement_block.statements)
     {
         statement->Accept(*this);
     }
@@ -100,18 +105,11 @@ void Typechecker::Visit(const ConditionalStatement& conditional_statement)
         ));
     }
 
-    for (const auto& statement : *conditional_statement.then_block)
-    {
-        statement->Accept(*this);
-    }
+    conditional_statement.then_block->Accept(*this);
 
-    if (!conditional_statement.else_block)
+    if (conditional_statement.else_block)
     {
-        return;
-    }
-    for (const auto& statement : *conditional_statement.else_block)
-    {
-        statement->Accept(*this);
+        conditional_statement.else_block->Accept(*this);
     }
 }
 
@@ -127,10 +125,7 @@ void Typechecker::Visit(const WhileLoop& while_loop)
         ));
     }
 
-    for (const auto& statement : *while_loop.body)
-    {
-        statement->Accept(*this);
-    }
+    while_loop.body->Accept(*this);
 }
 
 void Typechecker::Visit(const Deallocation& deallocation)
@@ -281,10 +276,7 @@ void Typechecker::Visit(const Function& function)
     auto return_type = type_resolver_.Convert(*function.return_type_annotation);
     function.type = std::make_shared<FunctionType>(parameters, return_type, TypeQualifier::Constant);
 
-    for (const auto& statement : *function.statements)
-    {
-        statement->Accept(*this);
-    }
+    function.body->Accept(*this);
 }
 
 void Typechecker::Visit(const Initializer& initializer)

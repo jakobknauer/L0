@@ -21,7 +21,8 @@ class Resolver : private IConstExpressionVisitor, private IConstStatementVisitor
     std::vector<std::shared_ptr<Scope>> scopes_{};
     bool local_{false};
 
-    void Visit(const Declaration& statement) override;
+    void Visit(const StatementBlock& statement_block) override;
+    void Visit(const Declaration& declaration) override;
     void Visit(const TypeDeclaration& type_declaration) override;
     void Visit(const ExpressionStatement& expression_statement) override;
     void Visit(const ReturnStatement& return_statement) override;

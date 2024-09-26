@@ -220,8 +220,7 @@ class StringLiteral : public Expression
 };
 
 class TypeAnnotation;
-class Statement;
-using StatementBlock = std::vector<std::shared_ptr<Statement>>;
+class StatementBlock;
 
 class ParameterDeclaration
 {
@@ -240,7 +239,7 @@ class Function : public Expression
     Function(
         std::shared_ptr<ParameterDeclarationList> parameters,
         std::shared_ptr<TypeAnnotation> return_type_annotation,
-        std::shared_ptr<StatementBlock> statements
+        std::shared_ptr<StatementBlock> body
     );
 
     void Accept(IConstExpressionVisitor& visitor) const override;
@@ -248,7 +247,7 @@ class Function : public Expression
 
     std::shared_ptr<ParameterDeclarationList> parameters;
     std::shared_ptr<TypeAnnotation> return_type_annotation;
-    std::shared_ptr<StatementBlock> statements;
+    std::shared_ptr<StatementBlock> body;
 
     mutable std::shared_ptr<Scope> locals = std::make_shared<Scope>();
     mutable std::optional<std::string> global_name{};

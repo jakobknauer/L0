@@ -34,7 +34,7 @@ void GlobalScopeBuilder::Run()
     std::vector<std::shared_ptr<TypeDeclaration>> type_declarations{};
     std::vector<std::shared_ptr<Declaration>> declarations{};
 
-    for (auto& statement : *module_.statements)
+    for (auto& statement : module_.statements->statements)
     {
         if (auto declaration = dynamic_pointer_cast<Declaration>(statement))
         {

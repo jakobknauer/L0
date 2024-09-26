@@ -43,7 +43,7 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     void DeclareGlobalVariable(std::shared_ptr<Declaration> declaration);
     void DefineGlobals();
 
-    using IConstStatementVisitor::Visit;
+    void Visit(const StatementBlock& statement_block) override;
     void Visit(const Declaration& declaration) override;
     void Visit(const TypeDeclaration& declaration) override;
     void Visit(const ExpressionStatement& expression_statement) override;

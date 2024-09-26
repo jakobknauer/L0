@@ -108,7 +108,7 @@ void Generator::FillGlobalTypes()
 
 void Generator::DeclareGlobalVariables()
 {
-    for (const auto& statement : *ast_module_.statements)
+    for (const auto& statement : ast_module_.statements->statements)
     {
         if (auto declaration = dynamic_pointer_cast<Declaration>(statement))
         {
@@ -152,7 +152,7 @@ void Generator::DeclareGlobalVariable(std::shared_ptr<Declaration> declaration)
 
 void Generator::DefineGlobals()
 {
-    for (const auto& statement : *ast_module_.statements)
+    for (const auto& statement : ast_module_.statements->statements)
     {
         auto declaration = dynamic_pointer_cast<Declaration>(statement);
         if (!declaration)
@@ -174,6 +174,14 @@ void Generator::DefineGlobals()
         llvm::Function* llvm_function = llvm::dyn_cast<llvm::Function>(callee.getCallee());
 
         GenerateFunctionBody(*function, *llvm_function);
+    }
+}
+
+void Generator::Visit(const StatementBlock& statement_block)
+{
+    for (auto statement : statement_block.statements)
+    {
+        statement->Accept(*this);
     }
 }
 
@@ -228,10 +236,7 @@ void Generator::Visit(const ConditionalStatement& conditional_statement)
 
     // then
     builder_.SetInsertPoint(then_block);
-    for (const auto& statement : *conditional_statement.then_block)
-    {
-        statement->Accept(*this);
-    }
+    conditional_statement.then_block->Accept(*this);
     if (!conditional_statement.then_block_returns)
     {
         builder_.CreateBr(merge_block);
@@ -242,10 +247,7 @@ void Generator::Visit(const ConditionalStatement& conditional_statement)
     {
         llvm_function->insert(llvm_function->end(), else_block);
         builder_.SetInsertPoint(else_block);
-        for (const auto& statement : *conditional_statement.else_block)
-        {
-            statement->Accept(*this);
-        }
+        conditional_statement.else_block->Accept(*this);
         if (!conditional_statement.else_block_returns)
         {
             builder_.CreateBr(merge_block);
@@ -279,10 +281,7 @@ void Generator::Visit(const WhileLoop& while_loop)
     // body
     llvm_function->insert(llvm_function->end(), body);
     builder_.SetInsertPoint(body);
-    for (const auto& statement : *while_loop.body)
-    {
-        statement->Accept(*this);
-    }
+    while_loop.body->Accept(*this);
     builder_.CreateBr(header);
 
     // afterloop
@@ -717,10 +716,7 @@ void Generator::GenerateFunctionBody(const Function& function, llvm::Function& l
     }
 
     builder_.SetInsertPoint(entry_block);
-    for (const auto& statement : *function.statements)
-    {
-        statement->Accept(*this);
-    }
+    function.body->Accept(*this);
 
     builder_.SetInsertPoint(allocas_block);
     builder_.CreateBr(entry_block);

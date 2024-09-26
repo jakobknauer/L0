@@ -181,11 +181,11 @@ ParameterDeclaration::ParameterDeclaration(std::string name, std::shared_ptr<Typ
 Function::Function(
     std::shared_ptr<ParameterDeclarationList> parameters,
     std::shared_ptr<TypeAnnotation> return_type_annotation,
-    std::shared_ptr<StatementBlock> statements
+    std::shared_ptr<StatementBlock> body
 )
     : parameters{parameters},
       return_type_annotation{return_type_annotation},
-      statements{statements}
+      body{body}
 {
 }
 

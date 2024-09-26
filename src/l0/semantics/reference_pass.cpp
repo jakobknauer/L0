@@ -12,7 +12,12 @@ ReferencePass::ReferencePass(Module& module)
 
 void ReferencePass::Run()
 {
-    for (auto& statement : *module_.statements)
+    module_.statements->Accept(*this);
+}
+
+void ReferencePass::Visit(StatementBlock& statement_block)
+{
+    for (auto statement : statement_block.statements)
     {
         statement->Accept(*this);
     }
@@ -41,28 +46,18 @@ void ReferencePass::Visit(ReturnStatement& return_statement)
 void ReferencePass::Visit(ConditionalStatement& conditional_statement)
 {
     conditional_statement.condition->Accept(*this);
-    for (auto& statement : *conditional_statement.then_block)
-    {
-        statement->Accept(*this);
-    }
+    conditional_statement.then_block->Accept(*this);
 
-    if (!conditional_statement.else_block)
+    if (conditional_statement.else_block)
     {
-        return;
-    }
-    for (auto& statement : *conditional_statement.else_block)
-    {
-        statement->Accept(*this);
+        conditional_statement.else_block->Accept(*this);
     }
 }
 
 void ReferencePass::Visit(WhileLoop& while_loop)
 {
     while_loop.condition->Accept(*this);
-    for (auto& statement : *while_loop.body)
-    {
-        statement->Accept(*this);
-    }
+    while_loop.body->Accept(*this);
 }
 
 void ReferencePass::Visit(Deallocation& deallocation)
@@ -127,10 +122,7 @@ void ReferencePass::Visit(StringLiteral& literal) {}
 
 void ReferencePass::Visit(Function& function)
 {
-    for (auto& statement : *function.statements)
-    {
-        statement->Accept(*this);
-    }
+    function.body->Accept(*this);
 }
 
 void ReferencePass::Visit(Initializer& initializer)
