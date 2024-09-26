@@ -12,7 +12,31 @@ ReturnStatementPass::ReturnStatementPass(Module& module)
 
 void ReturnStatementPass::Run()
 {
-    Visit(*module_.statements);
+    module_.statements->Accept(*this);
+}
+
+void ReturnStatementPass::Visit(StatementBlock& statement_block)
+{
+    bool block_returns_{false};
+    auto first_return = statement_block.statements.end();
+    for (auto it = statement_block.statements.begin(); it != statement_block.statements.end(); ++it)
+    {
+        auto statement = *it;
+        statement->Accept(*this);
+
+        if (statement_returns_ && !block_returns_)
+        {
+            block_returns_ = true;
+            first_return = it;
+        }
+    }
+
+    if (block_returns_)
+    {
+        statement_block.statements.erase(first_return + 1, statement_block.statements.end());
+    }
+
+    statement_returns_ = block_returns_;
 }
 
 void ReturnStatementPass::Visit(Declaration& declaration)
@@ -52,12 +76,12 @@ void ReturnStatementPass::Visit(ConditionalStatement& conditional_statement)
 {
     conditional_statement.condition->Accept(*this);
 
-    Visit(*conditional_statement.then_block);
+    conditional_statement.then_block->Accept(*this);
     conditional_statement.then_block_returns = statement_returns_;
 
     if (conditional_statement.else_block)
     {
-        Visit(*conditional_statement.else_block);
+        conditional_statement.else_block->Accept(*this);
         conditional_statement.else_block_returns = statement_returns_;
     }
 
@@ -67,7 +91,7 @@ void ReturnStatementPass::Visit(ConditionalStatement& conditional_statement)
 void ReturnStatementPass::Visit(WhileLoop& while_loop)
 {
     while_loop.condition->Accept(*this);
-    Visit(*while_loop.body);
+    while_loop.body->Accept(*this);
     statement_returns_ = false;
 }
 
@@ -125,7 +149,7 @@ void ReturnStatementPass::Visit(Function& function)
     }
 
     expected_return_value_.push(function_type->return_type);
-    Visit(*function.statements);
+    function.body->Accept(*this);
     expected_return_value_.pop();
 
     if (!statement_returns_)
@@ -134,7 +158,7 @@ void ReturnStatementPass::Visit(Function& function)
         {
             auto return_statement = std::make_shared<ReturnStatement>(std::make_shared<UnitLiteral>());
             return_statement->value->type = std::make_shared<UnitType>(TypeQualifier::Constant);
-            function.statements->push_back(return_statement);
+            function.body->statements.push_back(return_statement);
         }
         else
         {
@@ -166,30 +190,6 @@ void ReturnStatementPass::Visit(Allocation& allocation)
             member_initializer->value->Accept(*this);
         }
     }
-}
-
-void ReturnStatementPass::Visit(StatementBlock& statement_block)
-{
-    bool block_returns_{false};
-    auto first_return = statement_block.end();
-    for (auto it = statement_block.begin(); it != statement_block.end(); ++it)
-    {
-        auto& statement = *it;
-        statement->Accept(*this);
-
-        if (statement_returns_ && !block_returns_)
-        {
-            block_returns_ = true;
-            first_return = it;
-        }
-    }
-
-    if (block_returns_)
-    {
-        statement_block.erase(first_return + 1, statement_block.end());
-    }
-
-    statement_returns_ = block_returns_;
 }
 
 void ReturnStatementPass::Visit(StructExpression& struct_expression)

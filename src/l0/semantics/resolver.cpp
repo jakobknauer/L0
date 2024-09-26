@@ -17,7 +17,12 @@ void Resolver::Check()
     scopes_.clear();
     scopes_.push_back(module_.externals);
     scopes_.push_back(module_.globals);
-    for (auto& statement : *module_.statements)
+    module_.statements->Accept(*this);
+}
+
+void Resolver::Visit(const StatementBlock& statement_block)
+{
+    for (auto statement : statement_block.statements)
     {
         statement->Accept(*this);
     }
@@ -62,10 +67,7 @@ void Resolver::Visit(const ConditionalStatement& conditional_statement)
     conditional_statement.condition->Accept(*this);
 
     scopes_.push_back(std::make_shared<Scope>());
-    for (auto& statement : *conditional_statement.then_block)
-    {
-        statement->Accept(*this);
-    }
+    conditional_statement.then_block->Accept(*this);
     scopes_.pop_back();
 
     if (!conditional_statement.else_block)
@@ -74,10 +76,7 @@ void Resolver::Visit(const ConditionalStatement& conditional_statement)
     }
 
     scopes_.push_back(std::make_shared<Scope>());
-    for (auto& statement : *conditional_statement.else_block)
-    {
-        statement->Accept(*this);
-    }
+    conditional_statement.else_block->Accept(*this);
     scopes_.pop_back();
 }
 
@@ -86,10 +85,7 @@ void Resolver::Visit(const WhileLoop& while_loop)
     while_loop.condition->Accept(*this);
 
     scopes_.push_back(std::make_shared<Scope>());
-    for (auto& statement : *while_loop.body)
-    {
-        statement->Accept(*this);
-    }
+    while_loop.body->Accept(*this);
     scopes_.pop_back();
 }
 
@@ -154,10 +150,7 @@ void Resolver::Visit(const Function& function)
     bool restore_local = local_;
     local_ = true;
     scopes_.push_back(function.locals);
-    for (const auto& statement : *function.statements)
-    {
-        statement->Accept(*this);
-    }
+    function.body->Accept(*this);
     scopes_.pop_back();
     local_ = restore_local;
 }

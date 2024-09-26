@@ -175,14 +175,14 @@ std::shared_ptr<Module> Parser::ParseModule()
 
 std::shared_ptr<StatementBlock> Parser::ParseStatementBlock(TokenType delimiter)
 {
-    auto block = std::make_shared<StatementBlock>();
+    std::vector<std::shared_ptr<Statement>> statements{};
     while (ConsumeAll(TokenType::Semicolon).type != delimiter)
     {
         auto statement = ParseStatement();
         Expect(TokenType::Semicolon);
-        block->push_back(statement);
+        statements.push_back(statement);
     }
-    return block;
+    return std::make_shared<StatementBlock>(statements);
 }
 
 std::shared_ptr<Statement> Parser::ParseStatement()
@@ -300,9 +300,8 @@ std::shared_ptr<Statement> Parser::ParseConditionalStatement()
     }
     else if (PeekIsKeyword(Keyword::If))
     {
-        auto else_block = std::make_shared<StatementBlock>();
         auto else_if = ParseConditionalStatement();
-        else_block->push_back(else_if);
+        auto else_block = std::make_shared<StatementBlock>(std::vector{else_if});
         return std::make_shared<ConditionalStatement>(condition, if_block, else_block);
     }
     else

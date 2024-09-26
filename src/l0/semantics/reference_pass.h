@@ -26,6 +26,7 @@ class ReferencePass : private IStatementVisitor, private IExpressionVisitor, pri
     void Run();
 
    private:
+    void Visit(StatementBlock& statement_block) override;
     void Visit(Declaration& declaration) override;
     void Visit(TypeDeclaration& type_declaration) override;
     void Visit(ExpressionStatement& expression_statement) override;
