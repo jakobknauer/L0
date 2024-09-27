@@ -17,7 +17,11 @@ void Resolver::Check()
     scopes_.clear();
     scopes_.push_back(module_.externals);
     scopes_.push_back(module_.globals);
-    module_.statements->Accept(*this);
+
+    for (auto callable : module_.callables)
+    {
+        callable->Accept(*this);
+    }
 }
 
 void Resolver::Visit(const StatementBlock& statement_block)
@@ -35,16 +39,13 @@ void Resolver::Visit(const Declaration& declaration)
         declaration.initializer->Accept(*this);
     }
 
-    if (local_)
+    auto scope = scopes_.back();
+    if (scope->IsVariableDeclared(declaration.variable))
     {
-        auto scope = scopes_.back();
-        if (scope->IsVariableDeclared(declaration.variable))
-        {
-            throw SemanticError(std::format("Duplicate declaration of local variable '{}'.", declaration.variable));
-        }
-        scope->DeclareVariable(declaration.variable);
-        declaration.scope = scope;
+        throw SemanticError(std::format("Duplicate declaration of local variable '{}'.", declaration.variable));
     }
+    scope->DeclareVariable(declaration.variable);
+    declaration.scope = scope;
 }
 
 void Resolver::Visit(const TypeDeclaration& type_declaration)
@@ -147,12 +148,9 @@ void Resolver::Visit(const Function& function)
         function.locals->DeclareVariable(param_decl->name);
     }
 
-    bool restore_local = local_;
-    local_ = true;
     scopes_.push_back(function.locals);
     function.body->Accept(*this);
     scopes_.pop_back();
-    local_ = restore_local;
 }
 
 void Resolver::Visit(const Initializer& initializer)

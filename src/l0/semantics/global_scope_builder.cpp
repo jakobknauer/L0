@@ -102,6 +102,10 @@ void GlobalScopeBuilder::FillTypeDetails(std::shared_ptr<TypeDeclaration> type_d
         if (auto function = std::dynamic_pointer_cast<Function>(member->default_initializer))
         {
             function->global_name = std::format("__memberfct_{}::{}", struct_type->name, member->name);
+            module_.callables.push_back(function);
+
+            module_.globals->DeclareVariable(function->global_name.value());
+            module_.globals->SetVariableType(function->global_name.value(), type_resolver_.Convert(*function));
         }
 
         struct_type->members->push_back(member);
@@ -114,41 +118,33 @@ void GlobalScopeBuilder::DeclareVariable(std::shared_ptr<Declaration> declaratio
     {
         throw SemanticError(std::format("Duplicate declaration of global variable '{}'.", declaration->variable));
     }
+
+    auto function = dynamic_pointer_cast<Function>(declaration->initializer);
+    if (!function)
+    {
+        throw SemanticError(std::format("Initializer of global variable must be a function.", declaration->variable));
+    }
+
+    if (!declaration->annotation)
+    {
+        throw SemanticError(std::format("Types of globals cannot be inferred."));
+    }
+
+    if (declaration->annotation->mutability == TypeAnnotationQualifier::Mutable)
+    {
+        throw SemanticError(std::format("Globals may not be declared mutable."));
+    }
+
+    std::shared_ptr<Type> type = type_resolver_.Convert(*declaration->annotation);
+
     module_.globals->DeclareVariable(declaration->variable);
-
-    auto initializer = declaration->initializer;
-    bool initializer_is_literal =
-        dynamic_pointer_cast<IntegerLiteral>(initializer) || dynamic_pointer_cast<Function>(initializer);
-    if (!initializer_is_literal)
-    {
-        throw SemanticError(
-            std::format("Initializer of global variable must be a literal or function.", declaration->variable)
-        );
-    }
-
-    std::shared_ptr<Type> type;
-    if (declaration->annotation)
-    {
-        if (declaration->annotation->mutability == TypeAnnotationQualifier::Mutable)
-        {
-            throw SemanticError(std::format("Globals may not be declared mutable."));
-        }
-        type = type_resolver_.Convert(*declaration->annotation);
-    }
-    else
-    {
-        if (dynamic_pointer_cast<IntegerLiteral>(declaration->initializer))
-        {
-            type = module_.globals->GetTypeDefinition(Typename::Integer);
-        }
-        else if (auto function = dynamic_pointer_cast<Function>(declaration->initializer))
-        {
-            type = type_resolver_.Convert(*function);
-        }
-    }
-
     module_.globals->SetVariableType(declaration->variable, type);
+
+    module_.global_declarations.push_back(declaration);
     declaration->scope = module_.globals;
-};
+
+    function->global_name = declaration->variable;
+    module_.callables.push_back(function);
+}
 
 }  // namespace l0

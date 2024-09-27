@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "l0/ast/expression.h"
 #include "l0/ast/scope.h"
 #include "l0/ast/statement.h"
 
@@ -17,6 +18,9 @@ class Module
 
     std::shared_ptr<Scope> globals = std::make_shared<Scope>();
     std::shared_ptr<Scope> externals = std::make_shared<Scope>();
+
+    std::vector<std::shared_ptr<Function>> callables{};
+    std::vector<std::shared_ptr<Declaration>> global_declarations{};
 };
 
 }  // namespace l0

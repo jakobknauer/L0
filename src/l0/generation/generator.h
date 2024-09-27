@@ -39,9 +39,9 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     void DeclareExternals();
     void DeclareGlobalTypes();
     void FillGlobalTypes();
-    void DeclareGlobalVariables();
-    void DeclareGlobalVariable(std::shared_ptr<Declaration> declaration);
-    void DefineGlobals();
+    void DeclareCallables();
+    void DeclareCallable(std::shared_ptr<Function> function);
+    void DefineCallables();
 
     void Visit(const StatementBlock& statement_block) override;
     void Visit(const Declaration& declaration) override;

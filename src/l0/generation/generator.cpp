@@ -46,8 +46,8 @@ std::string Generator::Generate()
     DeclareGlobalTypes();
     FillGlobalTypes();
 
-    DeclareGlobalVariables();
-    DefineGlobals();
+    DeclareCallables();
+    DefineCallables();
 
     std::string code{};
     llvm::raw_string_ostream os{code};
@@ -101,79 +101,50 @@ void Generator::FillGlobalTypes()
         {
             members.push_back(type_converter_.GetValueDeclarationType(*member->type));
         }
-
         llvm_struct_type->setBody(members, true);
     }
 }
 
-void Generator::DeclareGlobalVariables()
+void Generator::DeclareCallables()
 {
-    for (const auto& statement : ast_module_.statements->statements)
+    for (auto callable : ast_module_.callables)
     {
-        if (auto declaration = dynamic_pointer_cast<Declaration>(statement))
-        {
-            DeclareGlobalVariable(declaration);
-        }
+        DeclareCallable(callable);
     }
 }
 
-void Generator::DeclareGlobalVariable(std::shared_ptr<Declaration> declaration)
+void Generator::DeclareCallable(std::shared_ptr<Function> function)
 {
-    auto type = declaration->scope->GetVariableType(declaration->variable);
-
-    if (auto ft = dynamic_pointer_cast<FunctionType>(type))
+    auto type = dynamic_pointer_cast<FunctionType>(function->type);
+    if (!type)
     {
-        auto llvm_type = type_converter_.GetFunctionDeclarationType(*ft);
-        llvm::FunctionCallee function_callee = llvm_module_.getOrInsertFunction(declaration->variable, llvm_type);
-
-        declaration->scope->SetLLVMValue(declaration->variable, function_callee.getCallee());
+        throw GeneratorError(std::format(
+            "Unexpected type for global callable '{}': '{}'.", function->global_name.value(), function->type->ToString()
+        ));
     }
-    else if (dynamic_pointer_cast<IntegerType>(type))
-    {
-        auto literal = dynamic_pointer_cast<IntegerLiteral>(declaration->initializer);
-        auto llvm_type = type_converter_.Convert(*type);
 
-        llvm_module_.getOrInsertGlobal(declaration->variable, llvm_type);
-        auto global = llvm_module_.getNamedGlobal(declaration->variable);
-        global->setLinkage(llvm::GlobalValue::LinkageTypes::PrivateLinkage);
-        global->setInitializer(llvm::ConstantInt::get(llvm_type, literal->value));
-        global->setAlignment(llvm::Align(1));
-        global->setConstant(true);
+    auto llvm_type = type_converter_.GetFunctionDeclarationType(*type);
+    llvm::FunctionCallee function_callee = llvm_module_.getOrInsertFunction(function->global_name.value(), llvm_type);
 
-        declaration->scope->SetLLVMValue(declaration->variable, global);
-    }
-    else
-    {
-        throw GeneratorError(
-            std::format("Unexpected type for global variable '{}': '{}'.", declaration->variable, type->ToString())
-        );
-    }
+    ast_module_.globals->SetLLVMValue(function->global_name.value(), function_callee.getCallee());
 }
 
-void Generator::DefineGlobals()
+void Generator::DefineCallables()
 {
-    for (const auto& statement : ast_module_.statements->statements)
+    for (auto callable : ast_module_.callables)
     {
-        auto declaration = dynamic_pointer_cast<Declaration>(statement);
-        if (!declaration)
-        {
-            continue;
-        }
-        auto type = declaration->scope->GetVariableType(declaration->variable);
-
-        auto function_type = dynamic_pointer_cast<FunctionType>(type);
+        auto function_type = dynamic_pointer_cast<FunctionType>(callable->type);
         if (!function_type)
         {
             continue;
         }
 
-        auto function = dynamic_pointer_cast<Function>(declaration->initializer);
         llvm::Type* llvm_type = type_converter_.Convert(*function_type);
 
-        llvm::FunctionCallee callee = llvm_module_.getOrInsertFunction(declaration->variable, llvm_type);
+        llvm::FunctionCallee callee = llvm_module_.getOrInsertFunction(callable->global_name.value(), llvm_type);
         llvm::Function* llvm_function = llvm::dyn_cast<llvm::Function>(callee.getCallee());
 
-        GenerateFunctionBody(*function, *llvm_function);
+        GenerateFunctionBody(*callable, *llvm_function);
     }
 }
 
