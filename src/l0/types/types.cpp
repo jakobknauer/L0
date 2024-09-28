@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <format>
+#include <ranges>
 #include <sstream>
 
 #include "l0/common/constants.h"
@@ -196,9 +197,21 @@ std::shared_ptr<StructMember> StructType::GetMember(std::string name) const
     return *std::ranges::find(*members, name, [](const auto& member) { return member->name; });
 }
 
-std::size_t StructType::GetMemberIndex(std::string name) const
+std::optional<std::size_t> StructType::GetNonstaticMemberIndex(std::string name) const
 {
-    return std::ranges::find(*members, name, [](const auto& member) { return member->name; }) - members->begin();
+    // clang-format off
+    auto nonstatic_members = *members
+        | std::views::filter([](auto member) { return !member->is_static; })
+        | std::views::enumerate;
+    // clang-format on
+    auto member_it = std::ranges::find(nonstatic_members, name, [](auto member) { return std::get<1>(member)->name; });
+
+    if (member_it == nonstatic_members.end())
+    {
+        return {};
+    }
+
+    return std::get<0>(*member_it);
 }
 
 bool StructType::Equals(const Type& other) const

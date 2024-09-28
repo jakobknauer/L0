@@ -93,6 +93,7 @@ void GlobalScopeBuilder::FillTypeDetails(std::shared_ptr<TypeDeclaration> type_d
         {
             member->type = type_resolver_.Convert(*method_annotation->function_type);
             member->is_method = true;
+            member->is_static = true;
         }
         else
         {

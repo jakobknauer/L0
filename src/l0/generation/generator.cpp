@@ -96,12 +96,14 @@ void Generator::FillGlobalTypes()
         }
         auto llvm_struct_type = llvm::StructType::getTypeByName(context_, type);
 
-        std::vector<llvm::Type*> members{};
-        for (const auto& member : *struct_type->members)
-        {
-            members.push_back(type_converter_.GetValueDeclarationType(*member->type));
-        }
-        llvm_struct_type->setBody(members, true);
+        // clang-format off
+        auto non_static_members = *struct_type->members
+            | std::views::filter([](auto member) { return !member->is_static; })
+            | std::views::transform([&](auto member) { return type_converter_.GetValueDeclarationType(*member->type); })
+            | std::ranges::to<std::vector>();
+        // clang-format on
+
+        llvm_struct_type->setBody(non_static_members, true);
     }
 }
 
@@ -490,19 +492,29 @@ void Generator::Visit(const MemberAccessor& member_accessor)
     auto object_ptr = result_address_;
     auto llvm_struct_type = type_converter_.Convert(*member_accessor.object_type);
 
-    auto member_address = builder_.CreateConstGEP2_32(
-        llvm_struct_type,
-        object_ptr,
-        0,
-        member_accessor.member_index,
-        std::format("member_address__{}__{}", struct_name, member_accessor.member)
-    );
+    if (member_accessor.nonstatic_member_index)
+    {
+        auto member_address = builder_.CreateConstGEP2_32(
+            llvm_struct_type,
+            object_ptr,
+            0,
+            member_accessor.nonstatic_member_index.value(),
+            std::format("member_address__{}__{}", struct_name, member_accessor.member)
+        );
 
-    auto llvm_member_type = type_converter_.GetValueDeclarationType(*member_accessor.type);
-    result_ = builder_.CreateLoad(
-        llvm_member_type, member_address, std::format("member__{}__{}", struct_name, member_accessor.member)
-    );
-    result_address_ = member_address;
+        auto llvm_member_type = type_converter_.GetValueDeclarationType(*member_accessor.type);
+        result_ = builder_.CreateLoad(
+            llvm_member_type, member_address, std::format("member__{}__{}", struct_name, member_accessor.member)
+        );
+        result_address_ = member_address;
+    }
+    else
+    {
+        auto member = member_accessor.object_type->GetMember(member_accessor.member);
+        member->default_initializer->Accept(*this);
+        // leave result_ and result_address_ as is
+    }
+
     object_ptr_ = object_ptr;
 }
 
@@ -613,12 +625,12 @@ void Generator::Visit(const Initializer& initializer)
 
     for (const auto& [name, init_value] : actual_initializers)
     {
-        auto member_index = struct_type->GetMemberIndex(name);
+        auto member_index = struct_type->GetNonstaticMemberIndex(name);
         auto member_address = builder_.CreateConstGEP2_32(
             llvm_type,
             alloca,
             0,
-            member_index,
+            member_index.value(),
             std::format("structinit_member_address__{}__{}", struct_type->name, name)
         );
         builder_.CreateStore(init_value, member_address);
@@ -741,7 +753,8 @@ std::vector<std::tuple<std::string, llvm::Value*>> Generator::GetActualMemberIni
         | std::ranges::to<std::unordered_set>();
 
     auto default_initialized_members = *struct_type.members
-        | std::views::transform([](const auto& member) { return member->name; })
+        | std::views::filter([](auto member) { return !member->is_static;})
+        | std::views::transform([](auto member) { return member->name; })
         | std::views::filter([&](const std::string& member)
                              { return !explicitely_initialized_members.contains(member); });
     // clang-format on

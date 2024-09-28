@@ -201,7 +201,7 @@ void Typechecker::Visit(const MemberAccessor& member_accessor)
     }
 
     member_accessor.object_type = object_type;
-    member_accessor.member_index = object_type->GetMemberIndex(member_accessor.member);
+    member_accessor.nonstatic_member_index = object_type->GetNonstaticMemberIndex(member_accessor.member);
     member_accessor.type = member_type;
 }
 
@@ -278,16 +278,22 @@ void Typechecker::Visit(const Initializer& initializer)
         if (!struct_type->HasMember(member_name))
         {
             throw SemanticError(
-                std::format("Struct '{}' does not have a member named '{}'.", struct_type->ToString(), member_name)
+                std::format("Struct '{}' does not have a member named '{}'.", struct_type->name, member_name)
             );
         }
+        auto member = struct_type->GetMember(member_initializer->member);
+        if (member->is_static)
+        {
+            throw SemanticError(
+                std::format("Static member '{}' of struct '{}' cannot be initialized.", member->name, struct_type->name)
+            );
+        }
+
         if (explicitely_initialized_members.contains(member_name))
         {
             throw SemanticError(std::format("Member '{}' is initialized twice.", member_name));
         }
         explicitely_initialized_members.insert(member_name);
-
-        auto member = struct_type->GetMember(member_initializer->member);
 
         member_initializer->value->Accept(*this);
 
