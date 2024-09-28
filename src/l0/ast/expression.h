@@ -149,7 +149,7 @@ class MemberAccessor : public Expression
     std::string member;
 
     mutable std::shared_ptr<StructType> object_type;
-    mutable std::size_t member_index;
+    mutable std::optional<std::size_t> nonstatic_member_index;
 };
 
 using ArgumentList = std::vector<std::shared_ptr<Expression>>;

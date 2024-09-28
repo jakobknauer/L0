@@ -133,6 +133,7 @@ class StructMember
     std::shared_ptr<Expression> default_initializer;
 
     bool is_method{false};
+    bool is_static{false};
 };
 
 using StructMemberList = std::vector<std::shared_ptr<StructMember>>;
@@ -151,7 +152,7 @@ class StructType : public Type
 
     bool HasMember(std::string name) const;
     std::shared_ptr<StructMember> GetMember(std::string name) const;
-    std::size_t GetMemberIndex(std::string name) const;
+    std::optional<std::size_t> GetNonstaticMemberIndex(std::string name) const;
 
    protected:
     bool Equals(const Type& other) const override;

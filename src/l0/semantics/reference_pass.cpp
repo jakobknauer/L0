@@ -175,11 +175,7 @@ bool ReferencePass::IsLValue(std::shared_ptr<Expression> value) const
     }
     else if (auto member_accessor = dynamic_pointer_cast<MemberAccessor>(value))
     {
-        if (IsLValue(member_accessor->object))
-        {
-            return true;
-        }
-        return false;
+        return member_accessor->nonstatic_member_index.has_value() && IsLValue(member_accessor->object);
     }
     return false;
 }
