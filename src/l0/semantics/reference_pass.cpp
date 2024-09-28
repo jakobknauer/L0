@@ -12,7 +12,10 @@ ReferencePass::ReferencePass(Module& module)
 
 void ReferencePass::Run()
 {
-    module_.statements->Accept(*this);
+    for (auto callable : module_.callables)
+    {
+        callable->Accept(*this);
+    }
 }
 
 void ReferencePass::Visit(StatementBlock& statement_block)

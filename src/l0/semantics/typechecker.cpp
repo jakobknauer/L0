@@ -15,7 +15,19 @@ Typechecker::Typechecker(Module& module)
 
 void Typechecker::Check()
 {
-    module_.statements->Accept(*this);
+    for (auto global_declaration : module_.global_declarations)
+    {
+        CheckGlobalDeclaration(*global_declaration);
+    }
+
+    for (auto type_name : module_.globals->GetTypes())
+    {
+        auto type = module_.globals->GetTypeDefinition(type_name);
+        if (auto struct_type = dynamic_pointer_cast<StructType>(type))
+        {
+            CheckStruct(*struct_type);
+        }
+    }
 }
 
 void Typechecker::Visit(const StatementBlock& statement_block)
@@ -35,11 +47,6 @@ void Typechecker::Visit(const Declaration& declaration)
 
     declaration.initializer->Accept(*this);
 
-    if (declaration.scope->IsVariableTypeSet(declaration.variable))
-    {
-        return;
-    }
-
     auto coerced_type = conversion_checker_.Coerce(declaration.annotation, declaration.initializer->type);
 
     if (!coerced_type)
@@ -54,33 +61,7 @@ void Typechecker::Visit(const Declaration& declaration)
 
 void Typechecker::Visit(const TypeDeclaration& type_declaration)
 {
-    auto type = module_.globals->GetTypeDefinition(type_declaration.name);
-    auto struct_type = dynamic_pointer_cast<StructType>(type);
-    if (!struct_type)
-    {
-        throw SemanticError(std::format("Expected struct type as global type, got '{}'.", type->ToString()));
-    }
-    for (const auto& member : *struct_type->members)
-    {
-        if (!member->default_initializer)
-        {
-            continue;
-        }
-
-        member->default_initializer->Accept(*this);
-        auto initializer_type = member->default_initializer->type;
-        auto annotated_type = member->type;
-
-        if (!conversion_checker_.CheckCompatibility(annotated_type, initializer_type))
-        {
-            throw SemanticError(std::format(
-                "Member '{}' is declared with type '{}', but default initializer has incompatible type '{}'.",
-                member->name,
-                annotated_type->ToString(),
-                initializer_type->ToString()
-            ));
-        }
-    }
+    throw SemanticError("Unexpected type declaration.");
 }
 
 void Typechecker::Visit(const ExpressionStatement& expression_statement)
@@ -483,6 +464,49 @@ void Typechecker::CheckMethodCall(const Call& call)
     }
 
     call.type = function_type->return_type;
+}
+
+void Typechecker::CheckGlobalDeclaration(const Declaration& declaration)
+{
+    declaration.initializer->Accept(*this);
+    auto initializer_type = declaration.initializer->type;
+
+    auto declared_type = module_.globals->GetVariableType(declaration.variable);
+
+    if (!conversion_checker_.CheckCompatibility(declared_type, initializer_type))
+    {
+        throw SemanticError(std::format(
+            "Global variable '{}' is declared with type '{}', but initializer is of incompatible type '{}'.",
+            declaration.variable,
+            declared_type->ToString(),
+            initializer_type->ToString()
+        ));
+    }
+}
+
+void Typechecker::CheckStruct(const StructType& struct_type)
+{
+    for (const auto& member : *struct_type.members)
+    {
+        if (!member->default_initializer)
+        {
+            continue;
+        }
+
+        member->default_initializer->Accept(*this);
+        auto initializer_type = member->default_initializer->type;
+        auto annotated_type = member->type;
+
+        if (!conversion_checker_.CheckCompatibility(annotated_type, initializer_type))
+        {
+            throw SemanticError(std::format(
+                "Member '{}' is declared with type '{}', but default initializer has incompatible type '{}'.",
+                member->name,
+                annotated_type->ToString(),
+                initializer_type->ToString()
+            ));
+        }
+    }
 }
 
 }  // namespace l0

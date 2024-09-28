@@ -56,6 +56,9 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
     bool IsMethodCall(const Call& call) const;
     void CheckFunctionCall(const Call& call);
     void CheckMethodCall(const Call& call);
+
+    void CheckGlobalDeclaration(const Declaration& declaration);
+    void CheckStruct(const StructType& struct_type);
 };
 
 }  // namespace l0

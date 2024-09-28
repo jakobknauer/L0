@@ -12,7 +12,10 @@ ReturnStatementPass::ReturnStatementPass(Module& module)
 
 void ReturnStatementPass::Run()
 {
-    module_.statements->Accept(*this);
+    for (auto callable : module_.callables)
+    {
+        callable->Accept(*this);
+    }
 }
 
 void ReturnStatementPass::Visit(StatementBlock& statement_block)
