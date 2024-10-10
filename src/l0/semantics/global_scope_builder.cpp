@@ -4,7 +4,6 @@
 
 #include "l0/ast/statement.h"
 #include "l0/ast/type_expression.h"
-#include "l0/common/constants.h"
 #include "l0/semantics/semantic_error.h"
 #include "l0/types/types.h"
 
@@ -14,64 +13,18 @@ namespace l0
 GlobalScopeBuilder::GlobalScopeBuilder(Module& module)
     : module_{module}
 {
-    // TODO declare basic types as external types - requires 'type resolution' in type_annotation_converter
-    module_.globals->DeclareType(Typename::Unit);
-    module_.globals->DeclareType(Typename::Boolean);
-    module_.globals->DeclareType(Typename::Integer);
-    module_.globals->DeclareType(Typename::Character);
-    module_.globals->DeclareType(Typename::CString);
-
-    module_.globals->DefineType(Typename::Unit, std::make_shared<UnitType>(TypeQualifier::Constant));
-    module_.globals->DefineType(Typename::Boolean, std::make_shared<BooleanType>(TypeQualifier::Constant));
-    module_.globals->DefineType(Typename::Integer, std::make_shared<IntegerType>(TypeQualifier::Constant));
-    auto C8 = std::make_shared<CharacterType>(TypeQualifier::Constant);
-    module_.globals->DefineType(Typename::Character, C8);
-    module_.globals->DefineType(Typename::CString, std::make_shared<ReferenceType>(C8, TypeQualifier::Constant));
 }
 
 void GlobalScopeBuilder::Run()
 {
-    std::vector<std::shared_ptr<TypeDeclaration>> type_declarations{};
-    std::vector<std::shared_ptr<Declaration>> declarations{};
-
-    for (auto& statement : module_.statements->statements)
-    {
-        if (auto declaration = dynamic_pointer_cast<Declaration>(statement))
-        {
-            declarations.push_back(declaration);
-        }
-        else if (auto type_declaration = dynamic_pointer_cast<TypeDeclaration>(statement))
-        {
-            type_declarations.push_back(type_declaration);
-        }
-        else
-        {
-            throw SemanticError("Only variable and type declarations are allowed as global statements.");
-        }
-    }
-
-    for (auto type_declaration : type_declarations)
-    {
-        DeclareType(type_declaration);
-    }
-    for (auto type_declaration : type_declarations)
+    for (auto type_declaration : module_.global_type_declarations)
     {
         FillTypeDetails(type_declaration);
     }
-    for (auto declaration : declarations)
+    for (auto declaration : module_.global_declarations)
     {
         DeclareVariable(declaration);
     }
-}
-
-void GlobalScopeBuilder::DeclareType(std::shared_ptr<TypeDeclaration> type_declaration)
-{
-    module_.globals->DeclareType(type_declaration->name);
-
-    auto type = std::make_shared<StructType>(
-        type_declaration->name, std::make_shared<StructMemberList>(), TypeQualifier::Constant
-    );
-    module_.globals->DefineType(type_declaration->name, type);
 }
 
 void GlobalScopeBuilder::FillTypeDetails(std::shared_ptr<TypeDeclaration> type_declaration)
@@ -102,7 +55,7 @@ void GlobalScopeBuilder::FillTypeDetails(std::shared_ptr<TypeDeclaration> type_d
 
         if (auto function = std::dynamic_pointer_cast<Function>(member->default_initializer))
         {
-            function->global_name = std::format("__memberfct_{}::{}", struct_type->name, member->name);
+            function->global_name = std::format("{}::{}", struct_type->name, member->name);
             module_.callables.push_back(function);
 
             module_.globals->DeclareVariable(function->global_name.value());
@@ -141,7 +94,6 @@ void GlobalScopeBuilder::DeclareVariable(std::shared_ptr<Declaration> declaratio
     module_.globals->DeclareVariable(declaration->variable);
     module_.globals->SetVariableType(declaration->variable, type);
 
-    module_.global_declarations.push_back(declaration);
     declaration->scope = module_.globals;
 
     function->global_name = declaration->variable;

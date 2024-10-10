@@ -22,7 +22,7 @@ bool IsValidIdentifierCharacter(char c)
 
 }  // namespace
 
-Lexer::Lexer(std::shared_ptr<std::istream> input)
+Lexer::Lexer(std::istream& input)
     : input_{input},
       keywords_{
           Keyword::Constant,
@@ -117,25 +117,25 @@ std::vector<Token> Lexer::GetTokens()
 
 bool Lexer::AtEnd() const
 {
-    return input_->eof();
+    return input_.eof();
 }
 
 char Lexer::Read()
 {
-    return current_ = input_->get();
+    return current_ = input_.get();
 }
 
 char Lexer::Skip()
 {
     while (current_ == ' ' || current_ == '\n')
     {
-        current_ = input_->get();
+        current_ = input_.get();
     }
     if (current_ == '#')
     {
         while (current_ != '\n')
         {
-            current_ = input_->get();
+            current_ = input_.get();
         }
         return Skip();
     }

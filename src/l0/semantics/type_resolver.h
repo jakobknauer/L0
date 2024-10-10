@@ -19,6 +19,7 @@ class TypeResolver : private ITypeAnnotationVisitor
     std::shared_ptr<Type> Convert(const TypeAnnotation& annotation);
     TypeQualifier Convert(TypeAnnotationQualifier qualifier);
     std::shared_ptr<FunctionType> Convert(const Function& function);
+    std::shared_ptr<Type> Resolve(std::string_view name);
 
    private:
     const Module& module_;

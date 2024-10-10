@@ -151,6 +151,23 @@ const std::unordered_set<std::string>& Scope::GetTypes() const
     return types_;
 }
 
+void Scope::UpdateTypes(const Scope& other)
+{
+    for (const auto& [name, definition] : other.type_definitions_)
+    {
+        DeclareType(name);
+        DefineType(name, definition);
+    }
+}
+
+void Scope::UpdateVariables(const Scope& other)
+{
+    for (const auto& [name, type] : other.variable_types_)
+    {
+        DeclareVariable(name, type);
+    }
+}
+
 ScopeError::ScopeError(const std::string& message)
     : message_{message}
 {

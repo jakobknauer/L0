@@ -1,0 +1,11 @@
+fn read_ln () -> String
+{
+    s : mut = String{};
+    c : mut = getchar();
+    while c != '\n':
+    {
+        s.append_c8(c);
+        c = getchar();
+    };
+    return s;
+};

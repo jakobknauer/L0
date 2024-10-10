@@ -41,14 +41,25 @@ std::shared_ptr<FunctionType> TypeResolver::Convert(const Function& function)
     return std::make_shared<FunctionType>(parameters, return_type, TypeQualifier::Constant);
 }
 
+std::shared_ptr<Type> TypeResolver::Resolve(std::string_view name)
+{
+    if (module_.externals->IsTypeDeclared(name))
+    {
+        return module_.externals->GetTypeDefinition(name);
+    }
+    else if (module_.globals->IsTypeDeclared(name))
+    {
+        return module_.globals->GetTypeDefinition(name);
+    }
+    else
+    {
+        throw SemanticError(std::format("Cannot resolve type name '{}'.", name));
+    }
+}
+
 void TypeResolver::Visit(const SimpleTypeAnnotation& sta)
 {
-    if (!module_.globals->IsTypeDeclared(sta.type))
-    {
-        throw SemanticError(std::format("Unknown simple type '{}'.", sta.type));
-    }
-
-    auto type = module_.globals->GetTypeDefinition(sta.type);
+    auto type = Resolve(sta.type);
     auto mutability = Convert(sta.mutability);
     result_ = ModifyQualifier(*type, mutability);
 }
@@ -88,4 +99,4 @@ void TypeResolver::Visit(const MutabilityOnlyTypeAnnotation& mota)
     throw SemanticError(std::format("Unexpected mutability-only type annotation."));
 }
 
-}  // namespace l0
+}  // namespace l0::detail
