@@ -2,6 +2,7 @@ fn main () -> I64
 {
     while true:
     {
+        printf("Enter a number: ");
         line := read_ln();
         n := string_to_i64(&line);
         fac_n := fac(n);
