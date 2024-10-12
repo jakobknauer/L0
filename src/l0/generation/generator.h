@@ -19,14 +19,14 @@ namespace l0
 class Generator : private IConstExpressionVisitor, IConstStatementVisitor
 {
    public:
-    Generator(Module& module);
+    Generator(llvm::LLVMContext& context, Module& module);
 
     std::string Generate();
 
    private:
     Module& ast_module_;
 
-    llvm::LLVMContext context_{};
+    llvm::LLVMContext& context_;
     llvm::IRBuilder<> builder_;
     llvm::Module llvm_module_;
     llvm::DataLayout data_layout_{&llvm_module_};
@@ -36,9 +36,9 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     llvm::Value* result_address_;
     llvm::Value* object_ptr_;
 
-    void DeclareExternals();
-    void DeclareGlobalTypes();
-    void FillGlobalTypes();
+    void DeclareExternalVariables();
+    void DeclareTypes();
+    void FillTypes();
     void DeclareCallables();
     void DeclareCallable(std::shared_ptr<Function> function);
     void DefineCallables();

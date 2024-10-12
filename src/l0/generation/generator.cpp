@@ -2,6 +2,7 @@
 
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/TargetSelect.h>
+#include <llvm/Transforms/IPO/StripDeadPrototypes.h>
 
 #include <algorithm>
 #include <format>
@@ -26,8 +27,9 @@ constexpr std::string kAllocationBlockName{"allocas"};
 
 }  // namespace
 
-Generator::Generator(Module& module)
+Generator::Generator(llvm::LLVMContext& context, Module& module)
     : ast_module_{module},
+      context_{context},
       builder_{context_},
       llvm_module_{module.name, context_},
       type_converter_{context_}
@@ -41,13 +43,17 @@ std::string Generator::Generate()
     llvm::InitializeNativeTargetAsmParser();
     llvm_module_.setTargetTriple("x86_64-pc-linux-gnu");
 
-    DeclareExternals();
+    DeclareTypes();
+    FillTypes();
 
-    DeclareGlobalTypes();
-    FillGlobalTypes();
+    DeclareExternalVariables();
 
     DeclareCallables();
     DefineCallables();
+
+    llvm::StripDeadPrototypesPass sdpp{};
+    llvm::ModuleAnalysisManager mam;
+    sdpp.run(llvm_module_, mam);
 
     std::string code{};
     llvm::raw_string_ostream os{code};
@@ -55,7 +61,7 @@ std::string Generator::Generate()
     return code;
 }
 
-void Generator::DeclareExternals()
+void Generator::DeclareExternalVariables()
 {
     for (const std::string& external_symbol : ast_module_.externals->GetVariables())
     {
@@ -77,16 +83,38 @@ void Generator::DeclareExternals()
     }
 }
 
-void Generator::DeclareGlobalTypes()
+void Generator::DeclareTypes()
 {
+    for (const auto& type : ast_module_.externals->GetTypes())
+    {
+        llvm::StructType::create(context_, type);
+    }
     for (const auto& type : ast_module_.globals->GetTypes())
     {
         llvm::StructType::create(context_, type);
     }
 }
 
-void Generator::FillGlobalTypes()
+void Generator::FillTypes()
 {
+    for (const auto& type : ast_module_.externals->GetTypes())
+    {
+        auto struct_type = dynamic_pointer_cast<StructType>(ast_module_.externals->GetTypeDefinition(type));
+        if (!struct_type)
+        {
+            continue;
+        }
+        auto llvm_struct_type = llvm::StructType::getTypeByName(context_, type);
+
+        // clang-format off
+        auto non_static_members = *struct_type->members
+            | std::views::filter([](auto member) { return !member->is_static; })
+            | std::views::transform([&](auto member) { return type_converter_.GetValueDeclarationType(*member->type); })
+            | std::ranges::to<std::vector>();
+        // clang-format on
+
+        llvm_struct_type->setBody(non_static_members, true);
+    }
     for (const auto& type : ast_module_.globals->GetTypes())
     {
         auto struct_type = dynamic_pointer_cast<StructType>(ast_module_.globals->GetTypeDefinition(type));
@@ -499,12 +527,12 @@ void Generator::Visit(const MemberAccessor& member_accessor)
             object_ptr,
             0,
             member_accessor.nonstatic_member_index.value(),
-            std::format("member_address__{}__{}", struct_name, member_accessor.member)
+            std::format("member_address__{}::{}", struct_name, member_accessor.member)
         );
 
         auto llvm_member_type = type_converter_.GetValueDeclarationType(*member_accessor.type);
         result_ = builder_.CreateLoad(
-            llvm_member_type, member_address, std::format("member__{}__{}", struct_name, member_accessor.member)
+            llvm_member_type, member_address, std::format("member__{}::{}", struct_name, member_accessor.member)
         );
         result_address_ = member_address;
     }
@@ -631,7 +659,7 @@ void Generator::Visit(const Initializer& initializer)
             alloca,
             0,
             member_index.value(),
-            std::format("structinit_member_address__{}__{}", struct_type->name, name)
+            std::format("structinit_member_address__{}::{}", struct_type->name, name)
         );
         builder_.CreateStore(init_value, member_address);
     }

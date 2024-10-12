@@ -1,0 +1,21 @@
+fn main () -> I64
+{
+    while true:
+    {
+        line := read_ln();
+        n := string_to_i64(&line);
+        fac_n := fac(n);
+
+        s : mut = from_cstring("Faculty of ");
+        s.append_i64(n);
+        s.append_cstring(" is ");
+        s.append_i64(fac_n);
+        s.append_c8('\n');
+        print_string(&s);
+
+        line.free();
+        s.free();
+    };
+
+    return 0;
+};

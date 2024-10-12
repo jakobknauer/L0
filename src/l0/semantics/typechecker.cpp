@@ -78,7 +78,7 @@ void Typechecker::Visit(const ConditionalStatement& conditional_statement)
 {
     conditional_statement.condition->Accept(*this);
     if (!conversion_checker_.CheckCompatibility(
-            conditional_statement.condition->type, module_.globals->GetTypeDefinition(Typename::Boolean)
+            conditional_statement.condition->type, type_resolver_.Resolve(Typename::Boolean)
         ))
     {
         throw SemanticError(std::format(
@@ -97,9 +97,7 @@ void Typechecker::Visit(const ConditionalStatement& conditional_statement)
 void Typechecker::Visit(const WhileLoop& while_loop)
 {
     while_loop.condition->Accept(*this);
-    if (!conversion_checker_.CheckCompatibility(
-            while_loop.condition->type, module_.globals->GetTypeDefinition(Typename::Boolean)
-        ))
+    if (!conversion_checker_.CheckCompatibility(while_loop.condition->type, type_resolver_.Resolve(Typename::Boolean)))
     {
         throw SemanticError(std::format(
             "Condition must be of type Boolean, but is of type '{}'.", while_loop.condition->type->ToString()
@@ -222,27 +220,27 @@ void Typechecker::Visit(const Call& call)
 
 void Typechecker::Visit(const UnitLiteral& literal)
 {
-    literal.type = module_.globals->GetTypeDefinition(Typename::Unit);
+    literal.type = type_resolver_.Resolve(Typename::Unit);
 }
 
 void Typechecker::Visit(const BooleanLiteral& literal)
 {
-    literal.type = module_.globals->GetTypeDefinition(Typename::Boolean);
+    literal.type = type_resolver_.Resolve(Typename::Boolean);
 }
 
 void Typechecker::Visit(const IntegerLiteral& literal)
 {
-    literal.type = module_.globals->GetTypeDefinition(Typename::Integer);
+    literal.type = type_resolver_.Resolve(Typename::Integer);
 }
 
 void Typechecker::Visit(const CharacterLiteral& literal)
 {
-    literal.type = module_.globals->GetTypeDefinition(Typename::Character);
+    literal.type = type_resolver_.Resolve(Typename::Character);
 }
 
 void Typechecker::Visit(const StringLiteral& literal)
 {
-    literal.type = module_.globals->GetTypeDefinition(Typename::CString);
+    literal.type = type_resolver_.Resolve(Typename::CString);
 }
 
 void Typechecker::Visit(const Function& function)
@@ -329,7 +327,7 @@ void Typechecker::Visit(const Allocation& allocation)
     if (allocation.size)
     {
         allocation.size->Accept(*this);
-        auto integer_type = module_.globals->GetTypeDefinition("I64");
+        auto integer_type = type_resolver_.Resolve(Typename::Integer);
         if (*allocation.size->type != *integer_type)
         {
             throw SemanticError(std::format(

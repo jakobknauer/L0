@@ -1,63 +1,3 @@
-fn main () -> I64
-{
-    while true:
-    {
-        line := read_ln();
-        n := string_to_i64(&line);
-        fac_n := fac(n);
-
-        s : mut = from_cstring("Faculty of ");
-        s.append_i64(n);
-        s.append_cstring(" is ");
-        s.append_i64(fac_n);
-        s.append_c8('\n');
-        print_string(&s);
-
-        line.free();
-        s.free();
-    };
-
-    return 0;
-};
-
-fn print_ln () -> ()
-{
-    printf("\n");
-};
-
-fn print_string (string : &String) -> ()
-{
-    printf(string^.cstring());
-};
-
-fn print_i64 (i64 : I64) -> ()
-{
-    s := from_i64(i64);
-    print_string(&s);
-    s.free();
-};
-
-fn read_ln () -> String
-{
-    s : mut = String{};
-    c : mut = getchar();
-    while c != '\n':
-    {
-        s.append_c8(c);
-        c = getchar();
-    };
-    return s;
-};
-
-fn fac (n : I64) -> I64
-{
-    if n == 0:
-    {
-        return 1;
-    };
-    return n * fac(n-1);
-};
-
 fn cstring_len (cstring : CString) -> I64
 {
     length : mut = 0;
@@ -144,30 +84,6 @@ fn c8_to_digit (c8 : C8) -> I64
     else if c8 == '8': { return 8; }
     else if c8 == '9': { return 9; }
     else: { return -1; };
-};
-
-fn pow (a : I64, b : I64) -> I64
-{
-    result : mut = 1;
-    i : mut = 0;
-    while i < b:
-    {
-        result = result * a;
-        i = i + 1;
-    };
-    return result;
-};
-
-fn n_digits (n : I64) -> I64
-{
-    result : mut = 1;
-    remainder : mut = n;
-    while remainder >= 10:
-    {
-        result = result + 1;
-        remainder = remainder / 10;
-    };
-    return result;
 };
 
 struct String

@@ -1,0 +1,32 @@
+fn fac (n : I64) -> I64
+{
+    if n == 0:
+    {
+        return 1;
+    };
+    return n * fac(n-1);
+};
+
+fn pow (a : I64, b : I64) -> I64
+{
+    result : mut = 1;
+    i : mut = 0;
+    while i < b:
+    {
+        result = result * a;
+        i = i + 1;
+    };
+    return result;
+};
+
+fn n_digits (n : I64) -> I64
+{
+    result : mut = 1;
+    remainder : mut = n;
+    while remainder >= 10:
+    {
+        result = result + 1;
+        remainder = remainder / 10;
+    };
+    return result;
+};

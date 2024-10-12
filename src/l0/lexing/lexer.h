@@ -22,7 +22,7 @@ class ILexer
 class Lexer : public ILexer
 {
    public:
-    Lexer(std::shared_ptr<std::istream> input);
+    Lexer(std::istream& input);
     std::vector<Token> GetTokens();
 
    private:
@@ -39,7 +39,7 @@ class Lexer : public ILexer
     Token ReadStringLiteral();
 
     char current_{};
-    std::shared_ptr<std::istream> input_;
+    std::istream& input_;
 
     std::unordered_map<char, TokenType> single_character_operators_;
     std::unordered_map<std::string, TokenType> two_character_operators_;

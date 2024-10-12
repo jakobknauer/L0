@@ -36,6 +36,9 @@ class Scope
     const std::unordered_set<std::string>& GetVariables() const;
     const std::unordered_set<std::string>& GetTypes() const;
 
+    void UpdateTypes(const Scope& other);
+    void UpdateVariables(const Scope& other);
+
    private:
     std::unordered_set<std::string> variables_;
     std::unordered_map<std::string, std::shared_ptr<Type>> variable_types_;
