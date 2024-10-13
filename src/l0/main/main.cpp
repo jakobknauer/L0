@@ -1,13 +1,13 @@
+#include <llvm/IR/LLVMContext.h>
+
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <print>
 #include <ranges>
-//
-// #include "l0/ast/ast_printer.h"
 
-#include <llvm/IR/LLVMContext.h>
-
+#include "l0/ast/ast_printer.h"
 #include "l0/ast/module.h"
 #include "l0/common/constants.h"
 #include "l0/generation/generator.h"
@@ -104,8 +104,6 @@ namespace l0
 
 std::shared_ptr<l0::Module> GetModule(const fs::path& input_path)
 {
-    using namespace l0;
-
     std::println("Loading source file '{}'", input_path.string());
     std::ifstream input_file{input_path};
 
@@ -138,8 +136,8 @@ std::shared_ptr<l0::Module> GetModule(const fs::path& input_path)
 
     DeclareExternals(*module);
 
-    // std::println("Result:");
-    // AstPrinter{std::cout}.Print(*module);
+    std::println("Result:");
+    AstPrinter{std::cout}.Print(*module);
 
     std::println("Analyzing top level statements");
     try

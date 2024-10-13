@@ -232,12 +232,14 @@ class ParameterDeclaration
 };
 
 using ParameterDeclarationList = std::vector<std::shared_ptr<ParameterDeclaration>>;
+using CaptureList = std::vector<std::string>;
 
 class Function : public Expression
 {
    public:
     Function(
         std::shared_ptr<ParameterDeclarationList> parameters,
+        std::shared_ptr<CaptureList> captures,
         std::shared_ptr<TypeAnnotation> return_type_annotation,
         std::shared_ptr<StatementBlock> body
     );
@@ -246,6 +248,7 @@ class Function : public Expression
     void Accept(IExpressionVisitor& visitor) override;
 
     std::shared_ptr<ParameterDeclarationList> parameters;
+    std::shared_ptr<CaptureList> captures;
     std::shared_ptr<TypeAnnotation> return_type_annotation;
     std::shared_ptr<StatementBlock> body;
 

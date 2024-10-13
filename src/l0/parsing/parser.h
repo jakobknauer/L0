@@ -71,6 +71,7 @@ class Parser : public IParser
     std::shared_ptr<Expression> ParseAllocation();
     std::shared_ptr<ArgumentList> ParseArgumentList();
     std::shared_ptr<ParameterDeclarationList> ParseParameterDeclarationList();
+    std::shared_ptr<CaptureList> ParseCaptureList();
     std::shared_ptr<ParameterDeclaration> ParseParameterDeclaration();
     std::shared_ptr<MemberInitializerList> ParseMemberInitializerList();
     std::shared_ptr<TypeAnnotation> ParseTypeAnnotation();

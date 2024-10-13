@@ -216,7 +216,18 @@ void AstPrinter::Visit(const StringLiteral& literal)
 
 void AstPrinter::Visit(const Function& function)
 {
-    out_ << "$(";
+    out_ << "$";
+
+    if (function.captures)
+    {
+        out_ << " [";
+        interleaved_for_each(
+            *function.captures, [&](const auto& capture) { out_ << capture; }, [&](const auto&) { out_ << ", "; }
+        );
+        out_ << "]";
+    }
+
+    out_ << " (";
     interleaved_for_each(
         *function.parameters,
         [&](const auto& parameter)
