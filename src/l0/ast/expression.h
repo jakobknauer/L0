@@ -254,6 +254,7 @@ class Function : public Expression
 
     mutable std::shared_ptr<Scope> locals = std::make_shared<Scope>();
     mutable std::optional<std::string> global_name{};
+    mutable std::vector<std::shared_ptr<Scope>> capture_scopes{};
 };
 
 struct MemberInitializer

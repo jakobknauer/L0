@@ -245,6 +245,15 @@ void Typechecker::Visit(const StringLiteral& literal)
 
 void Typechecker::Visit(const Function& function)
 {
+    if (function.captures)
+    {
+        for (const auto& [capture, scope] : std::views::zip(*function.captures, function.capture_scopes))
+        {
+            auto capture_type = scope->GetVariableType(capture);
+            function.locals->SetVariableType(capture, capture_type);
+        }
+    }
+
     auto parameters = std::make_shared<std::vector<std::shared_ptr<Type>>>();
     for (const auto& param_decl : *function.parameters)
     {
