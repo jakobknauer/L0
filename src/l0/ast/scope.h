@@ -24,7 +24,7 @@ class Scope
     std::shared_ptr<Type> GetVariableType(std::string_view name) const;
 
     void SetLLVMValue(std::string_view name, llvm::Value* llvm_value);
-    llvm::Value* GetLLVMValue(std::string_view name);
+    llvm::Value* GetLLVMValue(std::string_view name) const;
 
     void DeclareType(std::string_view name);
     bool IsTypeDeclared(std::string_view name) const;

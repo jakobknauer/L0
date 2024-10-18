@@ -88,7 +88,7 @@ fn c8_to_digit (c8 : C8) -> I64
 
 struct String
 {
-    _buffer : mut &mut C8 = new [1] C8;  # Initializes to '\0';
+    _buffer : mut &mut C8;
     _length : mut I64 = 0;
     _capacity : mut I64 = 1;
 

@@ -53,13 +53,16 @@ void GlobalScopeBuilder::FillTypeDetails(std::shared_ptr<TypeDeclaration> type_d
             member->type = type_resolver_.Convert(*member_declaration->annotation);
         }
 
+        if (member->default_initializer)
+        {
+            member->default_initializer_global_name = std::format("{}::{}", struct_type->name, member->name);
+            module_.globals->DeclareVariable(*member->default_initializer_global_name);
+            module_.globals->SetVariableType(*member->default_initializer_global_name, member->type);
+        }
         if (auto function = std::dynamic_pointer_cast<Function>(member->default_initializer))
         {
-            function->global_name = std::format("{}::{}", struct_type->name, member->name);
+            function->global_name = std::format("__fn__{}::{}", struct_type->name, member->name);
             module_.callables.push_back(function);
-
-            module_.globals->DeclareVariable(function->global_name.value());
-            module_.globals->SetVariableType(function->global_name.value(), type_resolver_.Convert(*function));
         }
 
         struct_type->members->push_back(member);
@@ -96,7 +99,7 @@ void GlobalScopeBuilder::DeclareVariable(std::shared_ptr<Declaration> declaratio
 
     declaration->scope = module_.globals;
 
-    function->global_name = declaration->variable;
+    function->global_name = declaration->variable == "main" ? "main" : std::format("__fn__{}", declaration->variable);
     module_.callables.push_back(function);
 }
 

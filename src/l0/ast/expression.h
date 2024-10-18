@@ -150,6 +150,7 @@ class MemberAccessor : public Expression
 
     mutable std::shared_ptr<StructType> object_type;
     mutable std::optional<std::size_t> nonstatic_member_index;
+    mutable std::shared_ptr<Scope> object_type_scope;
 };
 
 using ArgumentList = std::vector<std::shared_ptr<Expression>>;
@@ -274,6 +275,8 @@ class Initializer : public Expression
 
     std::shared_ptr<TypeAnnotation> annotation;
     std::shared_ptr<MemberInitializerList> member_initializers;
+
+    mutable std::shared_ptr<Scope> type_scope;
 };
 
 class Allocation : public Expression

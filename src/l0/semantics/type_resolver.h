@@ -19,7 +19,8 @@ class TypeResolver : private ITypeAnnotationVisitor
     std::shared_ptr<Type> Convert(const TypeAnnotation& annotation);
     TypeQualifier Convert(TypeAnnotationQualifier qualifier);
     std::shared_ptr<FunctionType> Convert(const Function& function);
-    std::shared_ptr<Type> Resolve(std::string_view name);
+    std::shared_ptr<Scope> Resolve(std::string_view name);
+    std::shared_ptr<Type> GetTypeByName(std::string_view name);
 
    private:
     const Module& module_;
@@ -32,6 +33,6 @@ class TypeResolver : private ITypeAnnotationVisitor
     void Visit(const MutabilityOnlyTypeAnnotation& mota) override;
 };
 
-}  // namespace l0
+}  // namespace l0::detail
 
 #endif

@@ -71,10 +71,10 @@ void Scope::SetLLVMValue(std::string_view name, llvm::Value* llvm_value)
         throw ScopeError(std::format("LLVM Value of variable '{}' was set before.", name));
     }
 
-    llvm_values_.insert(std::make_pair(name, llvm_value));
+    llvm_values_.insert({std::string{name}, llvm_value});
 }
 
-llvm::Value* Scope::GetLLVMValue(std::string_view name)
+llvm::Value* Scope::GetLLVMValue(std::string_view name) const
 {
     if (!IsVariableDeclared(name))
     {

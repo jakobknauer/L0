@@ -38,7 +38,7 @@ llvm::Type* TypeConverter::GetValueDeclarationType(const Type& type)
 {
     if (auto function_type = dynamic_cast<const FunctionType*>(&type))
     {
-        return llvm::PointerType::getUnqual(context_);
+        return llvm::StructType::getTypeByName(context_, "__closure");
     }
     else
     {

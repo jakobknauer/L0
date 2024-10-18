@@ -134,6 +134,7 @@ class StructMember
 
     bool is_method{false};
     bool is_static{false};
+    std::optional<std::string> default_initializer_global_name{std::nullopt};
 };
 
 using StructMemberList = std::vector<std::shared_ptr<StructMember>>;
