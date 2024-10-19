@@ -596,8 +596,11 @@ void Generator::Visit(const Call& call)
 
     auto function_address =
         builder_.CreateConstGEP2_32(closure_type_, result_address_, 0, 0, "tmpgep_closure_function");
+    auto captures_address =
+        builder_.CreateConstGEP2_32(closure_type_, result_address_, 0, 1, "tmpgep_closure_captures");
     auto llvm_function =
         builder_.CreateLoad(llvm::PointerType::get(context_, 0), function_address, "tmp_closure_function");
+    auto captures = builder_.CreateLoad(llvm::PointerType::get(context_, 0), captures_address, "tmp_closure_captures");
 
     auto function_type = dynamic_pointer_cast<FunctionType>(call.function->type);
     llvm::FunctionType* llvm_function_type = type_converter_.GetFunctionDeclarationType(*function_type);
@@ -612,8 +615,7 @@ void Generator::Visit(const Call& call)
         argument->Accept(*this);
         arguments.push_back(result_);
     }
-    // TODO replace with pointer to captures
-    arguments.push_back(llvm::ConstantPointerNull::get(llvm::PointerType::get(context_, 0)));
+    arguments.push_back(captures);
 
     result_ = builder_.CreateCall(llvm_function_type, llvm_function, arguments, "calltmp");
     result_address_ = nullptr;
