@@ -197,7 +197,6 @@ void Generator::DeclareCallable(std::shared_ptr<Function> function)
     }
 
     auto llvm_type = type_converter_.GetFunctionDeclarationType(*type);
-    // llvm_module_->getOrInsertFunction(function->global_name.value(), llvm_type);
     auto linkage = function->global_name == "main" ? llvm::GlobalValue::LinkageTypes::ExternalLinkage
                                                    : llvm::GlobalValue::LinkageTypes::PrivateLinkage;
     llvm::Function::Create(llvm_type, linkage, function->global_name.value(), llvm_module_);
@@ -654,23 +653,30 @@ void Generator::Visit(const StringLiteral& literal)
 
 void Generator::Visit(const Function& function)
 {
+    if (!function.global_name)
+    {
+        function.global_name = GetLambdaName();
+    }
+
     llvm::Function* llvm_function = llvm_module_->getFunction(function.global_name.value());
 
-    if (llvm_function)
+    if (!llvm_function)
     {
-        std::vector<llvm::Constant*> closure_members{};
-        closure_members.push_back(llvm::dyn_cast<llvm::Function>(llvm_function));
-        closure_members.push_back(llvm::ConstantPointerNull::get(llvm::PointerType::get(context_, 0)));
-        auto closure = llvm::ConstantStruct::get(closure_type_, closure_members);
+        auto type = dynamic_pointer_cast<FunctionType>(function.type);
+        auto llvm_type = type_converter_.GetFunctionDeclarationType(*type);
+        auto linkage = llvm::GlobalValue::LinkageTypes::ExternalLinkage;
+        llvm_function = llvm::Function::Create(llvm_type, linkage, function.global_name.value(), llvm_module_);
 
-        result_ = closure;
-        result_address_ = nullptr;
-        return;
+        GenerateFunctionBody(function, *llvm_function);
     }
-    else
-    {
-        throw std::runtime_error(function.global_name.value());
-    }
+
+    std::vector<llvm::Constant*> closure_members{};
+    closure_members.push_back(llvm_function);
+    closure_members.push_back(llvm::ConstantPointerNull::get(llvm::PointerType::get(context_, 0)));
+    auto closure = llvm::ConstantStruct::get(closure_type_, closure_members);
+
+    result_ = closure;
+    result_address_ = nullptr;
 }
 
 void Generator::Visit(const Initializer& initializer)
@@ -742,6 +748,8 @@ void Generator::Visit(const Allocation& allocation)
 
 void Generator::GenerateFunctionBody(const Function& function, llvm::Function& llvm_function)
 {
+    llvm::BasicBlock* previous_block = builder_.GetInsertBlock();
+
     llvm::BasicBlock* allocas_block = llvm::BasicBlock::Create(context_, kAllocationBlockName, &llvm_function);
     llvm::BasicBlock* entry_block = llvm::BasicBlock::Create(context_, "entry", &llvm_function);
 
@@ -753,11 +761,7 @@ void Generator::GenerateFunctionBody(const Function& function, llvm::Function& l
         ParameterDeclaration& param = *function.parameters->at(i);
         llvm::Argument* llvm_param = llvm_function.args().begin() + i;
 
-        auto param_type = type_converter_.Convert(*function_type->parameters->at(i));
-        if (llvm::isa<llvm::FunctionType>(param_type))
-        {
-            param_type = llvm::PointerType::getUnqual(context_);
-        }
+        auto param_type = type_converter_.GetValueDeclarationType(*function_type->parameters->at(i));
 
         llvm::AllocaInst* alloca = builder_.CreateAlloca(param_type, nullptr, param.name);
         function.locals->SetLLVMValue(param.name, alloca);
@@ -771,6 +775,8 @@ void Generator::GenerateFunctionBody(const Function& function, llvm::Function& l
     builder_.CreateBr(entry_block);
 
     llvm::verifyFunction(llvm_function);
+
+    builder_.SetInsertPoint(previous_block);
 }
 
 llvm::AllocaInst* Generator::GenerateAlloca(llvm::Type* type, std::string name)
