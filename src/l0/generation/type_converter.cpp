@@ -30,6 +30,7 @@ llvm::FunctionType* TypeConverter::GetFunctionDeclarationType(const FunctionType
     {
         params.push_back(GetValueDeclarationType(*param));
     }
+    params.push_back(llvm::PointerType::get(context_, 0));
     llvm::Type* return_type = GetValueDeclarationType(*type.return_type);
     return llvm::FunctionType::get(return_type, params, false);
 }

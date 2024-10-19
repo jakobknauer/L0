@@ -612,6 +612,8 @@ void Generator::Visit(const Call& call)
         argument->Accept(*this);
         arguments.push_back(result_);
     }
+    // TODO replace with pointer to captures
+    arguments.push_back(llvm::ConstantPointerNull::get(llvm::PointerType::get(context_, 0)));
 
     result_ = builder_.CreateCall(llvm_function_type, llvm_function, arguments, "calltmp");
     result_address_ = nullptr;
