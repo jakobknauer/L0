@@ -83,9 +83,10 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     );
 
     llvm::StructType* GenerateClosureContextStruct(const Function& function);
+    std::tuple<llvm::Value*, llvm::StructType*> GenerateClosureContext(const Function& function);
     void VisitGlobal(llvm::GlobalVariable* global_variable);
 
-    llvm::Function* GetMallocFunction();
+    llvm::Value* CallMalloc(llvm::Value* size, const std::string& name);
 };
 
 }  // namespace l0
