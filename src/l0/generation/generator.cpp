@@ -37,6 +37,7 @@ Generator::Generator(llvm::LLVMContext& context, Module& module)
 {
     pointer_type_ = llvm::PointerType::get(context_, 0);
     closure_type_ = llvm::StructType::getTypeByName(context_, "__closure");
+    int_type_ = llvm::IntegerType::getInt64Ty(context_);
 }
 
 llvm::Module* Generator::Generate()
@@ -540,7 +541,9 @@ void Generator::Visit(const Variable& variable)
     }
     else
     {
-        throw GeneratorError(std::format("Unexpected LLVM value stored for variable '{}'.", variable.name));
+        auto llvm_type = type_converter_.GetValueDeclarationType(*variable.type);
+        result_ = builder_.CreateLoad(llvm_type, llvm_value, variable.name);
+        result_address_ = llvm_value;
     }
 }
 
@@ -663,24 +666,69 @@ void Generator::Visit(const Function& function)
     }
 
     llvm::Function* llvm_function = llvm_module_->getFunction(function.global_name.value());
+    llvm::Value* capture = nullptr;
 
     if (!llvm_function)
     {
+        llvm::StructType* context_struct = nullptr;
+        if (function.captures)
+        {
+            context_struct = GenerateClosureContextStruct(function);
+
+            llvm::FunctionType* int_to_ptr = llvm::FunctionType::get(pointer_type_, int_type_, false);
+            llvm::Value* context_size =
+                llvm::ConstantInt::get(int_type_, data_layout_.getTypeAllocSize(context_struct));
+            std::vector<llvm::Value*> malloc_args{context_size};
+            auto context_address =
+                builder_.CreateCall(int_to_ptr, GetMallocFunction(), malloc_args, "__context_address");
+
+            for (auto capture_index : std::views::iota(std::size_t{0}, function.captures->size()))
+            {
+                const auto& capture = function.captures->at(capture_index);
+                capture->Accept(*this);
+                const auto captured_value = result_;
+
+                auto member_address = builder_.CreateConstGEP2_32(
+                    context_struct, context_address, 0, capture_index, "tmpgep_contextmember"
+                );
+                builder_.CreateStore(captured_value, member_address);
+            }
+
+            capture = context_address;
+        }
+
         auto type = dynamic_pointer_cast<FunctionType>(function.type);
         auto llvm_type = type_converter_.GetFunctionDeclarationType(*type);
         auto linkage = llvm::GlobalValue::LinkageTypes::ExternalLinkage;
         llvm_function = llvm::Function::Create(llvm_type, linkage, function.global_name.value(), llvm_module_);
 
-        GenerateFunctionBody(function, *llvm_function);
+        GenerateFunctionBody(function, *llvm_function, context_struct);
     }
 
-    std::vector<llvm::Constant*> closure_members{};
-    closure_members.push_back(llvm_function);
-    closure_members.push_back(llvm::ConstantPointerNull::get(llvm::PointerType::get(context_, 0)));
-    auto closure = llvm::ConstantStruct::get(closure_type_, closure_members);
+    if (!function.captures)
+    {
+        std::vector<llvm::Constant*> closure_members{};
+        closure_members.push_back(llvm_function);
+        closure_members.push_back(llvm::ConstantPointerNull::get(pointer_type_));
+        auto closure = llvm::ConstantStruct::get(closure_type_, closure_members);
 
-    result_ = closure;
-    result_address_ = nullptr;
+        result_ = closure;
+        result_address_ = nullptr;
+    }
+    else
+    {
+        auto closure_address = GenerateAlloca(closure_type_, "__closure_address");
+
+        auto function_address =
+            builder_.CreateConstGEP2_32(closure_type_, closure_address, 0, 0, "tmpgep_closure_function");
+        auto captures_address =
+            builder_.CreateConstGEP2_32(closure_type_, closure_address, 0, 1, "tmpgep_closure_captures");
+        builder_.CreateStore(llvm_function, function_address);
+        builder_.CreateStore(capture, captures_address);
+
+        result_ = builder_.CreateLoad(closure_type_, closure_address);
+        result_address_ = nullptr;
+    }
 }
 
 void Generator::Visit(const Initializer& initializer)
@@ -718,15 +766,12 @@ void Generator::Visit(const Initializer& initializer)
 
 void Generator::Visit(const Allocation& allocation)
 {
-    llvm::Type* llvm_int_type = type_converter_.Convert(IntegerType{TypeQualifier::Constant});
-    llvm::Type* llvm_ptr_type = llvm::PointerType::get(context_, 0);
-    llvm::FunctionType* int_to_ptr = llvm::FunctionType::get(llvm_ptr_type, llvm_int_type, false);
-
-    llvm::FunctionCallee malloc_function = llvm_module_->getOrInsertFunction("malloc", int_to_ptr);
+    llvm::Function* malloc_function = GetMallocFunction();
+    llvm::FunctionType* int_to_ptr = llvm::FunctionType::get(pointer_type_, int_type_, false);
 
     llvm::Value* size_to_allocate;
     llvm::Type* allocated_llvm_type = type_converter_.Convert(*allocation.allocated_type);
-    llvm::Value* type_size = llvm::ConstantInt::get(llvm_int_type, data_layout_.getTypeAllocSize(allocated_llvm_type));
+    llvm::Value* type_size = llvm::ConstantInt::get(int_type_, data_layout_.getTypeAllocSize(allocated_llvm_type));
     if (allocation.size)
     {
         allocation.size->Accept(*this);
@@ -742,7 +787,7 @@ void Generator::Visit(const Allocation& allocation)
     allocation.initial_value->Accept(*this);
     auto initial_value = result_;
 
-    auto reference = builder_.CreateCall(int_to_ptr, malloc_function.getCallee(), arguments, "allocation");
+    auto reference = builder_.CreateCall(int_to_ptr, malloc_function, arguments, "allocation");
 
     // TODO use loop + GEP for array initialization
     builder_.CreateStore(initial_value, reference);
@@ -750,7 +795,9 @@ void Generator::Visit(const Allocation& allocation)
     result_address_ = nullptr;
 }
 
-void Generator::GenerateFunctionBody(const Function& function, llvm::Function& llvm_function)
+void Generator::GenerateFunctionBody(
+    const Function& function, llvm::Function& llvm_function, llvm::StructType* context_struct
+)
 {
     llvm::BasicBlock* previous_block = builder_.GetInsertBlock();
 
@@ -770,6 +817,18 @@ void Generator::GenerateFunctionBody(const Function& function, llvm::Function& l
         llvm::AllocaInst* alloca = builder_.CreateAlloca(param_type, nullptr, param.name);
         function.locals->SetLLVMValue(param.name, alloca);
         builder_.CreateStore(llvm_param, alloca);
+    }
+
+    if (function.captures)
+    {
+        auto context_address = (llvm_function.args().end() - 1);
+        for (auto capture_index : std::views::iota(std::size_t{0}, function.captures->size()))
+        {
+            const auto& capture = function.captures->at(capture_index);
+            const auto& capture_address =
+                builder_.CreateConstGEP2_32(context_struct, context_address, 0, capture_index, capture->name);
+            function.locals->SetLLVMValue(capture->name, capture_address);
+        }
     }
 
     builder_.SetInsertPoint(entry_block);
@@ -867,15 +926,15 @@ llvm::StructType* Generator::GenerateClosureContextStruct(const Function& functi
 {
     std::vector<llvm::Type*> capture_types{};
 
-    for (const auto& [capture, scope] : std::views::zip(*function.captures, function.capture_scopes))
+    for (const auto& capture : *function.captures)
     {
-        auto type = scope->GetVariableType(capture);
+        auto type = capture->type;
         auto llvm_type = type_converter_.Convert(*type);
         capture_types.push_back(llvm_type);
     }
 
     auto closure_context_struct =
-        llvm::StructType::create(context_, std::format("__{}__context", *function.global_name));
+        llvm::StructType::create(context_, std::format("__context__{}", *function.global_name));
     closure_context_struct->setBody(capture_types, true);
 
     return closure_context_struct;
@@ -894,6 +953,12 @@ void Generator::VisitGlobal(llvm::GlobalVariable* global_variable)
         result_ = builder_.CreateLoad(llvm_type, global_variable, global_variable->getName());
         result_address_ = global_variable;
     }
+}
+
+llvm::Function* Generator::GetMallocFunction()
+{
+    llvm::FunctionType* int_to_ptr = llvm::FunctionType::get(pointer_type_, int_type_, false);
+    return llvm::dyn_cast<llvm::Function>(llvm_module_->getOrInsertFunction("malloc", int_to_ptr).getCallee());
 }
 
 }  // namespace l0

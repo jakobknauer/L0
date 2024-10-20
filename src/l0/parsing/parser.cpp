@@ -774,7 +774,7 @@ std::shared_ptr<CaptureList> Parser::ParseCaptureList()
     do
     {
         auto capture = Expect(TokenType::Identifier);
-        captures->push_back(std::any_cast<std::string>(capture.data));
+        captures->push_back(std::make_shared<Variable>(std::any_cast<std::string>(capture.data)));
 
         Token next = Consume();
         switch (next.type)

@@ -233,7 +233,7 @@ class ParameterDeclaration
 };
 
 using ParameterDeclarationList = std::vector<std::shared_ptr<ParameterDeclaration>>;
-using CaptureList = std::vector<std::string>;
+using CaptureList = std::vector<std::shared_ptr<Variable>>;
 
 class Function : public Expression
 {
@@ -255,7 +255,6 @@ class Function : public Expression
 
     mutable std::shared_ptr<Scope> locals = std::make_shared<Scope>();
     mutable std::optional<std::string> global_name{};
-    mutable std::vector<std::shared_ptr<Scope>> capture_scopes{};
 };
 
 struct MemberInitializer

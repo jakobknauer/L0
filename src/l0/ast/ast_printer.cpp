@@ -222,7 +222,7 @@ void AstPrinter::Visit(const Function& function)
     {
         out_ << " [";
         interleaved_for_each(
-            *function.captures, [&](const auto& capture) { out_ << capture; }, [&](const auto&) { out_ << ", "; }
+            *function.captures, [&](const auto& capture) { capture->Accept(*this); }, [&](const auto&) { out_ << ", "; }
         );
         out_ << "]";
     }

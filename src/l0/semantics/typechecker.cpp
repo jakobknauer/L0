@@ -250,10 +250,11 @@ void Typechecker::Visit(const Function& function)
 {
     if (function.captures)
     {
-        for (const auto& [capture, scope] : std::views::zip(*function.captures, function.capture_scopes))
+        for (const auto& capture : *function.captures)
         {
-            auto capture_type = scope->GetVariableType(capture);
-            function.locals->SetVariableType(capture, capture_type);
+            capture->Accept(*this);
+            auto capture_type = capture->type;
+            function.locals->SetVariableType(capture->name, capture_type);
         }
     }
 

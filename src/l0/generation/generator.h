@@ -33,6 +33,7 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
 
     llvm::StructType* closure_type_;
     llvm::PointerType* pointer_type_;
+    llvm::Type* int_type_;
 
     TypeConverter type_converter_;
     llvm::Value* result_;
@@ -71,7 +72,9 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     void Visit(const Initializer& Initializer) override;
     void Visit(const Allocation& allocation) override;
 
-    void GenerateFunctionBody(const Function& function, llvm::Function& llvm_function);
+    void GenerateFunctionBody(
+        const Function& function, llvm::Function& llvm_function, llvm::StructType* context_struct = nullptr
+    );
     llvm::AllocaInst* GenerateAlloca(llvm::Type* type, std::string name);
     void GenerateResultAddress();
 
@@ -81,6 +84,8 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
 
     llvm::StructType* GenerateClosureContextStruct(const Function& function);
     void VisitGlobal(llvm::GlobalVariable* global_variable);
+
+    llvm::Function* GetMallocFunction();
 };
 
 }  // namespace l0

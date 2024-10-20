@@ -147,8 +147,8 @@ void Resolver::Visit(const Function& function)
     {
         for (const auto& capture : *function.captures)
         {
-            function.capture_scopes.push_back(Resolve(capture));
-            function.locals->DeclareVariable(capture);
+            capture->Accept(*this);
+            function.locals->DeclareVariable(capture->name);
         }
     }
 
