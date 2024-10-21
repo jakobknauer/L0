@@ -916,7 +916,7 @@ llvm::StructType* Generator::GenerateClosureContextStruct(const Function& functi
     for (const auto& capture : *function.captures)
     {
         auto type = capture->type;
-        auto llvm_type = type_converter_.Convert(*type);
+        auto llvm_type = type_converter_.GetValueDeclarationType(*type);
         capture_types.push_back(llvm_type);
     }
 
