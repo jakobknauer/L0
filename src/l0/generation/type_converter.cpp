@@ -30,6 +30,7 @@ llvm::FunctionType* TypeConverter::GetFunctionDeclarationType(const FunctionType
     {
         params.push_back(GetValueDeclarationType(*param));
     }
+    params.push_back(llvm::PointerType::get(context_, 0));
     llvm::Type* return_type = GetValueDeclarationType(*type.return_type);
     return llvm::FunctionType::get(return_type, params, false);
 }
@@ -38,7 +39,7 @@ llvm::Type* TypeConverter::GetValueDeclarationType(const Type& type)
 {
     if (auto function_type = dynamic_cast<const FunctionType*>(&type))
     {
-        return llvm::PointerType::getUnqual(context_);
+        return llvm::StructType::getTypeByName(context_, "__closure");
     }
     else
     {

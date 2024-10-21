@@ -1,6 +1,6 @@
 fn read_ln () -> String
 {
-    s : mut = String{};
+    s : mut = String{ _buffer = new [1] C8; };
     c : mut = getchar();
     while c != '\n':
     {

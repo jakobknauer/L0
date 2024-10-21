@@ -78,7 +78,7 @@ void Typechecker::Visit(const ConditionalStatement& conditional_statement)
 {
     conditional_statement.condition->Accept(*this);
     if (!conversion_checker_.CheckCompatibility(
-            conditional_statement.condition->type, type_resolver_.Resolve(Typename::Boolean)
+            conditional_statement.condition->type, type_resolver_.GetTypeByName(Typename::Boolean)
         ))
     {
         throw SemanticError(std::format(
@@ -97,7 +97,9 @@ void Typechecker::Visit(const ConditionalStatement& conditional_statement)
 void Typechecker::Visit(const WhileLoop& while_loop)
 {
     while_loop.condition->Accept(*this);
-    if (!conversion_checker_.CheckCompatibility(while_loop.condition->type, type_resolver_.Resolve(Typename::Boolean)))
+    if (!conversion_checker_.CheckCompatibility(
+            while_loop.condition->type, type_resolver_.GetTypeByName(Typename::Boolean)
+        ))
     {
         throw SemanticError(std::format(
             "Condition must be of type Boolean, but is of type '{}'.", while_loop.condition->type->ToString()
@@ -199,6 +201,7 @@ void Typechecker::Visit(const MemberAccessor& member_accessor)
     }
 
     member_accessor.object_type = object_type;
+    member_accessor.object_type_scope = type_resolver_.Resolve(member_accessor.object_type->name);
     member_accessor.nonstatic_member_index = object_type->GetNonstaticMemberIndex(member_accessor.member);
     member_accessor.type = member_type;
 }
@@ -220,31 +223,41 @@ void Typechecker::Visit(const Call& call)
 
 void Typechecker::Visit(const UnitLiteral& literal)
 {
-    literal.type = type_resolver_.Resolve(Typename::Unit);
+    literal.type = type_resolver_.GetTypeByName(Typename::Unit);
 }
 
 void Typechecker::Visit(const BooleanLiteral& literal)
 {
-    literal.type = type_resolver_.Resolve(Typename::Boolean);
+    literal.type = type_resolver_.GetTypeByName(Typename::Boolean);
 }
 
 void Typechecker::Visit(const IntegerLiteral& literal)
 {
-    literal.type = type_resolver_.Resolve(Typename::Integer);
+    literal.type = type_resolver_.GetTypeByName(Typename::Integer);
 }
 
 void Typechecker::Visit(const CharacterLiteral& literal)
 {
-    literal.type = type_resolver_.Resolve(Typename::Character);
+    literal.type = type_resolver_.GetTypeByName(Typename::Character);
 }
 
 void Typechecker::Visit(const StringLiteral& literal)
 {
-    literal.type = type_resolver_.Resolve(Typename::CString);
+    literal.type = type_resolver_.GetTypeByName(Typename::CString);
 }
 
 void Typechecker::Visit(const Function& function)
 {
+    if (function.captures)
+    {
+        for (const auto& capture : *function.captures)
+        {
+            capture->Accept(*this);
+            auto capture_type = capture->type;
+            function.locals->SetVariableType(capture->name, capture_type);
+        }
+    }
+
     auto parameters = std::make_shared<std::vector<std::shared_ptr<Type>>>();
     for (const auto& param_decl : *function.parameters)
     {
@@ -320,6 +333,7 @@ void Typechecker::Visit(const Initializer& initializer)
     }
 
     initializer.type = annotated_type;
+    initializer.type_scope = type_resolver_.Resolve(struct_type->name);
 }
 
 void Typechecker::Visit(const Allocation& allocation)
@@ -327,7 +341,7 @@ void Typechecker::Visit(const Allocation& allocation)
     if (allocation.size)
     {
         allocation.size->Accept(*this);
-        auto integer_type = type_resolver_.Resolve(Typename::Integer);
+        auto integer_type = type_resolver_.GetTypeByName(Typename::Integer);
         if (*allocation.size->type != *integer_type)
         {
             throw SemanticError(std::format(

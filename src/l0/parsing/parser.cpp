@@ -1,5 +1,7 @@
 #include "l0/parsing/parser.h"
 
+#include <llvm/IR/PassManager.h>
+
 #include <optional>
 #include <ranges>
 
@@ -619,13 +621,18 @@ std::shared_ptr<Expression> Parser::ParseAtomicExpression()
 std::shared_ptr<Expression> Parser::ParseFunction()
 {
     Expect(TokenType::Dollar);
+    std::shared_ptr<CaptureList> captures{nullptr};
+    if (Peek().type == TokenType::OpeningBracket)
+    {
+        captures = ParseCaptureList();
+    }
     auto parameters = ParseParameterDeclarationList();
     Expect(TokenType::Arrow);
     auto return_type = ParseTypeAnnotation();
     Expect(TokenType::OpeningBrace);
     auto statements = ParseStatementBlock(TokenType::ClosingBrace);
     Expect(TokenType::ClosingBrace);
-    return std::make_shared<Function>(parameters, return_type, statements);
+    return std::make_shared<Function>(parameters, captures, return_type, statements);
 }
 
 std::shared_ptr<Expression> Parser::ParseInitializer()
@@ -752,6 +759,49 @@ std::shared_ptr<ParameterDeclaration> Parser::ParseParameterDeclaration()
     Expect(TokenType::Colon);
     auto annotation = ParseTypeAnnotation();
     return std::make_shared<ParameterDeclaration>(std::any_cast<std::string>(name.data), annotation);
+}
+
+std::shared_ptr<CaptureList> Parser::ParseCaptureList()
+{
+    auto captures = std::make_shared<CaptureList>();
+
+    Expect(TokenType::OpeningBracket);
+    if (ConsumeIf(TokenType::ClosingBracket))
+    {
+        return captures;
+    }
+
+    do
+    {
+        auto capture = Expect(TokenType::Identifier);
+        captures->push_back(std::make_shared<Variable>(std::any_cast<std::string>(capture.data)));
+
+        Token next = Consume();
+        switch (next.type)
+        {
+            case TokenType::ClosingBracket:
+            {
+                return captures;
+            }
+            case TokenType::Comma:
+            {
+                if (ConsumeIf(TokenType::ClosingBracket))
+                {
+                    return captures;
+                }
+                else
+                {
+                    continue;
+                }
+            }
+            default:
+            {
+                throw ParserError(std::format(
+                    "Expected ',' or ']', got token '{}' of type '{}' instead.", next.lexeme, str(next.type)
+                ));
+            }
+        }
+    } while (true);
 }
 
 std::shared_ptr<TypeAnnotation> Parser::ParseTypeAnnotation()
@@ -992,7 +1042,7 @@ std::shared_ptr<Statement> Parser::ParseAlternativeFunctionDeclaration()
         return_type
     );
 
-    auto function = std::make_shared<Function>(parameters, return_type, statements);
+    auto function = std::make_shared<Function>(parameters, nullptr, return_type, statements);
 
     return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), type_annotation, function);
 }
@@ -1029,7 +1079,7 @@ std::shared_ptr<Statement> Parser::ParseAlternativeMethodDeclaration()
     );
     auto method_annotation = std::make_shared<MethodTypeAnnotation>(function_annotation);
 
-    auto function = std::make_shared<Function>(parameters, return_type, statements);
+    auto function = std::make_shared<Function>(parameters, nullptr, return_type, statements);
 
     return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), method_annotation, function);
 }

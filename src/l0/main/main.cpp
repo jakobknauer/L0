@@ -1,13 +1,13 @@
+#include <llvm/IR/LLVMContext.h>
+
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <memory>
 #include <print>
 #include <ranges>
-//
-// #include "l0/ast/ast_printer.h"
 
-#include <llvm/IR/LLVMContext.h>
-
+#include "l0/ast/ast_printer.h"
 #include "l0/ast/module.h"
 #include "l0/common/constants.h"
 #include "l0/generation/generator.h"
@@ -33,7 +33,7 @@ std::shared_ptr<l0::Module> GetModule(const fs::path& input_path);
 
 void SemanticCheckModule(l0::Module& module);
 
-void GenerateIRForModule(l0::Module& module, llvm::LLVMContext& context, const fs::path& output_path);
+llvm::Module* GenerateIRForModule(l0::Module& module, llvm::LLVMContext& context);
 
 }  // namespace l0
 
@@ -87,13 +87,27 @@ int main(int argc, char* argv[])
     }
 
     llvm::LLVMContext context{};
+    auto pointer_type_ = llvm::PointerType::get(context, 0);
+    auto closure_type_ = llvm::StructType::create(context, "__closure");
+    closure_type_->setBody({pointer_type_, pointer_type_}, true);
 
     std::println("Generating IR");
-    for (const auto& module : modules)
+    auto llvm_modules = modules
+                      | std::views::transform([&](auto module) { return GenerateIRForModule(*module, context); })
+                      | std::ranges::to<std::vector>();
+
+    for (const auto& [module, llvm_module] : std::views::zip(modules, llvm_modules))
     {
         fs::path output_path{module->source_path};
         output_path.replace_extension("ll");
-        GenerateIRForModule(*module, context, output_path);
+
+        std::ofstream output_file{output_path};
+
+        std::string code{};
+        llvm::raw_string_ostream os{code};
+        os << *llvm_module;
+
+        output_file << code;
     }
 
     std::println("Leaving.");
@@ -104,8 +118,6 @@ namespace l0
 
 std::shared_ptr<l0::Module> GetModule(const fs::path& input_path)
 {
-    using namespace l0;
-
     std::println("Loading source file '{}'", input_path.string());
     std::ifstream input_file{input_path};
 
@@ -138,8 +150,8 @@ std::shared_ptr<l0::Module> GetModule(const fs::path& input_path)
 
     DeclareExternals(*module);
 
-    // std::println("Result:");
-    // AstPrinter{std::cout}.Print(*module);
+    std::println("Result:");
+    AstPrinter{std::cout}.Print(*module);
 
     std::println("Analyzing top level statements");
     try
@@ -233,16 +245,15 @@ void SemanticCheckModule(l0::Module& module)
     }
 }
 
-void GenerateIRForModule(l0::Module& module, llvm::LLVMContext& context, const fs::path& output_path)
+llvm::Module* GenerateIRForModule(l0::Module& module, llvm::LLVMContext& context)
 {
     using namespace l0;
 
     std::println("Generating IR for module '{}'", module.name);
     try
     {
-        std::string code = Generator{context, module}.Generate();
-        std::ofstream output_file{output_path};
-        output_file << code;
+        llvm::Module* llvm_module = Generator{context, module}.Generate();
+        return llvm_module;
     }
     catch (const GeneratorError& ge)
     {

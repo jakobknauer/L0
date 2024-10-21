@@ -150,6 +150,7 @@ class MemberAccessor : public Expression
 
     mutable std::shared_ptr<StructType> object_type;
     mutable std::optional<std::size_t> nonstatic_member_index;
+    mutable std::shared_ptr<Scope> object_type_scope;
 };
 
 using ArgumentList = std::vector<std::shared_ptr<Expression>>;
@@ -232,12 +233,14 @@ class ParameterDeclaration
 };
 
 using ParameterDeclarationList = std::vector<std::shared_ptr<ParameterDeclaration>>;
+using CaptureList = std::vector<std::shared_ptr<Variable>>;
 
 class Function : public Expression
 {
    public:
     Function(
         std::shared_ptr<ParameterDeclarationList> parameters,
+        std::shared_ptr<CaptureList> captures,
         std::shared_ptr<TypeAnnotation> return_type_annotation,
         std::shared_ptr<StatementBlock> body
     );
@@ -246,6 +249,7 @@ class Function : public Expression
     void Accept(IExpressionVisitor& visitor) override;
 
     std::shared_ptr<ParameterDeclarationList> parameters;
+    std::shared_ptr<CaptureList> captures;
     std::shared_ptr<TypeAnnotation> return_type_annotation;
     std::shared_ptr<StatementBlock> body;
 
@@ -270,6 +274,8 @@ class Initializer : public Expression
 
     std::shared_ptr<TypeAnnotation> annotation;
     std::shared_ptr<MemberInitializerList> member_initializers;
+
+    mutable std::shared_ptr<Scope> type_scope;
 };
 
 class Allocation : public Expression

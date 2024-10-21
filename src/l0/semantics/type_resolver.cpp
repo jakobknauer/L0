@@ -41,15 +41,15 @@ std::shared_ptr<FunctionType> TypeResolver::Convert(const Function& function)
     return std::make_shared<FunctionType>(parameters, return_type, TypeQualifier::Constant);
 }
 
-std::shared_ptr<Type> TypeResolver::Resolve(std::string_view name)
+std::shared_ptr<Scope> TypeResolver::Resolve(std::string_view name)
 {
     if (module_.externals->IsTypeDeclared(name))
     {
-        return module_.externals->GetTypeDefinition(name);
+        return module_.externals;
     }
     else if (module_.globals->IsTypeDeclared(name))
     {
-        return module_.globals->GetTypeDefinition(name);
+        return module_.globals;
     }
     else
     {
@@ -57,9 +57,14 @@ std::shared_ptr<Type> TypeResolver::Resolve(std::string_view name)
     }
 }
 
+std::shared_ptr<Type> TypeResolver::GetTypeByName(std::string_view name)
+{
+    return Resolve(name)->GetTypeDefinition(name);
+}
+
 void TypeResolver::Visit(const SimpleTypeAnnotation& sta)
 {
-    auto type = Resolve(sta.type);
+    auto type = GetTypeByName(sta.type);
     auto mutability = Convert(sta.mutability);
     result_ = ModifyQualifier(*type, mutability);
 }

@@ -2,6 +2,7 @@
 
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/TargetSelect.h>
+#include <llvm/Transforms/IPO/GlobalDCE.h>
 #include <llvm/Transforms/IPO/StripDeadPrototypes.h>
 
 #include <algorithm>
@@ -24,6 +25,7 @@ std::string GetLambdaName()
 }
 
 constexpr std::string kAllocationBlockName{"allocas"};
+constexpr std::string kEntryBlockName{"entry"};
 
 }  // namespace
 
@@ -31,34 +33,36 @@ Generator::Generator(llvm::LLVMContext& context, Module& module)
     : ast_module_{module},
       context_{context},
       builder_{context_},
-      llvm_module_{module.name, context_},
+      llvm_module_{new llvm::Module{module.name, context_}},
       type_converter_{context_}
 {
+    pointer_type_ = llvm::PointerType::get(context_, 0);
+    closure_type_ = llvm::StructType::getTypeByName(context_, "__closure");
+    int_type_ = llvm::IntegerType::getInt64Ty(context_);
 }
 
-std::string Generator::Generate()
+llvm::Module* Generator::Generate()
 {
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
-    llvm_module_.setTargetTriple("x86_64-pc-linux-gnu");
+    llvm_module_->setTargetTriple("x86_64-pc-linux-gnu");
 
     DeclareTypes();
-    FillTypes();
-
     DeclareExternalVariables();
 
     DeclareCallables();
+
+    FillTypes();
+    DeclareGlobalVariables();
+
     DefineCallables();
 
-    llvm::StripDeadPrototypesPass sdpp{};
     llvm::ModuleAnalysisManager mam;
-    sdpp.run(llvm_module_, mam);
+    llvm::GlobalDCEPass global_dce_pass{};
+    global_dce_pass.run(*llvm_module_, mam);
 
-    std::string code{};
-    llvm::raw_string_ostream os{code};
-    os << llvm_module_;
-    return code;
+    return llvm_module_;
 }
 
 void Generator::DeclareExternalVariables()
@@ -67,19 +71,54 @@ void Generator::DeclareExternalVariables()
     {
         auto type = ast_module_.externals->GetVariableType(external_symbol);
 
-        if (auto function_type = dynamic_pointer_cast<FunctionType>(type))
+        if (external_symbol == "printf" || external_symbol == "getchar")
         {
+            auto function_type = dynamic_pointer_cast<FunctionType>(type);
             auto llvm_type = type_converter_.Convert(*function_type);
-            llvm::FunctionCallee function_callee = llvm_module_.getOrInsertFunction(external_symbol, llvm_type);
-            ast_module_.externals->SetLLVMValue(external_symbol, function_callee.getCallee());
+            llvm::FunctionCallee function_callee = llvm_module_->getOrInsertFunction(external_symbol, llvm_type);
+            std::vector<llvm::Constant*> closure_members{};
+            closure_members.push_back(llvm::dyn_cast<llvm::Function>(function_callee.getCallee()));
+            closure_members.push_back(llvm::ConstantPointerNull::get(llvm::PointerType::get(context_, 0)));
+            auto closure = llvm::ConstantStruct::get(closure_type_, closure_members);
+            auto global_var = new llvm::GlobalVariable(
+                *llvm_module_,
+                closure_type_,
+                true,
+                llvm::GlobalValue::InternalLinkage,
+                closure,
+                std::format("{}", external_symbol)
+            );
+            ast_module_.externals->SetLLVMValue(external_symbol, global_var);
+            continue;
         }
-        else
-        {
-            auto llvm_type = type_converter_.Convert(*type);
-            llvm_module_.getOrInsertGlobal(external_symbol, llvm_type);
-            auto global = llvm_module_.getNamedGlobal(external_symbol);
-            ast_module_.externals->SetLLVMValue(external_symbol, global);
-        }
+
+        auto llvm_type = type_converter_.GetValueDeclarationType(*type);
+        auto global_var = new llvm::GlobalVariable(
+            *llvm_module_, llvm_type, true, llvm::GlobalValue::ExternalLinkage, nullptr, external_symbol
+        );
+        ast_module_.externals->SetLLVMValue(external_symbol, global_var);
+    }
+}
+
+void Generator::DeclareGlobalVariables()
+{
+    for (const auto& global_declaration : ast_module_.global_declarations)
+    {
+        const std::string& name = global_declaration->variable;
+        const auto type = ast_module_.globals->GetVariableType(name);
+        const auto llvm_type = type_converter_.GetValueDeclarationType(*type);
+
+        global_declaration->initializer->Accept(*this);
+
+        auto global_var = new llvm::GlobalVariable(
+            *llvm_module_,
+            llvm_type,
+            true,
+            llvm::GlobalValue::ExternalLinkage,
+            llvm::dyn_cast<llvm::Constant>(result_),
+            name
+        );
+        ast_module_.globals->SetLLVMValue(name, global_var);
     }
 }
 
@@ -97,24 +136,6 @@ void Generator::DeclareTypes()
 
 void Generator::FillTypes()
 {
-    for (const auto& type : ast_module_.externals->GetTypes())
-    {
-        auto struct_type = dynamic_pointer_cast<StructType>(ast_module_.externals->GetTypeDefinition(type));
-        if (!struct_type)
-        {
-            continue;
-        }
-        auto llvm_struct_type = llvm::StructType::getTypeByName(context_, type);
-
-        // clang-format off
-        auto non_static_members = *struct_type->members
-            | std::views::filter([](auto member) { return !member->is_static; })
-            | std::views::transform([&](auto member) { return type_converter_.GetValueDeclarationType(*member->type); })
-            | std::ranges::to<std::vector>();
-        // clang-format on
-
-        llvm_struct_type->setBody(non_static_members, true);
-    }
     for (const auto& type : ast_module_.globals->GetTypes())
     {
         auto struct_type = dynamic_pointer_cast<StructType>(ast_module_.globals->GetTypeDefinition(type));
@@ -132,6 +153,26 @@ void Generator::FillTypes()
         // clang-format on
 
         llvm_struct_type->setBody(non_static_members, true);
+
+        for (auto member : *struct_type->members)
+        {
+            if (!member->default_initializer)
+            {
+                continue;
+            }
+            member->default_initializer->Accept(*this);
+
+            auto llvm_type = type_converter_.GetValueDeclarationType(*member->type);
+            auto global_var = new llvm::GlobalVariable(
+                *llvm_module_,
+                llvm_type,
+                true,
+                llvm::GlobalValue::ExternalLinkage,
+                llvm::dyn_cast<llvm::Constant>(result_),
+                member->default_initializer_global_name.value()
+            );
+            ast_module_.globals->SetLLVMValue(member->default_initializer_global_name.value(), global_var);
+        }
     }
 }
 
@@ -153,10 +194,10 @@ void Generator::DeclareCallable(std::shared_ptr<Function> function)
         ));
     }
 
-    auto llvm_type = type_converter_.GetFunctionDeclarationType(*type);
-    llvm::FunctionCallee function_callee = llvm_module_.getOrInsertFunction(function->global_name.value(), llvm_type);
-
-    ast_module_.globals->SetLLVMValue(function->global_name.value(), function_callee.getCallee());
+    const auto llvm_type = type_converter_.GetFunctionDeclarationType(*type);
+    const auto linkage = (function->global_name == "main") ? llvm::GlobalValue::LinkageTypes::ExternalLinkage
+                                                           : llvm::GlobalValue::LinkageTypes::PrivateLinkage;
+    llvm::Function::Create(llvm_type, linkage, function->global_name.value(), llvm_module_);
 }
 
 void Generator::DefineCallables()
@@ -171,7 +212,7 @@ void Generator::DefineCallables()
 
         llvm::Type* llvm_type = type_converter_.Convert(*function_type);
 
-        llvm::FunctionCallee callee = llvm_module_.getOrInsertFunction(callable->global_name.value(), llvm_type);
+        llvm::FunctionCallee callee = llvm_module_->getOrInsertFunction(callable->global_name.value(), llvm_type);
         llvm::Function* llvm_function = llvm::dyn_cast<llvm::Function>(callee.getCallee());
 
         GenerateFunctionBody(*callable, *llvm_function);
@@ -298,7 +339,7 @@ void Generator::Visit(const Deallocation& deallocation)
     llvm::Type* llvm_void_type = llvm::Type::getVoidTy(context_);
     llvm::FunctionType* ptr_to_void = llvm::FunctionType::get(llvm_void_type, llvm_ptr_type, false);
 
-    llvm::FunctionCallee free_function = llvm_module_.getOrInsertFunction("free", ptr_to_void);
+    llvm::FunctionCallee free_function = llvm_module_->getOrInsertFunction("free", ptr_to_void);
 
     deallocation.reference->Accept(*this);
     llvm::Value* operand = result_;
@@ -309,7 +350,6 @@ void Generator::Visit(const Deallocation& deallocation)
 
 void Generator::Visit(const Assignment& assignment)
 {
-    // ReferencePass sets target_address
     assignment.target->Accept(*this);
     GenerateResultAddress();
     auto target_address = result_address_;
@@ -361,8 +401,7 @@ void Generator::Visit(const UnaryOp& unary_op)
             unary_op.operand->Accept(*this);
             auto address = result_;
             auto llvm_type = type_converter_.Convert(*unary_op.type);
-            result_ =
-                builder_.CreateLoad(llvm_type, address, std::format("deref__{}", std::string{result_->getName()}));
+            result_ = builder_.CreateLoad(llvm_type, address, std::format("dereftmp_{}", result_->getName().str()));
             result_address_ = address;
         }
     }
@@ -483,17 +522,7 @@ void Generator::Visit(const Variable& variable)
     }
     else if (auto global_variable = llvm::dyn_cast<llvm::GlobalVariable>(llvm_value))
     {
-        auto llvm_type = global_variable->getValueType();
-        if (llvm::isa<llvm::ArrayType>(llvm_type))
-        {
-            result_ = llvm_value;
-            result_address_ = nullptr;
-        }
-        else
-        {
-            result_ = builder_.CreateLoad(llvm_type, llvm_value, variable.name);
-            result_address_ = llvm_value;
-        }
+        VisitGlobal(global_variable);
     }
     else if (llvm::isa<llvm::Function>(llvm_value))
     {
@@ -507,7 +536,9 @@ void Generator::Visit(const Variable& variable)
     }
     else
     {
-        throw GeneratorError(std::format("Unexpected LLVM value stored for variable '{}'.", variable.name));
+        auto llvm_type = type_converter_.GetValueDeclarationType(*variable.type);
+        result_ = builder_.CreateLoad(llvm_type, llvm_value, variable.name);
+        result_address_ = llvm_value;
     }
 }
 
@@ -519,6 +550,7 @@ void Generator::Visit(const MemberAccessor& member_accessor)
     GenerateResultAddress();
     auto object_ptr = result_address_;
     auto llvm_struct_type = type_converter_.Convert(*member_accessor.object_type);
+    auto llvm_member_type = type_converter_.GetValueDeclarationType(*member_accessor.type);
 
     if (member_accessor.nonstatic_member_index)
     {
@@ -527,19 +559,27 @@ void Generator::Visit(const MemberAccessor& member_accessor)
             object_ptr,
             0,
             member_accessor.nonstatic_member_index.value(),
-            std::format("member_address__{}::{}", struct_name, member_accessor.member)
+            std::format("geptmp_{}.{}::{}", object_ptr->getName().str(), struct_name, member_accessor.member)
         );
 
-        auto llvm_member_type = type_converter_.GetValueDeclarationType(*member_accessor.type);
         result_ = builder_.CreateLoad(
-            llvm_member_type, member_address, std::format("member__{}::{}", struct_name, member_accessor.member)
+            llvm_member_type,
+            member_address,
+            std::format("{}.{}::{}", object_ptr->getName().str(), struct_name, member_accessor.member)
         );
         result_address_ = member_address;
     }
     else
     {
         auto member = member_accessor.object_type->GetMember(member_accessor.member);
-        member->default_initializer->Accept(*this);
+        auto static_initializer =
+            member_accessor.object_type_scope->GetLLVMValue(*member->default_initializer_global_name);
+        auto static_initializer_as_global = llvm::dyn_cast<llvm::GlobalVariable>(static_initializer);
+        if (!static_initializer_as_global)
+        {
+            throw GeneratorError(std::format("Static initializer for {} is not a global variable.", member->name));
+        }
+        VisitGlobal(static_initializer_as_global);
         // leave result_ and result_address_ as is
     }
 
@@ -550,9 +590,26 @@ void Generator::Visit(const Call& call)
 {
     call.function->Accept(*this);
 
-    llvm::Value* llvm_function = result_;
+    GenerateResultAddress();
+    llvm::Value* closure = result_address_;
     llvm::Value* object_ptr = object_ptr_;
+
+    const std::string& closure_name = object_ptr
+                                        ? std::format("{}.{}", object_ptr_->getName().str(), closure->getName().str())
+                                        : closure->getName().str();
+
     object_ptr_ = nullptr;
+
+    auto function_address =
+        builder_.CreateConstGEP2_32(closure_type_, closure, 0, 0, std::format("geptmp_{}_function", closure_name));
+    auto context_address =
+        builder_.CreateConstGEP2_32(closure_type_, closure, 0, 1, std::format("geptmp_{}_context", closure_name));
+    auto llvm_function = builder_.CreateLoad(
+        llvm::PointerType::get(context_, 0), function_address, std::format("{}_function", closure_name)
+    );
+    auto context = builder_.CreateLoad(
+        llvm::PointerType::get(context_, 0), context_address, std::format("{}_context", closure_name)
+    );
 
     auto function_type = dynamic_pointer_cast<FunctionType>(call.function->type);
     llvm::FunctionType* llvm_function_type = type_converter_.GetFunctionDeclarationType(*function_type);
@@ -567,6 +624,7 @@ void Generator::Visit(const Call& call)
         argument->Accept(*this);
         arguments.push_back(result_);
     }
+    arguments.push_back(context);
 
     result_ = builder_.CreateCall(llvm_function_type, llvm_function, arguments, "calltmp");
     result_address_ = nullptr;
@@ -602,38 +660,62 @@ void Generator::Visit(const CharacterLiteral& literal)
 
 void Generator::Visit(const StringLiteral& literal)
 {
-    result_ = builder_.CreateGlobalString(literal.value);
+    result_ = builder_.CreateGlobalString(literal.value, "__const_str", 0, llvm_module_);
     result_address_ = nullptr;
 }
 
 void Generator::Visit(const Function& function)
 {
-    if (!function.global_name.has_value())
+    if (!function.global_name)
     {
         function.global_name = GetLambdaName();
     }
 
-    llvm::Function* llvm_function = llvm_module_.getFunction(function.global_name.value());
+    llvm::Function* closure_function = llvm_module_->getFunction(function.global_name.value());
+    llvm::Value* closure_context_ptr = nullptr;
 
-    if (llvm_function)
+    if (!closure_function)
     {
-        result_ = llvm_function;
-        result_address_ = nullptr;
-        return;
+        llvm::StructType* context_struct = nullptr;
+        if (function.captures)
+        {
+            std::tie(closure_context_ptr, context_struct) = GenerateClosureContext(function);
+        }
+
+        auto type = dynamic_pointer_cast<FunctionType>(function.type);
+        auto llvm_type = type_converter_.GetFunctionDeclarationType(*type);
+        auto linkage = llvm::GlobalValue::LinkageTypes::ExternalLinkage;
+        closure_function = llvm::Function::Create(llvm_type, linkage, function.global_name.value(), llvm_module_);
+
+        GenerateFunctionBody(function, *closure_function, context_struct);
     }
 
-    auto llvm_type = type_converter_.GetFunctionDeclarationType(*dynamic_pointer_cast<FunctionType>(function.type));
-    auto callee = llvm_module_.getOrInsertFunction(function.global_name.value(), llvm_type);
-    llvm_function = llvm::dyn_cast<llvm::Function>(callee.getCallee());
+    if (!function.captures)
+    {
+        std::vector<llvm::Constant*> closure_members{};
+        closure_members.push_back(closure_function);
+        closure_members.push_back(llvm::ConstantPointerNull::get(pointer_type_));
+        auto closure = llvm::ConstantStruct::get(closure_type_, closure_members);
 
-    llvm::BasicBlock* previous_block = builder_.GetInsertBlock();
+        result_ = closure;
+        result_address_ = nullptr;
+    }
+    else
+    {
+        auto closure_address = GenerateAlloca(closure_type_, std::format("address_{}", function.global_name.value()));
 
-    GenerateFunctionBody(function, *llvm_function);
+        auto closure_function_address = builder_.CreateConstGEP2_32(
+            closure_type_, closure_address, 0, 0, std::format("geptmp_{}_function", function.global_name.value())
+        );
+        auto closure_context_address = builder_.CreateConstGEP2_32(
+            closure_type_, closure_address, 0, 1, std::format("geptmp_{}_captures", function.global_name.value())
+        );
+        builder_.CreateStore(closure_function, closure_function_address);
+        builder_.CreateStore(closure_context_ptr, closure_context_address);
 
-    builder_.SetInsertPoint(previous_block);
-
-    result_ = llvm_function;
-    result_address_ = nullptr;
+        result_ = builder_.CreateLoad(closure_type_, closure_address);
+        result_address_ = nullptr;
+    }
 }
 
 void Generator::Visit(const Initializer& initializer)
@@ -646,10 +728,13 @@ void Generator::Visit(const Initializer& initializer)
         );
     }
 
-    llvm::Type* llvm_type = type_converter_.Convert(*initializer.type);
-    auto alloca = GenerateAlloca(llvm_type, std::format("structinit_address__{}", struct_type->name));
+    const std::string object_name = std::format("init_{}", struct_type->name);
 
-    auto actual_initializers = GetActualMemberInitializers(*initializer.member_initializers, *struct_type);
+    llvm::Type* llvm_type = type_converter_.Convert(*initializer.type);
+    auto alloca = GenerateAlloca(llvm_type, std::format("address_{}", object_name));
+
+    auto actual_initializers =
+        GetActualMemberInitializers(*initializer.member_initializers, *struct_type, *initializer.type_scope);
 
     for (const auto& [name, init_value] : actual_initializers)
     {
@@ -659,26 +744,21 @@ void Generator::Visit(const Initializer& initializer)
             alloca,
             0,
             member_index.value(),
-            std::format("structinit_member_address__{}::{}", struct_type->name, name)
+            std::format("address_{}.{}::{}", object_name, struct_type->name, name)
         );
         builder_.CreateStore(init_value, member_address);
     }
 
-    result_ = builder_.CreateLoad(llvm_type, alloca, std::format("structinit__{}", struct_type->name));
+    result_ = builder_.CreateLoad(llvm_type, alloca, object_name);
     result_address_ = alloca;
 }
 
 void Generator::Visit(const Allocation& allocation)
 {
-    llvm::Type* llvm_int_type = type_converter_.Convert(IntegerType{TypeQualifier::Constant});
-    llvm::Type* llvm_ptr_type = llvm::PointerType::get(context_, 0);
-    llvm::FunctionType* int_to_ptr = llvm::FunctionType::get(llvm_ptr_type, llvm_int_type, false);
-
-    llvm::FunctionCallee malloc_function = llvm_module_.getOrInsertFunction("malloc", int_to_ptr);
+    llvm::Type* allocated_llvm_type = type_converter_.Convert(*allocation.allocated_type);
+    llvm::Value* type_size = llvm::ConstantInt::get(int_type_, data_layout_.getTypeAllocSize(allocated_llvm_type));
 
     llvm::Value* size_to_allocate;
-    llvm::Type* allocated_llvm_type = type_converter_.Convert(*allocation.allocated_type);
-    llvm::Value* type_size = llvm::ConstantInt::get(llvm_int_type, data_layout_.getTypeAllocSize(allocated_llvm_type));
     if (allocation.size)
     {
         allocation.size->Accept(*this);
@@ -689,12 +769,10 @@ void Generator::Visit(const Allocation& allocation)
     {
         size_to_allocate = type_size;
     }
-    std::vector<llvm::Value*> arguments{size_to_allocate};
-
     allocation.initial_value->Accept(*this);
     auto initial_value = result_;
 
-    auto reference = builder_.CreateCall(int_to_ptr, malloc_function.getCallee(), arguments, "allocation");
+    auto reference = CallMalloc(size_to_allocate, "allocated");
 
     // TODO use loop + GEP for array initialization
     builder_.CreateStore(initial_value, reference);
@@ -702,24 +780,38 @@ void Generator::Visit(const Allocation& allocation)
     result_address_ = nullptr;
 }
 
-void Generator::GenerateFunctionBody(const Function& function, llvm::Function& llvm_function)
+void Generator::GenerateFunctionBody(
+    const Function& function, llvm::Function& llvm_function, llvm::StructType* context_struct
+)
 {
+    llvm::BasicBlock* previous_block = builder_.GetInsertBlock();
+
     llvm::BasicBlock* allocas_block = llvm::BasicBlock::Create(context_, kAllocationBlockName, &llvm_function);
-    llvm::BasicBlock* entry_block = llvm::BasicBlock::Create(context_, "entry", &llvm_function);
+    llvm::BasicBlock* entry_block = llvm::BasicBlock::Create(context_, kEntryBlockName, &llvm_function);
 
     auto function_type = dynamic_pointer_cast<FunctionType>(function.type);
 
     builder_.SetInsertPoint(allocas_block);
+    // Fill local scope with captures
+    if (function.captures)
+    {
+        auto context_address = (llvm_function.args().end() - 1);
+        for (auto capture_index : std::views::iota(std::size_t{0}, function.captures->size()))
+        {
+            const Variable& capture = *function.captures->at(capture_index);
+            const auto& capture_address =
+                builder_.CreateConstGEP2_32(context_struct, context_address, 0, capture_index, capture.name);
+            function.locals->SetLLVMValue(capture.name, capture_address);
+        }
+    }
+
+    // Fill local scope with arguments
     for (std::size_t i = 0; i < function.parameters->size(); ++i)
     {
         ParameterDeclaration& param = *function.parameters->at(i);
         llvm::Argument* llvm_param = llvm_function.args().begin() + i;
 
-        auto param_type = type_converter_.Convert(*function_type->parameters->at(i));
-        if (llvm::isa<llvm::FunctionType>(param_type))
-        {
-            param_type = llvm::PointerType::getUnqual(context_);
-        }
+        auto param_type = type_converter_.GetValueDeclarationType(*function_type->parameters->at(i));
 
         llvm::AllocaInst* alloca = builder_.CreateAlloca(param_type, nullptr, param.name);
         function.locals->SetLLVMValue(param.name, alloca);
@@ -733,6 +825,8 @@ void Generator::GenerateFunctionBody(const Function& function, llvm::Function& l
     builder_.CreateBr(entry_block);
 
     llvm::verifyFunction(llvm_function);
+
+    builder_.SetInsertPoint(previous_block);
 }
 
 llvm::AllocaInst* Generator::GenerateAlloca(llvm::Type* type, std::string name)
@@ -767,12 +861,12 @@ void Generator::GenerateResultAddress()
         return;
     }
 
-    result_address_ = GenerateAlloca(result_->getType(), std::format("address_{}", std::string{result_->getName()}));
+    result_address_ = GenerateAlloca(result_->getType(), std::format("address_{}", result_->getName().str()));
     builder_.CreateStore(result_, result_address_);
 }
 
 std::vector<std::tuple<std::string, llvm::Value*>> Generator::GetActualMemberInitializers(
-    const MemberInitializerList& explicit_initializers, const StructType& struct_type
+    const MemberInitializerList& explicit_initializers, const StructType& struct_type, const Scope& scope
 )
 {
     // clang-format off
@@ -792,11 +886,16 @@ std::vector<std::tuple<std::string, llvm::Value*>> Generator::GetActualMemberIni
     for (const std::string& member_name : default_initialized_members)
     {
         auto member = struct_type.GetMember(member_name);
+        auto default_initializer = scope.GetLLVMValue(*member->default_initializer_global_name);
+        auto default_initializer_as_global = llvm::dyn_cast<llvm::GlobalVariable>(default_initializer);
+        if (!default_initializer_as_global)
+        {
+            throw GeneratorError(std::format("Default initializer for {} is not a global variable.", member->name));
+        }
+        VisitGlobal(default_initializer_as_global);
 
-        member->default_initializer->Accept(*this);
-        auto init_value = result_;
-
-        actual_initializers.push_back({member_name, init_value});
+        actual_initializers.push_back({member_name, result_});
+        result_ = nullptr;
     }
 
     for (const auto& member_initializer : explicit_initializers)
@@ -808,6 +907,73 @@ std::vector<std::tuple<std::string, llvm::Value*>> Generator::GetActualMemberIni
     }
 
     return actual_initializers;
+}
+
+llvm::StructType* Generator::GenerateClosureContextStruct(const Function& function)
+{
+    std::vector<llvm::Type*> capture_types{};
+
+    for (const auto& capture : *function.captures)
+    {
+        auto type = capture->type;
+        auto llvm_type = type_converter_.GetValueDeclarationType(*type);
+        capture_types.push_back(llvm_type);
+    }
+
+    auto closure_context_struct =
+        llvm::StructType::create(context_, std::format("__context__{}", *function.global_name));
+    closure_context_struct->setBody(capture_types, true);
+
+    return closure_context_struct;
+}
+
+void Generator::VisitGlobal(llvm::GlobalVariable* global_variable)
+{
+    auto llvm_type = global_variable->getValueType();
+    if (llvm::isa<llvm::ArrayType>(llvm_type))
+    {
+        result_ = global_variable;
+        result_address_ = nullptr;
+    }
+    else
+    {
+        result_ = builder_.CreateLoad(llvm_type, global_variable, global_variable->getName());
+        result_address_ = global_variable;
+    }
+}
+
+llvm::Value* Generator::CallMalloc(llvm::Value* size, const std::string& name)
+{
+    llvm::FunctionType* int_to_ptr = llvm::FunctionType::get(pointer_type_, int_type_, false);
+    llvm::Function* malloc_function =
+        llvm::dyn_cast<llvm::Function>(llvm_module_->getOrInsertFunction("malloc", int_to_ptr).getCallee());
+    return builder_.CreateCall(int_to_ptr, malloc_function, {size}, name);
+}
+
+std::tuple<llvm::Value*, llvm::StructType*> Generator::GenerateClosureContext(const Function& function)
+{
+    auto context_struct = GenerateClosureContextStruct(function);
+
+    llvm::Value* context_size = llvm::ConstantInt::get(int_type_, data_layout_.getTypeAllocSize(context_struct));
+    auto context_address = CallMalloc(context_size, std::format("address_{}_context", function.global_name.value()));
+
+    for (auto capture_index : std::views::iota(std::size_t{0}, function.captures->size()))
+    {
+        const auto& capture = function.captures->at(capture_index);
+        capture->Accept(*this);
+        const auto captured_value = result_;
+
+        auto member_address = builder_.CreateConstGEP2_32(
+            context_struct,
+            context_address,
+            0,
+            capture_index,
+            std::format("tmpgep_{}_capture_{}", function.global_name.value(), capture->name)
+        );
+        builder_.CreateStore(captured_value, member_address);
+    }
+
+    return {context_address, context_struct};
 }
 
 }  // namespace l0

@@ -143,14 +143,30 @@ void Resolver::Visit(const StringLiteral& literal) {}
 
 void Resolver::Visit(const Function& function)
 {
+    if (function.captures)
+    {
+        for (const auto& capture : *function.captures)
+        {
+            capture->Accept(*this);
+            function.locals->DeclareVariable(capture->name);
+        }
+    }
+
+    auto scopes_backup = scopes_;
+
+    scopes_.clear();
+    scopes_.push_back(module_.externals);
+    scopes_.push_back(module_.globals);
+    scopes_.push_back(function.locals);
+
     for (const auto& param_decl : *function.parameters)
     {
         function.locals->DeclareVariable(param_decl->name);
     }
 
-    scopes_.push_back(function.locals);
     function.body->Accept(*this);
-    scopes_.pop_back();
+
+    scopes_ = scopes_backup;
 }
 
 void Resolver::Visit(const Initializer& initializer)
@@ -196,7 +212,7 @@ std::shared_ptr<Scope> Resolver::Resolve(const std::string name)
             return scope;
         }
     }
-    throw SemanticError(std::format("Usage of undeclared variable: '{}'.", name));
+    throw SemanticError(std::format("Cannot resolve variable '{}'.", name));
 }
 
 }  // namespace l0

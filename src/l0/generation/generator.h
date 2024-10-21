@@ -21,15 +21,19 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
    public:
     Generator(llvm::LLVMContext& context, Module& module);
 
-    std::string Generate();
+    llvm::Module* Generate();
 
    private:
     Module& ast_module_;
 
     llvm::LLVMContext& context_;
     llvm::IRBuilder<> builder_;
-    llvm::Module llvm_module_;
-    llvm::DataLayout data_layout_{&llvm_module_};
+    llvm::Module* llvm_module_;
+    llvm::DataLayout data_layout_{llvm_module_};
+
+    llvm::StructType* closure_type_;
+    llvm::PointerType* pointer_type_;
+    llvm::Type* int_type_;
 
     TypeConverter type_converter_;
     llvm::Value* result_;
@@ -37,6 +41,7 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     llvm::Value* object_ptr_;
 
     void DeclareExternalVariables();
+    void DeclareGlobalVariables();
     void DeclareTypes();
     void FillTypes();
     void DeclareCallables();
@@ -67,13 +72,21 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     void Visit(const Initializer& Initializer) override;
     void Visit(const Allocation& allocation) override;
 
-    void GenerateFunctionBody(const Function& function, llvm::Function& llvm_function);
+    void GenerateFunctionBody(
+        const Function& function, llvm::Function& llvm_function, llvm::StructType* context_struct = nullptr
+    );
     llvm::AllocaInst* GenerateAlloca(llvm::Type* type, std::string name);
     void GenerateResultAddress();
 
     std::vector<std::tuple<std::string, llvm::Value*>> GetActualMemberInitializers(
-        const MemberInitializerList& explicit_initializers, const StructType& struct_type
+        const MemberInitializerList& explicit_initializers, const StructType& struct_type, const Scope& scope
     );
+
+    llvm::StructType* GenerateClosureContextStruct(const Function& function);
+    std::tuple<llvm::Value*, llvm::StructType*> GenerateClosureContext(const Function& function);
+    void VisitGlobal(llvm::GlobalVariable* global_variable);
+
+    llvm::Value* CallMalloc(llvm::Value* size, const std::string& name);
 };
 
 }  // namespace l0
