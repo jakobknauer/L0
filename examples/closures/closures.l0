@@ -1,0 +1,12 @@
+fn main () -> I64
+{
+    a := 5;
+    b := 2;
+
+    f := $ [a] (x : I64) -> I64 { return x + a; };
+    g := $ [b] (x : I64) -> I64 { return x * b; };
+
+    h := $ [f, g] (x : I64) -> I64 { return f(g(x)); };
+
+    return h(3);
+};
