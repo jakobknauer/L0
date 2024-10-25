@@ -40,12 +40,15 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     llvm::Value* result_address_;
     llvm::Value* object_ptr_;
 
+    void DeclareTypes();
+    void DeclareEnvironmentVariables();
     void DeclareExternalVariables();
     void DeclareGlobalVariables();
-    void DeclareTypes();
-    void FillTypes();
     void DeclareCallables();
     void DeclareCallable(std::shared_ptr<Function> function);
+
+    void DefineTypes();
+    void DefineGlobalVariables();
     void DefineCallables();
 
     void Visit(const StatementBlock& statement_block) override;

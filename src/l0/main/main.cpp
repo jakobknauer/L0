@@ -171,27 +171,27 @@ void DeclareExternals(l0::Module& module)
 {
     using namespace l0;
 
-    module.externals->DeclareType(Typename::Unit);
-    module.externals->DeclareType(Typename::Boolean);
-    module.externals->DeclareType(Typename::Integer);
-    module.externals->DeclareType(Typename::Character);
-    module.externals->DeclareType(Typename::CString);
+    module.environment->DeclareType(Typename::Unit);
+    module.environment->DeclareType(Typename::Boolean);
+    module.environment->DeclareType(Typename::Integer);
+    module.environment->DeclareType(Typename::Character);
+    module.environment->DeclareType(Typename::CString);
 
-    module.externals->DefineType(Typename::Unit, std::make_shared<UnitType>(TypeQualifier::Constant));
-    module.externals->DefineType(Typename::Boolean, std::make_shared<BooleanType>(TypeQualifier::Constant));
+    module.environment->DefineType(Typename::Unit, std::make_shared<UnitType>(TypeQualifier::Constant));
+    module.environment->DefineType(Typename::Boolean, std::make_shared<BooleanType>(TypeQualifier::Constant));
     auto i64 = std::make_shared<IntegerType>(TypeQualifier::Constant);
-    module.externals->DefineType(Typename::Integer, i64);
+    module.environment->DefineType(Typename::Integer, i64);
     auto c8 = std::make_shared<CharacterType>(TypeQualifier::Constant);
-    module.externals->DefineType(Typename::Character, c8);
+    module.environment->DefineType(Typename::Character, c8);
     auto cstring = std::make_shared<ReferenceType>(c8, TypeQualifier::Constant);
-    module.externals->DefineType(Typename::CString, cstring);
+    module.environment->DefineType(Typename::CString, cstring);
 
     auto parameters_string = std::make_shared<ParameterList>(std::initializer_list<std::shared_ptr<Type>>{cstring});
     auto string_to_int = std::make_shared<FunctionType>(parameters_string, i64, TypeQualifier::Constant);
-    module.externals->DeclareVariable("printf", string_to_int);
+    module.environment->DeclareVariable("printf", string_to_int);
 
     auto void_to_char = std::make_shared<FunctionType>(std::make_shared<ParameterList>(), c8, TypeQualifier::Constant);
-    module.externals->DeclareVariable("getchar", void_to_char);
+    module.environment->DeclareVariable("getchar", void_to_char);
 }
 
 void SemanticCheckModule(l0::Module& module)

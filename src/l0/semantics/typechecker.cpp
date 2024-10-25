@@ -20,9 +20,9 @@ void Typechecker::Check()
         CheckGlobalDeclaration(*global_declaration);
     }
 
-    for (auto type_name : module_.globals->GetTypes())
+    for (auto global_type_declaration : module_.global_type_declarations)
     {
-        auto type = module_.globals->GetTypeDefinition(type_name);
+        auto type = global_type_declaration->type;
         if (auto struct_type = dynamic_pointer_cast<StructType>(type))
         {
             CheckStruct(*struct_type);
@@ -512,8 +512,8 @@ void Typechecker::CheckStruct(const StructType& struct_type)
         }
 
         member->default_initializer->Accept(*this);
-        auto initializer_type = member->default_initializer->type;
         auto annotated_type = member->type;
+        auto initializer_type = member->default_initializer->type;
 
         if (!conversion_checker_.CheckCompatibility(annotated_type, initializer_type))
         {
