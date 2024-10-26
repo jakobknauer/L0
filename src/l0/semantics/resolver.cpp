@@ -15,6 +15,7 @@ Resolver::Resolver(const Module& module)
 void Resolver::Check()
 {
     scopes_.clear();
+    scopes_.push_back(module_.environment);
     scopes_.push_back(module_.externals);
     scopes_.push_back(module_.globals);
 
@@ -155,6 +156,7 @@ void Resolver::Visit(const Function& function)
     auto scopes_backup = scopes_;
 
     scopes_.clear();
+    scopes_.push_back(module_.environment);
     scopes_.push_back(module_.externals);
     scopes_.push_back(module_.globals);
     scopes_.push_back(function.locals);

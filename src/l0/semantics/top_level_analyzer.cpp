@@ -41,6 +41,7 @@ void TopLevelAnalyzer::DeclareType(std::shared_ptr<TypeDeclaration> type_declara
     auto type = std::make_shared<StructType>(
         type_declaration->name, std::make_shared<StructMemberList>(), TypeQualifier::Constant
     );
+    type_declaration->type = type;
     module_.globals->DefineType(type_declaration->name, type);
 }
 

@@ -43,6 +43,11 @@ std::shared_ptr<FunctionType> TypeResolver::Convert(const Function& function)
 
 std::shared_ptr<Scope> TypeResolver::Resolve(std::string_view name)
 {
+    // TODO reverse order?
+    if (module_.environment->IsTypeDeclared(name))
+    {
+        return module_.environment;
+    }
     if (module_.externals->IsTypeDeclared(name))
     {
         return module_.externals;

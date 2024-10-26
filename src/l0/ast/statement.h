@@ -62,6 +62,8 @@ class TypeDeclaration : public Statement
 
     std::string name;
     std::shared_ptr<TypeExpression> definition;
+
+    mutable std::shared_ptr<Type> type;
 };
 
 class ExpressionStatement : public Statement

@@ -49,13 +49,13 @@ llvm::Module* Generator::Generate()
     llvm_module_->setTargetTriple("x86_64-pc-linux-gnu");
 
     DeclareTypes();
+    DeclareEnvironmentVariables();
     DeclareExternalVariables();
-
+    DeclareGlobalVariables();
     DeclareCallables();
 
-    FillTypes();
-    DeclareGlobalVariables();
-
+    DefineTypes();
+    DefineGlobalVariables();
     DefineCallables();
 
     llvm::ModuleAnalysisManager mam;
@@ -63,63 +63,6 @@ llvm::Module* Generator::Generate()
     global_dce_pass.run(*llvm_module_, mam);
 
     return llvm_module_;
-}
-
-void Generator::DeclareExternalVariables()
-{
-    for (const std::string& external_symbol : ast_module_.externals->GetVariables())
-    {
-        auto type = ast_module_.externals->GetVariableType(external_symbol);
-
-        if (external_symbol == "printf" || external_symbol == "getchar")
-        {
-            auto function_type = dynamic_pointer_cast<FunctionType>(type);
-            auto llvm_type = type_converter_.Convert(*function_type);
-            llvm::FunctionCallee function_callee = llvm_module_->getOrInsertFunction(external_symbol, llvm_type);
-            std::vector<llvm::Constant*> closure_members{};
-            closure_members.push_back(llvm::dyn_cast<llvm::Function>(function_callee.getCallee()));
-            closure_members.push_back(llvm::ConstantPointerNull::get(llvm::PointerType::get(context_, 0)));
-            auto closure = llvm::ConstantStruct::get(closure_type_, closure_members);
-            auto global_var = new llvm::GlobalVariable(
-                *llvm_module_,
-                closure_type_,
-                true,
-                llvm::GlobalValue::InternalLinkage,
-                closure,
-                std::format("{}", external_symbol)
-            );
-            ast_module_.externals->SetLLVMValue(external_symbol, global_var);
-            continue;
-        }
-
-        auto llvm_type = type_converter_.GetValueDeclarationType(*type);
-        auto global_var = new llvm::GlobalVariable(
-            *llvm_module_, llvm_type, true, llvm::GlobalValue::ExternalLinkage, nullptr, external_symbol
-        );
-        ast_module_.externals->SetLLVMValue(external_symbol, global_var);
-    }
-}
-
-void Generator::DeclareGlobalVariables()
-{
-    for (const auto& global_declaration : ast_module_.global_declarations)
-    {
-        const std::string& name = global_declaration->variable;
-        const auto type = ast_module_.globals->GetVariableType(name);
-        const auto llvm_type = type_converter_.GetValueDeclarationType(*type);
-
-        global_declaration->initializer->Accept(*this);
-
-        auto global_var = new llvm::GlobalVariable(
-            *llvm_module_,
-            llvm_type,
-            true,
-            llvm::GlobalValue::ExternalLinkage,
-            llvm::dyn_cast<llvm::Constant>(result_),
-            name
-        );
-        ast_module_.globals->SetLLVMValue(name, global_var);
-    }
 }
 
 void Generator::DeclareTypes()
@@ -134,45 +77,60 @@ void Generator::DeclareTypes()
     }
 }
 
-void Generator::FillTypes()
+void Generator::DeclareEnvironmentVariables()
 {
-    for (const auto& type : ast_module_.globals->GetTypes())
+    for (const std::string& environment_symbol : ast_module_.environment->GetVariables())
     {
-        auto struct_type = dynamic_pointer_cast<StructType>(ast_module_.globals->GetTypeDefinition(type));
-        if (!struct_type)
+        auto type = ast_module_.environment->GetVariableType(environment_symbol);
+        auto function_type = dynamic_pointer_cast<FunctionType>(type);
+        auto llvm_type = type_converter_.Convert(*function_type);
+
+        llvm::FunctionCallee function_callee = llvm_module_->getOrInsertFunction(environment_symbol, llvm_type);
+
+        std::vector<llvm::Constant*> closure_members{};
+        closure_members.push_back(llvm::dyn_cast<llvm::Function>(function_callee.getCallee()));
+        closure_members.push_back(llvm::ConstantPointerNull::get(llvm::PointerType::get(context_, 0)));
+        auto closure = llvm::ConstantStruct::get(closure_type_, closure_members);
+
+        auto global_var = new llvm::GlobalVariable(
+            *llvm_module_,
+            closure_type_,
+            true,
+            llvm::GlobalValue::InternalLinkage,
+            closure,
+            std::format("{}", environment_symbol)
+        );
+        ast_module_.environment->SetLLVMValue(environment_symbol, global_var);
+    }
+}
+
+void Generator::DeclareExternalVariables()
+{
+    for (const std::string& external_symbol : ast_module_.externals->GetVariables())
+    {
+        auto type = ast_module_.externals->GetVariableType(external_symbol);
+        auto llvm_type = type_converter_.GetValueDeclarationType(*type);
+        auto global_var = new llvm::GlobalVariable(
+            *llvm_module_, llvm_type, true, llvm::GlobalValue::ExternalLinkage, nullptr, external_symbol
+        );
+        ast_module_.externals->SetLLVMValue(external_symbol, global_var);
+    }
+}
+
+void Generator::DeclareGlobalVariables()
+{
+    for (const auto& global_symbol : ast_module_.globals->GetVariables())
+    {
+        if (global_symbol == "main")
         {
             continue;
         }
-        auto llvm_struct_type = llvm::StructType::getTypeByName(context_, type);
-
-        // clang-format off
-        auto non_static_members = *struct_type->members
-            | std::views::filter([](auto member) { return !member->is_static; })
-            | std::views::transform([&](auto member) { return type_converter_.GetValueDeclarationType(*member->type); })
-            | std::ranges::to<std::vector>();
-        // clang-format on
-
-        llvm_struct_type->setBody(non_static_members, true);
-
-        for (auto member : *struct_type->members)
-        {
-            if (!member->default_initializer)
-            {
-                continue;
-            }
-            member->default_initializer->Accept(*this);
-
-            auto llvm_type = type_converter_.GetValueDeclarationType(*member->type);
-            auto global_var = new llvm::GlobalVariable(
-                *llvm_module_,
-                llvm_type,
-                true,
-                llvm::GlobalValue::ExternalLinkage,
-                llvm::dyn_cast<llvm::Constant>(result_),
-                member->default_initializer_global_name.value()
-            );
-            ast_module_.globals->SetLLVMValue(member->default_initializer_global_name.value(), global_var);
-        }
+        const auto type = ast_module_.globals->GetVariableType(global_symbol);
+        const auto llvm_type = type_converter_.GetValueDeclarationType(*type);
+        const auto global_var = new llvm::GlobalVariable(
+            *llvm_module_, llvm_type, true, llvm::GlobalValue::ExternalLinkage, nullptr, global_symbol
+        );
+        ast_module_.globals->SetLLVMValue(global_symbol, global_var);
     }
 }
 
@@ -200,21 +158,71 @@ void Generator::DeclareCallable(std::shared_ptr<Function> function)
     llvm::Function::Create(llvm_type, linkage, function->global_name.value(), llvm_module_);
 }
 
-void Generator::DefineCallables()
+void Generator::DefineTypes()
 {
-    for (auto callable : ast_module_.callables)
+    for (const auto& type_declaration : ast_module_.global_type_declarations)
     {
-        auto function_type = dynamic_pointer_cast<FunctionType>(callable->type);
-        if (!function_type)
+        auto struct_type = dynamic_pointer_cast<StructType>(type_declaration->type);
+        if (!struct_type)
+        {
+            continue;
+        }
+        auto llvm_struct_type = llvm::StructType::getTypeByName(context_, struct_type->name);
+
+        // clang-format off
+        auto non_static_members = *struct_type->members
+            | std::views::filter([](auto member) { return !member->is_static; })
+            | std::views::transform([&](auto member) { return type_converter_.GetValueDeclarationType(*member->type); })
+            | std::ranges::to<std::vector>();
+        // clang-format on
+
+        llvm_struct_type->setBody(non_static_members, true);
+
+        for (auto member : *struct_type->members)
+        {
+            if (!member->default_initializer)
+            {
+                continue;
+            }
+            member->default_initializer->Accept(*this);
+            const auto initializer = llvm::dyn_cast<llvm::Constant>(result_);
+            const auto llvm_value = ast_module_.globals->GetLLVMValue(member->default_initializer_global_name.value());
+            const auto global_var = llvm::dyn_cast<llvm::GlobalVariable>(llvm_value);
+            global_var->setInitializer(initializer);
+        }
+    }
+}
+
+void Generator::DefineGlobalVariables()
+{
+    for (const auto& global_declaration : ast_module_.global_declarations)
+    {
+        if (global_declaration->variable == "main")
         {
             continue;
         }
 
-        llvm::Type* llvm_type = type_converter_.Convert(*function_type);
+        global_declaration->initializer->Accept(*this);
+        auto initializer = llvm::dyn_cast<llvm::Constant>(result_);
 
-        llvm::FunctionCallee callee = llvm_module_->getOrInsertFunction(callable->global_name.value(), llvm_type);
-        llvm::Function* llvm_function = llvm::dyn_cast<llvm::Function>(callee.getCallee());
+        const auto llvm_value = ast_module_.globals->GetLLVMValue(global_declaration->variable);
+        const auto global_var = llvm::dyn_cast<llvm::GlobalVariable>(llvm_value);
 
+        global_var->setInitializer(initializer);
+    }
+}
+
+void Generator::DefineCallables()
+{
+    for (auto callable : ast_module_.callables)
+    {
+        llvm::Function* llvm_function = llvm_module_->getFunction(callable->global_name.value());
+        if (!llvm_function)
+        {
+            throw GeneratorError(
+                std::format("Callable with name '{}' has not been declared.", callable->global_name.value())
+            );
+        }
         GenerateFunctionBody(*callable, *llvm_function);
     }
 }
