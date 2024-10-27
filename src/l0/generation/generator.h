@@ -36,9 +36,6 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     llvm::Type* int_type_;
 
     TypeConverter type_converter_;
-    llvm::Value* result_;
-    llvm::Value* result_address_;
-    llvm::Value* object_ptr_;
 
     void DeclareTypes();
     void DeclareEnvironmentVariables();
@@ -78,8 +75,6 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     void GenerateFunctionBody(
         const Function& function, llvm::Function& llvm_function, llvm::StructType* context_struct = nullptr
     );
-    llvm::AllocaInst* GenerateAlloca(llvm::Type* type, std::string name);
-    void GenerateResultAddress();
 
     std::vector<std::tuple<std::string, llvm::Value*>> GetActualMemberInitializers(
         const MemberInitializerList& explicit_initializers, const StructType& struct_type, const Scope& scope
@@ -89,8 +84,40 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     std::tuple<llvm::Value*, llvm::StructType*> GenerateClosureContext(const Function& function);
     void VisitGlobal(llvm::GlobalVariable* global_variable);
 
-    llvm::Value* CallMalloc(llvm::Value* size, const std::string& name);
+    llvm::Value* GenerateMallocCall(llvm::Value* size, const std::string& name);
+
+    class ResultStore
+    {
+       public:
+        ResultStore(llvm::IRBuilder<>& builder);
+
+        llvm::Value* GetResult();
+        llvm::Value* GetResultAddress();
+        llvm::Value* GetObjectPointer();
+        bool HasObjectPointer();
+
+        void Clear();
+        void SetResult(llvm::Value* result);
+        void SetResultAndObjectPointer(llvm::Value* result, llvm::Value* object_ptr);
+        void SetResultAddress(llvm::Value* result_address, llvm::Type* result_type);
+        void SetResultAddressAndObjectPointer(
+            llvm::Value* result_address, llvm::Type* result_type, llvm::Value* object_ptr
+        );
+        void SetResultAndResultAddress(llvm::Value* result, llvm::Value* result_address);
+        void SetObjectPointerNoOverride(llvm::Value* object_ptr);
+
+       private:
+        llvm::IRBuilder<>& builder_;
+
+        llvm::Value* result_{nullptr};
+        llvm::Value* result_address_{nullptr};
+        llvm::Type* result_type_{nullptr};
+        llvm::Value* object_ptr_{nullptr};
+    };
+    ResultStore result_store_{builder_};
 };
+
+llvm::AllocaInst* GenerateAlloca(llvm::IRBuilder<>& builder, llvm::Type* type, std::string name);
 
 }  // namespace l0
 

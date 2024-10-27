@@ -89,7 +89,7 @@ void Generator::DeclareEnvironmentVariables()
 
         std::vector<llvm::Constant*> closure_members{};
         closure_members.push_back(llvm::dyn_cast<llvm::Function>(function_callee.getCallee()));
-        closure_members.push_back(llvm::ConstantPointerNull::get(llvm::PointerType::get(context_, 0)));
+        closure_members.push_back(llvm::ConstantPointerNull::get(pointer_type_));
         auto closure = llvm::ConstantStruct::get(closure_type_, closure_members);
 
         auto global_var = new llvm::GlobalVariable(
@@ -185,7 +185,7 @@ void Generator::DefineTypes()
                 continue;
             }
             member->default_initializer->Accept(*this);
-            const auto initializer = llvm::dyn_cast<llvm::Constant>(result_);
+            const auto initializer = llvm::dyn_cast<llvm::Constant>(result_store_.GetResult());
             const auto llvm_value = ast_module_.globals->GetLLVMValue(member->default_initializer_global_name.value());
             const auto global_var = llvm::dyn_cast<llvm::GlobalVariable>(llvm_value);
             global_var->setInitializer(initializer);
@@ -203,7 +203,7 @@ void Generator::DefineGlobalVariables()
         }
 
         global_declaration->initializer->Accept(*this);
-        auto initializer = llvm::dyn_cast<llvm::Constant>(result_);
+        auto initializer = llvm::dyn_cast<llvm::Constant>(result_store_.GetResult());
 
         const auto llvm_value = ast_module_.globals->GetLLVMValue(global_declaration->variable);
         const auto global_var = llvm::dyn_cast<llvm::GlobalVariable>(llvm_value);
@@ -238,16 +238,16 @@ void Generator::Visit(const StatementBlock& statement_block)
 void Generator::Visit(const Declaration& declaration)
 {
     declaration.initializer->Accept(*this);
-    llvm::Value* initializer = result_;
+    llvm::Value* initializer = result_store_.GetResult();
 
     std::shared_ptr<Type> type = declaration.scope->GetVariableType(declaration.variable);
     llvm::Type* llvm_type = type_converter_.GetValueDeclarationType(*type);
-    llvm::AllocaInst* alloca = GenerateAlloca(llvm_type, declaration.variable);
+    llvm::AllocaInst* alloca = GenerateAlloca(builder_, llvm_type, declaration.variable);
 
     declaration.scope->SetLLVMValue(declaration.variable, alloca);
     builder_.CreateStore(initializer, alloca);
 
-    result_ = nullptr;
+    result_store_.Clear();
 }
 
 void Generator::Visit(const TypeDeclaration& type_declaration) {}
@@ -255,22 +255,21 @@ void Generator::Visit(const TypeDeclaration& type_declaration) {}
 void Generator::Visit(const ExpressionStatement& expression_statement)
 {
     expression_statement.expression->Accept(*this);
-    result_ = nullptr;
+    result_store_.Clear();
 }
 
 void Generator::Visit(const ReturnStatement& return_statement)
 {
     return_statement.value->Accept(*this);
-    auto return_value = result_;
-
+    auto return_value = result_store_.GetResult();
     builder_.CreateRet(return_value);
-    result_ = nullptr;
+    result_store_.Clear();
 }
 
 void Generator::Visit(const ConditionalStatement& conditional_statement)
 {
     conditional_statement.condition->Accept(*this);
-    auto condition = result_;
+    auto condition = result_store_.GetResult();
 
     bool else_exists{conditional_statement.else_block};
     bool merge_needed = !conditional_statement.then_block_returns || !conditional_statement.else_block_returns;
@@ -311,7 +310,7 @@ void Generator::Visit(const ConditionalStatement& conditional_statement)
         builder_.SetInsertPoint(merge_block);
     }
 
-    result_ = nullptr;
+    result_store_.Clear();
 }
 
 void Generator::Visit(const WhileLoop& while_loop)
@@ -325,7 +324,7 @@ void Generator::Visit(const WhileLoop& while_loop)
     builder_.CreateBr(header);
     builder_.SetInsertPoint(header);
     while_loop.condition->Accept(*this);
-    auto condition = result_;
+    auto condition = result_store_.GetResult();
     builder_.CreateCondBr(condition, body, afterloop);
 
     // body
@@ -338,7 +337,7 @@ void Generator::Visit(const WhileLoop& while_loop)
     llvm_function->insert(llvm_function->end(), afterloop);
     builder_.SetInsertPoint(afterloop);
 
-    result_ = nullptr;
+    result_store_.Clear();
 }
 
 void Generator::Visit(const Deallocation& deallocation)
@@ -350,24 +349,23 @@ void Generator::Visit(const Deallocation& deallocation)
     llvm::FunctionCallee free_function = llvm_module_->getOrInsertFunction("free", ptr_to_void);
 
     deallocation.reference->Accept(*this);
-    llvm::Value* operand = result_;
+    llvm::Value* operand = result_store_.GetResult();
     std::vector<llvm::Value*> arguments{operand};
 
-    result_ = builder_.CreateCall(ptr_to_void, free_function.getCallee(), arguments);
+    auto call = builder_.CreateCall(ptr_to_void, free_function.getCallee(), arguments);
+    result_store_.SetResult(call);
 }
 
 void Generator::Visit(const Assignment& assignment)
 {
     assignment.target->Accept(*this);
-    GenerateResultAddress();
-    auto target_address = result_address_;
+    auto target_address = result_store_.GetResultAddress();
 
     assignment.expression->Accept(*this);
-    auto value = result_;
+    auto value = result_store_.GetResult();
 
     builder_.CreateStore(value, target_address);
-    // leave result_ as it is :)
-    result_address_ = target_address;
+    result_store_.SetResultAndResultAddress(value, target_address);
 }
 
 void Generator::Visit(const UnaryOp& unary_op)
@@ -383,34 +381,32 @@ void Generator::Visit(const UnaryOp& unary_op)
         case UnaryOp::Overload::IntegerNegation:
         {
             unary_op.operand->Accept(*this);
-            llvm::Value* operand = result_;
-            result_ = builder_.CreateNeg(operand, "negtmp");
-            result_address_ = nullptr;
+            llvm::Value* operand = result_store_.GetResult();
+            auto result = builder_.CreateNeg(operand, "negtmp");
+            result_store_.SetResult(result);
             break;
         }
         case UnaryOp::Overload::BooleanNegation:
         {
             unary_op.operand->Accept(*this);
-            llvm::Value* operand = result_;
-            result_ = builder_.CreateNot(operand, "nottmp");
-            result_address_ = nullptr;
+            llvm::Value* operand = result_store_.GetResult();
+            auto result = builder_.CreateNot(operand, "nottmp");
+            result_store_.SetResult(result);
             break;
         }
         case UnaryOp::Overload::AddressOf:
         {
             unary_op.operand->Accept(*this);
-            GenerateResultAddress();
-            result_ = result_address_;
-            result_address_ = nullptr;
+            auto address = result_store_.GetResultAddress();
+            result_store_.SetResult(address);
             break;
         }
         case UnaryOp::Overload::Dereferenciation:
         {
             unary_op.operand->Accept(*this);
-            auto address = result_;
+            auto address = result_store_.GetResult();
             auto llvm_type = type_converter_.Convert(*unary_op.type);
-            result_ = builder_.CreateLoad(llvm_type, address, std::format("dereftmp_{}", result_->getName().str()));
-            result_address_ = address;
+            result_store_.SetResultAddress(address, llvm_type);
         }
     }
 }
@@ -418,10 +414,10 @@ void Generator::Visit(const UnaryOp& unary_op)
 void Generator::Visit(const BinaryOp& binary_op)
 {
     binary_op.left->Accept(*this);
-    llvm::Value* left = result_;
+    llvm::Value* left = result_store_.GetResult();
 
     binary_op.right->Accept(*this);
-    llvm::Value* right = result_;
+    llvm::Value* right = result_store_.GetResult();
 
     switch (binary_op.overload)
     {
@@ -430,90 +426,90 @@ void Generator::Visit(const BinaryOp& binary_op)
             auto reference_type = dynamic_pointer_cast<ReferenceType>(binary_op.left->type);
             auto llvm_type = type_converter_.Convert(*reference_type->base_type);
             std::vector<llvm::Value*> indices = {right};
-            result_ = builder_.CreateGEP(llvm_type, left, indices, "indextmp");
-            result_address_ = nullptr;
+            auto result = builder_.CreateGEP(llvm_type, left, indices, "indextmp");
+            result_store_.SetResult(result);
             break;
         }
         case BinaryOp::Overload::IntegerAddition:
         {
-            result_ = builder_.CreateAdd(left, right, "addtmp");
-            result_address_ = nullptr;
+            auto result = builder_.CreateAdd(left, right, "addtmp");
+            result_store_.SetResult(result);
             break;
         }
         case BinaryOp::Overload::IntegerSubtraction:
         {
-            result_ = builder_.CreateSub(left, right, "subtmp");
-            result_address_ = nullptr;
+            auto result = builder_.CreateSub(left, right, "subtmp");
+            result_store_.SetResult(result);
             break;
         }
         case BinaryOp::Overload::IntegerMultiplication:
         {
-            result_ = builder_.CreateMul(left, right, "multmp");
-            result_address_ = nullptr;
+            auto result = builder_.CreateMul(left, right, "multmp");
+            result_store_.SetResult(result);
             break;
         }
         case BinaryOp::Overload::IntegerDivision:
         {
-            result_ = builder_.CreateSDiv(left, right, "sdivtmp");
-            result_address_ = nullptr;
+            auto result = builder_.CreateSDiv(left, right, "sdivtmp");
+            result_store_.SetResult(result);
             break;
         }
         case BinaryOp::Overload::IntegerRemainder:
         {
-            result_ = builder_.CreateURem(left, right, "uremtmp");
-            result_address_ = nullptr;
+            auto result = builder_.CreateURem(left, right, "uremtmp");
+            result_store_.SetResult(result);
             break;
         }
         case BinaryOp::Overload::BooleanConjunction:
         {
-            result_ = builder_.CreateLogicalAnd(left, right, "andtmp");
-            result_address_ = nullptr;
+            auto result = builder_.CreateLogicalAnd(left, right, "andtmp");
+            result_store_.SetResult(result);
             break;
         }
         case BinaryOp::Overload::BooleanDisjunction:
         {
-            result_ = builder_.CreateLogicalOr(left, right, "ortmp");
-            result_address_ = nullptr;
+            auto result = builder_.CreateLogicalOr(left, right, "ortmp");
+            result_store_.SetResult(result);
             break;
         }
         case BinaryOp::Overload::BooleanEquality:
         case BinaryOp::Overload::IntegerEquality:
         case BinaryOp::Overload::CharacterEquality:
         {
-            result_ = builder_.CreateICmpEQ(left, right, "eqtmp");
-            result_address_ = nullptr;
+            auto result = builder_.CreateICmpEQ(left, right, "eqtmp");
+            result_store_.SetResult(result);
             break;
         }
         case BinaryOp::Overload::BooleanInequality:
         case BinaryOp::Overload::IntegerInequality:
         case BinaryOp::Overload::CharacterInequality:
         {
-            result_ = builder_.CreateICmpNE(left, right, "netmp");
-            result_address_ = nullptr;
+            auto result = builder_.CreateICmpNE(left, right, "netmp");
+            result_store_.SetResult(result);
             break;
         }
         case BinaryOp::Overload::IntegerLess:
         {
-            result_ = builder_.CreateICmpSLT(left, right, "slttmp");
-            result_address_ = nullptr;
+            auto result = builder_.CreateICmpSLT(left, right, "slttmp");
+            result_store_.SetResult(result);
             break;
         }
         case BinaryOp::Overload::IntegerGreater:
         {
-            result_ = builder_.CreateICmpSGT(left, right, "sgttmp");
-            result_address_ = nullptr;
+            auto result = builder_.CreateICmpSGT(left, right, "sgttmp");
+            result_store_.SetResult(result);
             break;
         }
         case BinaryOp::Overload::IntegerLessOrEquals:
         {
-            result_ = builder_.CreateICmpSLE(left, right, "sletmp");
-            result_address_ = nullptr;
+            auto result = builder_.CreateICmpSLE(left, right, "sletmp");
+            result_store_.SetResult(result);
             break;
         }
         case BinaryOp::Overload::IntegerGreaterOrEquals:
         {
-            result_ = builder_.CreateICmpSGE(left, right, "sgetmp");
-            result_address_ = nullptr;
+            auto result = builder_.CreateICmpSGE(left, right, "sgetmp");
+            result_store_.SetResult(result);
             break;
         }
     }
@@ -525,8 +521,7 @@ void Generator::Visit(const Variable& variable)
     if (auto allocation = llvm::dyn_cast<llvm::AllocaInst>(llvm_value))
     {
         auto allocated_type = allocation->getAllocatedType();
-        result_ = builder_.CreateLoad(allocated_type, llvm_value, variable.name);
-        result_address_ = llvm_value;
+        result_store_.SetResultAddress(llvm_value, allocated_type);
     }
     else if (auto global_variable = llvm::dyn_cast<llvm::GlobalVariable>(llvm_value))
     {
@@ -534,19 +529,16 @@ void Generator::Visit(const Variable& variable)
     }
     else if (llvm::isa<llvm::Function>(llvm_value))
     {
-        result_ = llvm_value;
-        result_address_ = nullptr;
+        result_store_.SetResult(llvm_value);
     }
     else if (llvm::isa<llvm::Argument>(llvm_value))
     {
-        result_ = llvm_value;
-        result_address_ = nullptr;
+        result_store_.SetResult(llvm_value);
     }
     else
     {
         auto llvm_type = type_converter_.GetValueDeclarationType(*variable.type);
-        result_ = builder_.CreateLoad(llvm_type, llvm_value, variable.name);
-        result_address_ = llvm_value;
+        result_store_.SetResultAddress(llvm_value, llvm_type);
     }
 }
 
@@ -555,8 +547,8 @@ void Generator::Visit(const MemberAccessor& member_accessor)
     auto struct_name = member_accessor.object_type->name;
 
     member_accessor.object->Accept(*this);
-    GenerateResultAddress();
-    auto object_ptr = result_address_;
+    auto object_ptr = result_store_.GetResultAddress();
+
     auto llvm_struct_type = type_converter_.Convert(*member_accessor.object_type);
     auto llvm_member_type = type_converter_.GetValueDeclarationType(*member_accessor.type);
 
@@ -570,12 +562,7 @@ void Generator::Visit(const MemberAccessor& member_accessor)
             std::format("geptmp_{}.{}::{}", object_ptr->getName().str(), struct_name, member_accessor.member)
         );
 
-        result_ = builder_.CreateLoad(
-            llvm_member_type,
-            member_address,
-            std::format("{}.{}::{}", object_ptr->getName().str(), struct_name, member_accessor.member)
-        );
-        result_address_ = member_address;
+        result_store_.SetResultAddress(member_address, llvm_member_type);
     }
     else
     {
@@ -588,36 +575,28 @@ void Generator::Visit(const MemberAccessor& member_accessor)
             throw GeneratorError(std::format("Static initializer for {} is not a global variable.", member->name));
         }
         VisitGlobal(static_initializer_as_global);
-        // leave result_ and result_address_ as is
     }
 
-    object_ptr_ = object_ptr;
+    result_store_.SetObjectPointerNoOverride(object_ptr);
 }
 
 void Generator::Visit(const Call& call)
 {
     call.function->Accept(*this);
+    llvm::Value* closure_ptr = result_store_.GetResultAddress();
 
-    GenerateResultAddress();
-    llvm::Value* closure = result_address_;
-    llvm::Value* object_ptr = object_ptr_;
-
-    const std::string& closure_name = object_ptr
-                                        ? std::format("{}.{}", object_ptr_->getName().str(), closure->getName().str())
-                                        : closure->getName().str();
-
-    object_ptr_ = nullptr;
+    const std::string& closure_name =
+        result_store_.HasObjectPointer()
+            ? std::format("{}.{}", result_store_.GetObjectPointer()->getName().str(), closure_ptr->getName().str())
+            : closure_ptr->getName().str();
 
     auto function_address =
-        builder_.CreateConstGEP2_32(closure_type_, closure, 0, 0, std::format("geptmp_{}_function", closure_name));
+        builder_.CreateConstGEP2_32(closure_type_, closure_ptr, 0, 0, std::format("geptmp_{}_function", closure_name));
     auto context_address =
-        builder_.CreateConstGEP2_32(closure_type_, closure, 0, 1, std::format("geptmp_{}_context", closure_name));
-    auto llvm_function = builder_.CreateLoad(
-        llvm::PointerType::get(context_, 0), function_address, std::format("{}_function", closure_name)
-    );
-    auto context = builder_.CreateLoad(
-        llvm::PointerType::get(context_, 0), context_address, std::format("{}_context", closure_name)
-    );
+        builder_.CreateConstGEP2_32(closure_type_, closure_ptr, 0, 1, std::format("geptmp_{}_context", closure_name));
+
+    auto llvm_function = builder_.CreateLoad(pointer_type_, function_address, std::format("{}_function", closure_name));
+    auto context = builder_.CreateLoad(pointer_type_, context_address, std::format("{}_context", closure_name));
 
     auto function_type = dynamic_pointer_cast<FunctionType>(call.function->type);
     llvm::FunctionType* llvm_function_type = type_converter_.GetFunctionDeclarationType(*function_type);
@@ -625,51 +604,51 @@ void Generator::Visit(const Call& call)
     std::vector<llvm::Value*> arguments{};
     if (call.is_method_call)
     {
-        arguments.push_back(object_ptr);
+        arguments.push_back(result_store_.GetObjectPointer());
     }
     for (auto& argument : *call.arguments)
     {
         argument->Accept(*this);
-        arguments.push_back(result_);
+        arguments.push_back(result_store_.GetResult());
     }
     arguments.push_back(context);
 
-    result_ = builder_.CreateCall(llvm_function_type, llvm_function, arguments, "calltmp");
-    result_address_ = nullptr;
+    auto llvm_call = builder_.CreateCall(llvm_function_type, llvm_function, arguments, "calltmp");
+    result_store_.SetResult(llvm_call);
 }
 
 void Generator::Visit(const UnitLiteral& literal)
 {
     auto unit_type = llvm::dyn_cast<llvm::StructType>(type_converter_.Convert(*literal.type));
-    result_ = llvm::ConstantStruct::get(unit_type, {});
-    result_address_ = nullptr;
+    auto result = llvm::ConstantStruct::get(unit_type, {});
+    result_store_.SetResult(result);
 }
 
 void Generator::Visit(const BooleanLiteral& literal)
 {
     llvm::Type* type = llvm::Type::getInt1Ty(context_);
-    result_ = llvm::ConstantInt::get(type, literal.value ? 1 : 0);
-    result_address_ = nullptr;
+    auto result = llvm::ConstantInt::get(type, literal.value ? 1 : 0);
+    result_store_.SetResult(result);
 }
 
 void Generator::Visit(const IntegerLiteral& literal)
 {
     llvm::Type* type = llvm::Type::getInt64Ty(context_);
-    result_ = llvm::ConstantInt::get(type, literal.value);
-    result_address_ = nullptr;
+    auto result = llvm::ConstantInt::get(type, literal.value);
+    result_store_.SetResult(result);
 }
 
 void Generator::Visit(const CharacterLiteral& literal)
 {
     llvm::Type* type = llvm::Type::getInt8Ty(context_);
-    result_ = llvm::ConstantInt::get(type, literal.value);
-    result_address_ = nullptr;
+    auto result = llvm::ConstantInt::get(type, literal.value);
+    result_store_.SetResult(result);
 }
 
 void Generator::Visit(const StringLiteral& literal)
 {
-    result_ = builder_.CreateGlobalString(literal.value, "__const_str", 0, llvm_module_);
-    result_address_ = nullptr;
+    auto result = builder_.CreateGlobalString(literal.value, "__const_str", 0, llvm_module_);
+    result_store_.SetResult(result);
 }
 
 void Generator::Visit(const Function& function)
@@ -705,12 +684,12 @@ void Generator::Visit(const Function& function)
         closure_members.push_back(llvm::ConstantPointerNull::get(pointer_type_));
         auto closure = llvm::ConstantStruct::get(closure_type_, closure_members);
 
-        result_ = closure;
-        result_address_ = nullptr;
+        result_store_.SetResult(closure);
     }
     else
     {
-        auto closure_address = GenerateAlloca(closure_type_, std::format("address_{}", function.global_name.value()));
+        auto closure_address =
+            GenerateAlloca(builder_, closure_type_, std::format("address_{}", function.global_name.value()));
 
         auto closure_function_address = builder_.CreateConstGEP2_32(
             closure_type_, closure_address, 0, 0, std::format("geptmp_{}_function", function.global_name.value())
@@ -721,8 +700,7 @@ void Generator::Visit(const Function& function)
         builder_.CreateStore(closure_function, closure_function_address);
         builder_.CreateStore(closure_context_ptr, closure_context_address);
 
-        result_ = builder_.CreateLoad(closure_type_, closure_address);
-        result_address_ = nullptr;
+        result_store_.SetResultAddress(closure_address, closure_type_);
     }
 }
 
@@ -739,7 +717,7 @@ void Generator::Visit(const Initializer& initializer)
     const std::string object_name = std::format("init_{}", struct_type->name);
 
     llvm::Type* llvm_type = type_converter_.Convert(*initializer.type);
-    auto alloca = GenerateAlloca(llvm_type, std::format("address_{}", object_name));
+    auto alloca = GenerateAlloca(builder_, llvm_type, std::format("address_{}", object_name));
 
     auto actual_initializers =
         GetActualMemberInitializers(*initializer.member_initializers, *struct_type, *initializer.type_scope);
@@ -757,8 +735,7 @@ void Generator::Visit(const Initializer& initializer)
         builder_.CreateStore(init_value, member_address);
     }
 
-    result_ = builder_.CreateLoad(llvm_type, alloca, object_name);
-    result_address_ = alloca;
+    result_store_.SetResultAddress(alloca, llvm_type);
 }
 
 void Generator::Visit(const Allocation& allocation)
@@ -770,7 +747,7 @@ void Generator::Visit(const Allocation& allocation)
     if (allocation.size)
     {
         allocation.size->Accept(*this);
-        auto array_size = result_;
+        auto array_size = result_store_.GetResult();
         size_to_allocate = builder_.CreateMul(type_size, array_size);
     }
     else
@@ -778,14 +755,13 @@ void Generator::Visit(const Allocation& allocation)
         size_to_allocate = type_size;
     }
     allocation.initial_value->Accept(*this);
-    auto initial_value = result_;
+    auto initial_value = result_store_.GetResult();
 
-    auto reference = CallMalloc(size_to_allocate, "allocated");
+    auto allocated_memory = GenerateMallocCall(size_to_allocate, "allocated");
 
     // TODO use loop + GEP for array initialization
-    builder_.CreateStore(initial_value, reference);
-    result_ = reference;
-    result_address_ = nullptr;
+    builder_.CreateStore(initial_value, allocated_memory);
+    result_store_.SetResult(allocated_memory);
 }
 
 void Generator::GenerateFunctionBody(
@@ -837,42 +813,6 @@ void Generator::GenerateFunctionBody(
     builder_.SetInsertPoint(previous_block);
 }
 
-llvm::AllocaInst* Generator::GenerateAlloca(llvm::Type* type, std::string name)
-{
-    llvm::Function& llvm_function = *builder_.GetInsertBlock()->getParent();
-
-    auto alloca_block = std::ranges::find(
-        llvm_function, kAllocationBlockName, [](const llvm::BasicBlock& block) { return block.getName(); }
-    );
-
-    if (alloca_block == llvm_function.end())
-    {
-        throw GeneratorError(std::format(
-            "Function '{}' does not have '{}' block. This should never happen.",
-            llvm_function.getName().str(),
-            kAllocationBlockName
-        ));
-    }
-
-    auto previous_block = builder_.GetInsertBlock();
-    builder_.SetInsertPoint(&*alloca_block);
-    auto alloca = builder_.CreateAlloca(type, nullptr, name);
-    builder_.SetInsertPoint(previous_block);
-
-    return alloca;
-}
-
-void Generator::GenerateResultAddress()
-{
-    if (result_address_)
-    {
-        return;
-    }
-
-    result_address_ = GenerateAlloca(result_->getType(), std::format("address_{}", result_->getName().str()));
-    builder_.CreateStore(result_, result_address_);
-}
-
 std::vector<std::tuple<std::string, llvm::Value*>> Generator::GetActualMemberInitializers(
     const MemberInitializerList& explicit_initializers, const StructType& struct_type, const Scope& scope
 )
@@ -901,16 +841,14 @@ std::vector<std::tuple<std::string, llvm::Value*>> Generator::GetActualMemberIni
             throw GeneratorError(std::format("Default initializer for {} is not a global variable.", member->name));
         }
         VisitGlobal(default_initializer_as_global);
-
-        actual_initializers.push_back({member_name, result_});
-        result_ = nullptr;
+        auto init = result_store_.GetResult();
+        actual_initializers.push_back({member_name, init});
     }
 
     for (const auto& member_initializer : explicit_initializers)
     {
         member_initializer->value->Accept(*this);
-        auto init_value = result_;
-
+        auto init_value = result_store_.GetResult();
         actual_initializers.push_back({member_initializer->member, init_value});
     }
 
@@ -940,17 +878,15 @@ void Generator::VisitGlobal(llvm::GlobalVariable* global_variable)
     auto llvm_type = global_variable->getValueType();
     if (llvm::isa<llvm::ArrayType>(llvm_type))
     {
-        result_ = global_variable;
-        result_address_ = nullptr;
+        result_store_.SetResult(global_variable);
     }
     else
     {
-        result_ = builder_.CreateLoad(llvm_type, global_variable, global_variable->getName());
-        result_address_ = global_variable;
+        result_store_.SetResultAddress(global_variable, llvm_type);
     }
 }
 
-llvm::Value* Generator::CallMalloc(llvm::Value* size, const std::string& name)
+llvm::Value* Generator::GenerateMallocCall(llvm::Value* size, const std::string& name)
 {
     llvm::FunctionType* int_to_ptr = llvm::FunctionType::get(pointer_type_, int_type_, false);
     llvm::Function* malloc_function =
@@ -963,13 +899,14 @@ std::tuple<llvm::Value*, llvm::StructType*> Generator::GenerateClosureContext(co
     auto context_struct = GenerateClosureContextStruct(function);
 
     llvm::Value* context_size = llvm::ConstantInt::get(int_type_, data_layout_.getTypeAllocSize(context_struct));
-    auto context_address = CallMalloc(context_size, std::format("address_{}_context", function.global_name.value()));
+    auto context_address =
+        GenerateMallocCall(context_size, std::format("address_{}_context", function.global_name.value()));
 
     for (auto capture_index : std::views::iota(std::size_t{0}, function.captures->size()))
     {
         const auto& capture = function.captures->at(capture_index);
         capture->Accept(*this);
-        const auto captured_value = result_;
+        const auto captured_value = result_store_.GetResult();
 
         auto member_address = builder_.CreateConstGEP2_32(
             context_struct,
@@ -982,6 +919,178 @@ std::tuple<llvm::Value*, llvm::StructType*> Generator::GenerateClosureContext(co
     }
 
     return {context_address, context_struct};
+}
+
+Generator::ResultStore::ResultStore(llvm::IRBuilder<>& builder)
+    : builder_{builder}
+{
+}
+
+llvm::Value* Generator::ResultStore::GetResult()
+{
+    if (!result_)
+    {
+        if (!result_address_)
+        {
+            throw GeneratorError("Generator::ResultStore::GetResult(): result_ and result_address_ are null.");
+        }
+        result_ = builder_.CreateLoad(
+            result_type_, result_address_, std::format("load_{}", result_address_->getName().str())
+        );
+    }
+    return result_;
+}
+
+llvm::Value* Generator::ResultStore::GetResultAddress()
+{
+    if (!result_address_)
+    {
+        if (!result_)
+        {
+            throw GeneratorError("Generator::ResultStore::GetResultAddress(): result_ and result_address_ are null.");
+        }
+        result_address_ =
+            GenerateAlloca(builder_, result_->getType(), std::format("address_{}", result_->getName().str()));
+        builder_.CreateStore(result_, result_address_);
+    }
+    return result_address_;
+}
+
+llvm::Value* Generator::ResultStore::GetObjectPointer()
+{
+    if (!object_ptr_)
+    {
+        throw GeneratorError("Generator::ResultStore::GetObjectPointer(): object_ptr_ is null.");
+    }
+    return object_ptr_;
+}
+
+void Generator::ResultStore::Clear()
+{
+    result_ = nullptr;
+    result_address_ = nullptr;
+    result_type_ = nullptr;
+}
+
+void Generator::ResultStore::SetResult(llvm::Value* result)
+{
+    if (!result)
+    {
+        throw GeneratorError("Generator::ResultStore::SetResult(): result is null");
+    }
+    result_ = result;
+    result_address_ = nullptr;
+    result_type_ = nullptr;
+    object_ptr_ = nullptr;
+}
+
+void Generator::ResultStore::SetResultAndObjectPointer(llvm::Value* result, llvm::Value* object_ptr)
+{
+    if (!result)
+    {
+        throw GeneratorError("Generator::ResultStore::SetResult(): result is null");
+    }
+    if (!object_ptr)
+    {
+        throw GeneratorError("Generator::ResultStore::SetResult(): object_ptr is null");
+    }
+    result_ = result;
+    result_address_ = nullptr;
+    result_type_ = nullptr;
+    object_ptr_ = object_ptr;
+}
+
+void Generator::ResultStore::SetResultAddress(llvm::Value* result_address, llvm::Type* result_type)
+{
+    if (!result_address)
+    {
+        throw GeneratorError("Generator::ResultStore::SetResultAddress(): result_address is null");
+    }
+    if (!result_type)
+    {
+        throw GeneratorError("Generator::ResultStore::SetResultAddress(): result_type is null");
+    }
+    result_ = nullptr;
+    result_address_ = result_address;
+    result_type_ = result_type;
+    object_ptr_ = nullptr;
+}
+
+void Generator::ResultStore::SetResultAddressAndObjectPointer(
+    llvm::Value* result_address, llvm::Type* result_type, llvm::Value* object_ptr
+)
+{
+    if (!result_address)
+    {
+        throw GeneratorError("Generator::ResultStore::SetResultAddress(): result_address is null");
+    }
+    if (!result_type)
+    {
+        throw GeneratorError("Generator::ResultStore::SetResultAddress(): result_type is null");
+    }
+    if (!object_ptr)
+    {
+        throw GeneratorError("Generator::ResultStore::SetResultAddress(): object_ptr is null");
+    }
+    result_ = nullptr;
+    result_address_ = result_address;
+    result_type_ = result_type;
+    object_ptr_ = object_ptr;
+}
+
+void Generator::ResultStore::SetResultAndResultAddress(llvm::Value* result, llvm::Value* result_address)
+{
+    if (!result)
+    {
+        throw GeneratorError("Generator::ResultStore::SetResultAndResultAddress(): result is null");
+    }
+    if (!result_address)
+    {
+        throw GeneratorError("Generator::ResultStore::SetResultAndResultAddress(): result_address is null");
+    }
+    result_ = result;
+    result_address_ = result_address;
+    result_type_ = nullptr;
+    object_ptr_ = nullptr;
+}
+
+void Generator::ResultStore::SetObjectPointerNoOverride(llvm::Value* object_ptr)
+{
+    if (!object_ptr)
+    {
+        throw GeneratorError("Generator::ResultStore::SetObjectPointerNoOverride(): object_ptr is null");
+    }
+    object_ptr_ = object_ptr;
+}
+
+bool Generator::ResultStore::HasObjectPointer()
+{
+    return object_ptr_;
+}
+
+llvm::AllocaInst* GenerateAlloca(llvm::IRBuilder<>& builder, llvm::Type* type, std::string name)
+{
+    llvm::Function& llvm_function = *builder.GetInsertBlock()->getParent();
+
+    auto alloca_block = std::ranges::find(
+        llvm_function, kAllocationBlockName, [](const llvm::BasicBlock& block) { return block.getName(); }
+    );
+
+    if (alloca_block == llvm_function.end())
+    {
+        throw GeneratorError(std::format(
+            "Function '{}' does not have '{}' block. This should never happen.",
+            llvm_function.getName().str(),
+            kAllocationBlockName
+        ));
+    }
+
+    auto previous_block = builder.GetInsertBlock();
+    builder.SetInsertPoint(&*alloca_block);
+    auto alloca = builder.CreateAlloca(type, nullptr, name);
+    builder.SetInsertPoint(previous_block);
+
+    return alloca;
 }
 
 }  // namespace l0
