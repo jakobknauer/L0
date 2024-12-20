@@ -345,15 +345,36 @@ void Generator::Visit(const Deallocation& deallocation)
     llvm::Type* llvm_ptr_type = llvm::PointerType::get(context_, 0);
     llvm::Type* llvm_void_type = llvm::Type::getVoidTy(context_);
     llvm::FunctionType* ptr_to_void = llvm::FunctionType::get(llvm_void_type, llvm_ptr_type, false);
-
     llvm::FunctionCallee free_function = llvm_module_->getOrInsertFunction("free", ptr_to_void);
 
-    deallocation.reference->Accept(*this);
-    llvm::Value* operand = result_store_.GetResult();
-    std::vector<llvm::Value*> arguments{operand};
+    switch (deallocation.deallocation_type)
+    {
+        case Deallocation::DeallocationType::Reference:
+        {
+            deallocation.reference->Accept(*this);
+            llvm::Value* operand = result_store_.GetResult();
+            std::vector<llvm::Value*> arguments{operand};
+            builder_.CreateCall(ptr_to_void, free_function.getCallee(), arguments);
+            break;
+        }
+        case Deallocation::DeallocationType::Closure:
+        {
+            deallocation.reference->Accept(*this);
+            llvm::Value* closure_ptr = result_store_.GetResultAddress();
+            auto context_address =
+                builder_.CreateConstGEP2_32(closure_type_, closure_ptr, 0, 1, "geptmp_closure_context");
+            auto context = builder_.CreateLoad(pointer_type_, context_address, "closure_context");
+            std::vector<llvm::Value*> arguments{context};
+            builder_.CreateCall(ptr_to_void, free_function.getCallee(), arguments);
+            break;
+        }
+        case Deallocation::DeallocationType::None:
+        {
+            throw GeneratorError("Deallocation type not set.");
+        }
+    }
 
-    auto call = builder_.CreateCall(ptr_to_void, free_function.getCallee(), arguments);
-    result_store_.SetResult(call);
+    result_store_.Clear();
 }
 
 void Generator::Visit(const Assignment& assignment)
