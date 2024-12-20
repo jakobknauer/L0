@@ -8,5 +8,11 @@ fn main () -> I64
 
     h := $ [f, g] (x : I64) -> I64 { return f(g(x)); };
 
-    return h(3);
+    result := h(3);
+
+    delete f;
+    delete g;
+    delete h;
+
+    return result;
 };

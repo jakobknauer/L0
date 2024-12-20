@@ -123,12 +123,20 @@ class WhileLoop : public Statement
 class Deallocation : public Statement
 {
    public:
+    enum class DeallocationType
+    {
+        None,
+        Reference,
+        Closure,
+    };
+
     Deallocation(std::shared_ptr<Expression> reference);
 
     void Accept(IConstStatementVisitor& visitor) const override;
     void Accept(IStatementVisitor& visitor) override;
 
     std::shared_ptr<Expression> reference;
+    mutable DeallocationType deallocation_type{DeallocationType::None};
 };
 
 class IConstStatementVisitor

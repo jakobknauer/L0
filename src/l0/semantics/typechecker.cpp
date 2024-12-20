@@ -112,11 +112,19 @@ void Typechecker::Visit(const WhileLoop& while_loop)
 void Typechecker::Visit(const Deallocation& deallocation)
 {
     deallocation.reference->Accept(*this);
-    auto reference_type = dynamic_pointer_cast<ReferenceType>(deallocation.reference->type);
-    if (!reference_type)
+
+    if (dynamic_pointer_cast<ReferenceType>(deallocation.reference->type))
+    {
+        deallocation.deallocation_type = Deallocation::DeallocationType::Reference;
+    }
+    else if (dynamic_pointer_cast<FunctionType>(deallocation.reference->type))
+    {
+        deallocation.deallocation_type = Deallocation::DeallocationType::Closure;
+    }
+    else
     {
         throw SemanticError(std::format(
-            "Operand of delete statement must be of reference type, but is of type '{}'.",
+            "Operand of delete statement must be of reference or function type, but is of type '{}'.",
             deallocation.reference->type->ToString()
         ));
     }
