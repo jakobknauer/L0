@@ -36,14 +36,14 @@ make -C build
  
 ```shell
 # Generate textual IR representation from L0 files
-build/src/l0/main/main <file1.l0 file2.l0 ...>
+build/src/l0/main/l0c <file1.l0 file2.l0 ...>
 
 # Compile and link to executable
 clang <file1.ll file2.ll ...> -o <output_file>
 
 # E.g. to build and run the faculty example:
 cd examples
-../build/src/l0/main/main "faculty.l0" "math.l0" "print.l0" "read.l0" "string.l0"
+../build/src/l0/main/l0c "faculty.l0" "math.l0" "print.l0" "read.l0" "string.l0"
 clang *.ll -o faculty
 ./faculty
 ```
