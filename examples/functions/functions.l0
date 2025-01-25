@@ -1,0 +1,44 @@
+# A function taking two integer arguments and returning a bool
+fn greater_than (x : I64, y : I64) -> Boolean
+{
+    return x > y;
+};
+
+
+# An equivalent function using the long syntax form, which is similar to declaring local variables:
+# The name of the function, followed by a colon, followed by the type, followed by an equals sign, followed by the initial value.
+# The type of the function is "(I64, I64) -> Boolean".
+# The initial value is an anonymouos function starting with "$", followed by parameter list, return type, and function body.
+# Since this is very verbose, the shortform syntax as in greater_than was introduced.
+greater_than2 : (I64, I64) -> Boolean = $ (x : I64, y : I64) -> Boolean
+{
+    return x > y;
+};
+
+
+# A higher order function accepting an integer x and a function f that maps an integer to an integer;
+# and returning an integer
+fn apply_twice (x : I64, f : (I64) -> I64) -> I64
+{
+    return f(f(x));
+};
+
+
+# A main function taking no arguments and with return type (), aka "Unit type".
+# The main function may also return an I64.
+# Functions returning () do not need any return statements. A "return unit;" statement is automatically appended to the end of the function.
+# They can however have "return unit;" statements, or simply "return;" for short.
+# This is helpful for returning early from a function.
+fn main () -> ()
+{
+    # A local variable of function type - using the "long" syntax similar to greater_than2 above;
+    # but since this is a local variable, the type can be deduced.
+    add_one := $ (x : I64) -> I64 { return x + 1; };
+
+    # Functions may be passed to other functions the same way as any other values, provided types match
+    a := apply_twice(3, add_one);
+    if a == 5:
+    {
+        printf("a is equal to 5\n");
+    };
+};

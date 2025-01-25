@@ -1,0 +1,41 @@
+fn main () -> ()
+{
+    # Simple if statement
+    x := 3;
+    if x == 3:
+    {
+        printf("x is equal to 3\n");
+    };
+
+
+    # If statement with else-if and else branches
+    y := 5;
+    if x < y:
+    {
+        printf("x is smaller than y\n");
+    }
+    else if x == y:
+    {
+        printf("x is equal to y\n");
+    }
+    else:
+    {
+        printf("x is greater than y\n");
+    };
+
+
+    # Loops
+    z : mut = 0;
+    while z < x + y:
+    {
+        printf("Counting up\n");
+        z = z + 1;
+    };
+
+
+    # More complex boolean conditions
+    if x + 2 == y && (z == x + y || !(z < 3)):
+    {
+        printf("Yay!\n");
+    };
+};
