@@ -101,7 +101,7 @@ void ReferencePass::Visit(BinaryOp& binary_op)
     binary_op.right->Accept(*this);
 }
 
-void ReferencePass::Visit(Variable& variable) {}
+void ReferencePass::Visit(Variable&) {}
 
 void ReferencePass::Visit(MemberAccessor& member_accessor)
 {
@@ -117,11 +117,11 @@ void ReferencePass::Visit(Call& call)
     }
 }
 
-void ReferencePass::Visit(UnitLiteral& literal) {}
-void ReferencePass::Visit(BooleanLiteral& literal) {}
-void ReferencePass::Visit(IntegerLiteral& literal) {}
-void ReferencePass::Visit(CharacterLiteral& literal) {}
-void ReferencePass::Visit(StringLiteral& literal) {}
+void ReferencePass::Visit(UnitLiteral&) {}
+void ReferencePass::Visit(BooleanLiteral&) {}
+void ReferencePass::Visit(IntegerLiteral&) {}
+void ReferencePass::Visit(CharacterLiteral&) {}
+void ReferencePass::Visit(StringLiteral&) {}
 
 void ReferencePass::Visit(Function& function)
 {

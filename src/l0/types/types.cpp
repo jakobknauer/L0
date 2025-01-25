@@ -19,6 +19,7 @@ std::string str(TypeQualifier qualifier)
         case TypeQualifier::Mutable:
             return std::format("{} ", Keyword::Mutable);
     }
+    std::unreachable();
 }
 
 Type::Type(TypeQualifier mutability)
@@ -68,7 +69,7 @@ void UnitType::Accept(IConstTypeVisitor& visitor) const
     visitor.Visit(*this);
 }
 
-bool UnitType::Equals(const Type& other) const
+bool UnitType::Equals(const Type&) const
 {
     return true;
 }
@@ -88,7 +89,7 @@ void BooleanType::Accept(IConstTypeVisitor& visitor) const
     visitor.Visit(*this);
 }
 
-bool BooleanType::Equals(const Type& other) const
+bool BooleanType::Equals(const Type&) const
 {
     return true;
 }
@@ -108,7 +109,7 @@ void IntegerType::Accept(IConstTypeVisitor& visitor) const
     visitor.Visit(*this);
 }
 
-bool IntegerType::Equals(const Type& other) const
+bool IntegerType::Equals(const Type&) const
 {
     return true;
 }
@@ -128,7 +129,7 @@ void CharacterType::Accept(IConstTypeVisitor& visitor) const
     visitor.Visit(*this);
 }
 
-bool CharacterType::Equals(const Type& other) const
+bool CharacterType::Equals(const Type&) const
 {
     return true;
 }
@@ -244,22 +245,22 @@ class ModifyQualifierVisitor : private IConstTypeVisitor
         result_ = std::make_shared<ReferenceType>(reference_type.base_type, qualifier_);
     }
 
-    void Visit(const UnitType& unit_type)
+    void Visit(const UnitType&)
     {
         result_ = std::make_shared<UnitType>(qualifier_);
     }
 
-    void Visit(const BooleanType& boolean_type)
+    void Visit(const BooleanType&)
     {
         result_ = std::make_shared<BooleanType>(qualifier_);
     }
 
-    void Visit(const IntegerType& integer_type)
+    void Visit(const IntegerType&)
     {
         result_ = std::make_shared<IntegerType>(qualifier_);
     }
 
-    void Visit(const CharacterType& character_type)
+    void Visit(const CharacterType&)
     {
         result_ = std::make_shared<CharacterType>(qualifier_);
     }

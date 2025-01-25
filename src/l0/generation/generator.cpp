@@ -250,7 +250,7 @@ void Generator::Visit(const Declaration& declaration)
     result_store_.Clear();
 }
 
-void Generator::Visit(const TypeDeclaration& type_declaration) {}
+void Generator::Visit(const TypeDeclaration&) {}
 
 void Generator::Visit(const ExpressionStatement& expression_statement)
 {

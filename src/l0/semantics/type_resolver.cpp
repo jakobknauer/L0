@@ -1,5 +1,7 @@
 #include "l0/semantics/type_resolver.h"
 
+#include <utility>
+
 #include "l0/semantics/semantic_error.h"
 
 namespace l0::detail
@@ -26,6 +28,7 @@ TypeQualifier TypeResolver::Convert(TypeAnnotationQualifier qualifier)
         case l0::TypeAnnotationQualifier::Mutable:
             return TypeQualifier::Mutable;
     }
+    std::unreachable();
 }
 
 std::shared_ptr<FunctionType> TypeResolver::Convert(const Function& function)
@@ -99,12 +102,12 @@ void TypeResolver::Visit(const FunctionTypeAnnotation& fta)
     result_ = std::make_shared<FunctionType>(parameters, return_type, mutability);
 }
 
-void TypeResolver::Visit(const MethodTypeAnnotation& mta)
+void TypeResolver::Visit(const MethodTypeAnnotation&)
 {
     throw SemanticError(std::format("Unexpected method type annotation."));
 }
 
-void TypeResolver::Visit(const MutabilityOnlyTypeAnnotation& mota)
+void TypeResolver::Visit(const MutabilityOnlyTypeAnnotation&)
 {
     throw SemanticError(std::format("Unexpected mutability-only type annotation."));
 }

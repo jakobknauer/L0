@@ -3,7 +3,7 @@ project(llvm-test)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_FLAGS "-Wall -Wpedantic")
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic -Werror")
 
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")

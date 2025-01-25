@@ -1,5 +1,7 @@
 #include "l0/lexing/token.h"
 
+#include <utility>
+
 namespace l0
 {
 
@@ -82,6 +84,7 @@ std::string str(TokenType type)
         case l0::TokenType::ColonEquals:
             return "ColonEquals";
     }
+    std::unreachable();
 }
 
 }  // namespace l0

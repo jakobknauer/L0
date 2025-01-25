@@ -132,15 +132,11 @@ void Resolver::Visit(const Call& call)
     }
 }
 
-void Resolver::Visit(const UnitLiteral& literal) {}
-
-void Resolver::Visit(const BooleanLiteral& literal) {}
-
-void Resolver::Visit(const IntegerLiteral& literal) {}
-
-void Resolver::Visit(const CharacterLiteral& literal) {}
-
-void Resolver::Visit(const StringLiteral& literal) {}
+void Resolver::Visit(const UnitLiteral&) {}
+void Resolver::Visit(const BooleanLiteral&) {}
+void Resolver::Visit(const IntegerLiteral&) {}
+void Resolver::Visit(const CharacterLiteral&) {}
+void Resolver::Visit(const StringLiteral&) {}
 
 void Resolver::Visit(const Function& function)
 {
