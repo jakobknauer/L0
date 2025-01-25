@@ -121,7 +121,7 @@ void ReturnStatementPass::Visit(BinaryOp& binary_op)
     binary_op.right->Accept(*this);
 }
 
-void ReturnStatementPass::Visit(Variable& variable) {}
+void ReturnStatementPass::Visit(Variable&) {}
 
 void ReturnStatementPass::Visit(MemberAccessor& member_accessor)
 {
@@ -137,11 +137,11 @@ void ReturnStatementPass::Visit(Call& call)
     }
 }
 
-void ReturnStatementPass::Visit(UnitLiteral& literal) {}
-void ReturnStatementPass::Visit(BooleanLiteral& literal) {}
-void ReturnStatementPass::Visit(IntegerLiteral& literal) {}
-void ReturnStatementPass::Visit(CharacterLiteral& literal) {}
-void ReturnStatementPass::Visit(StringLiteral& literal) {}
+void ReturnStatementPass::Visit(UnitLiteral&) {}
+void ReturnStatementPass::Visit(BooleanLiteral&) {}
+void ReturnStatementPass::Visit(IntegerLiteral&) {}
+void ReturnStatementPass::Visit(CharacterLiteral&) {}
+void ReturnStatementPass::Visit(StringLiteral&) {}
 
 void ReturnStatementPass::Visit(Function& function)
 {

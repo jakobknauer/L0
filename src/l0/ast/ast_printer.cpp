@@ -1,6 +1,7 @@
 #include "l0/ast/ast_printer.h"
 
 #include <ranges>
+#include <utility>
 
 #include "l0/common/constants.h"
 
@@ -182,14 +183,12 @@ void AstPrinter::Visit(const Call& call)
     call.function->Accept(*this);
     out_ << "(";
     interleaved_for_each(
-        *call.arguments,
-        [&](const auto& argument) { argument->Accept(*this); },
-        [&](const auto& argument) { out_ << ", "; }
+        *call.arguments, [&](const auto& argument) { argument->Accept(*this); }, [&](const auto&) { out_ << ", "; }
     );
     out_ << ")";
 }
 
-void AstPrinter::Visit(const UnitLiteral& literal)
+void AstPrinter::Visit(const UnitLiteral&)
 {
     out_ << Keyword::UnitLiteral;
 }
@@ -235,7 +234,7 @@ void AstPrinter::Visit(const Function& function)
             out_ << parameter->name << ": ";
             parameter->annotation->Accept(*this);
         },
-        [&](const auto& parameter) { out_ << ", "; }
+        [&](const auto&) { out_ << ", "; }
     );
     out_ << ") -> ";
     function.return_type_annotation->Accept(*this);
@@ -317,9 +316,7 @@ void AstPrinter::Visit(const FunctionTypeAnnotation& fta)
     PrintQualifier(fta.mutability);
     out_ << "(";
     interleaved_for_each(
-        *fta.parameters,
-        [&](const auto& parameter) { parameter->Accept(*this); },
-        [&](const auto& parameter) { out_ << ", "; }
+        *fta.parameters, [&](const auto& parameter) { parameter->Accept(*this); }, [&](const auto&) { out_ << ", "; }
     );
     out_ << ") -> ";
     fta.return_type->Accept(*this);
@@ -385,6 +382,7 @@ std::string str(UnaryOp::Operator op)
         case UnaryOp::Operator::Caret:
             return "^";
     }
+    std::unreachable();
 }
 
 std::string str(BinaryOp::Operator op)
@@ -418,6 +416,7 @@ std::string str(BinaryOp::Operator op)
         case l0::BinaryOp::Operator::GreaterEquals:
             return ">=";
     }
+    std::unreachable();
 }
 
 }  // namespace l0

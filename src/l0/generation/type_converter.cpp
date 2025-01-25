@@ -37,7 +37,7 @@ llvm::FunctionType* TypeConverter::GetFunctionDeclarationType(const FunctionType
 
 llvm::Type* TypeConverter::GetValueDeclarationType(const Type& type)
 {
-    if (auto function_type = dynamic_cast<const FunctionType*>(&type))
+    if (dynamic_cast<const FunctionType*>(&type))
     {
         return llvm::StructType::getTypeByName(context_, "__closure");
     }
@@ -53,22 +53,22 @@ void TypeConverter::Visit(const ReferenceType& reference_type)
     result_ = llvm::PointerType::get(result_, 0);
 }
 
-void TypeConverter::Visit(const UnitType& unit_type)
+void TypeConverter::Visit(const UnitType&)
 {
     result_ = llvm::StructType::getTypeByName(context_, Typename::Unit);
 }
 
-void TypeConverter::Visit(const BooleanType& boolean_type)
+void TypeConverter::Visit(const BooleanType&)
 {
     result_ = llvm::IntegerType::getInt1Ty(context_);
 }
 
-void TypeConverter::Visit(const IntegerType& integer_type)
+void TypeConverter::Visit(const IntegerType&)
 {
     result_ = llvm::IntegerType::getInt64Ty(context_);
 }
 
-void TypeConverter::Visit(const CharacterType& character_type)
+void TypeConverter::Visit(const CharacterType&)
 {
     result_ = llvm::IntegerType::getInt8Ty(context_);
 }

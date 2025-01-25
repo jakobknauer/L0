@@ -71,22 +71,22 @@ void ConversionChecker::Visit(const ReferenceType& reference_type)
     // leave result_ as is
 }
 
-void ConversionChecker::Visit(const UnitType& unit_type)
+void ConversionChecker::Visit(const UnitType&)
 {
     result_ = bool{dynamic_pointer_cast<UnitType>(value_)};
 }
 
-void ConversionChecker::Visit(const BooleanType& boolean_type)
+void ConversionChecker::Visit(const BooleanType&)
 {
     result_ = bool{dynamic_pointer_cast<BooleanType>(value_)};
 }
 
-void ConversionChecker::Visit(const IntegerType& integer_type)
+void ConversionChecker::Visit(const IntegerType&)
 {
     result_ = dynamic_pointer_cast<IntegerType>(value_) != nullptr;
 }
 
-void ConversionChecker::Visit(const CharacterType& character_type)
+void ConversionChecker::Visit(const CharacterType&)
 {
     result_ = dynamic_pointer_cast<CharacterType>(value_) != nullptr;
 }

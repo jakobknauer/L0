@@ -59,7 +59,7 @@ void Typechecker::Visit(const Declaration& declaration)
     declaration.scope->SetVariableType(declaration.variable, coerced_type);
 }
 
-void Typechecker::Visit(const TypeDeclaration& type_declaration)
+void Typechecker::Visit(const TypeDeclaration&)
 {
     throw SemanticError("Unexpected type declaration.");
 }
