@@ -185,32 +185,50 @@ void Typechecker::Visit(const Variable& variable)
 void Typechecker::Visit(const MemberAccessor& member_accessor)
 {
     member_accessor.object->Accept(*this);
-    auto object_type = dynamic_pointer_cast<StructType>(member_accessor.object->type);
-    if (!object_type)
+    std::shared_ptr<Type> dereferenced_object_type = member_accessor.object->type;
+    std::shared_ptr<Expression> dereferenced_object = member_accessor.object;
+    while (auto type_as_ref = dynamic_pointer_cast<ReferenceType>(dereferenced_object_type))
+    {
+        dereferenced_object_type = type_as_ref->base_type;
+
+        auto new_dereferenced_object = std::make_shared<UnaryOp>(dereferenced_object, UnaryOp::Operator::Caret);
+        new_dereferenced_object->overload = UnaryOp::Overload::Dereferenciation;
+        new_dereferenced_object->type = dereferenced_object_type;
+        dereferenced_object = new_dereferenced_object;
+    }
+
+    auto dereferenced_object_type_as_struct = dynamic_pointer_cast<StructType>(dereferenced_object_type);
+    if (!dereferenced_object_type_as_struct)
     {
         throw SemanticError(std::format(
-            "Member accessor object must be of struct type, but is of type '{}'.",
-            member_accessor.object->type->ToString()
+            "Type of member accessor object after removing references must be of struct type, but is of type '{}'.",
+            dereferenced_object_type->ToString()
         ));
     }
 
-    if (!object_type->HasMember(member_accessor.member))
+    if (!dereferenced_object_type_as_struct->HasMember(member_accessor.member))
     {
-        throw SemanticError(
-            std::format("Struct '{}' does not have a member named '{}'.", object_type->name, member_accessor.member)
-        );
+        throw SemanticError(std::format(
+            "Struct '{}' does not have a member named '{}'.",
+            dereferenced_object_type_as_struct->name,
+            member_accessor.member
+        ));
     }
 
-    auto member = object_type->GetMember(member_accessor.member);
+    auto member = dereferenced_object_type_as_struct->GetMember(member_accessor.member);
     auto member_type = member->type;
-    if (object_type->mutability == TypeQualifier::Constant && member_type->mutability == TypeQualifier::Mutable)
+    if (dereferenced_object_type_as_struct->mutability == TypeQualifier::Constant
+        && member_type->mutability == TypeQualifier::Mutable)
     {
         member_type = ModifyQualifier(*member_type, TypeQualifier::Constant);
     }
 
-    member_accessor.object_type = object_type;
-    member_accessor.object_type_scope = type_resolver_.Resolve(member_accessor.object_type->name);
-    member_accessor.nonstatic_member_index = object_type->GetNonstaticMemberIndex(member_accessor.member);
+    member_accessor.dereferenced_object_type = dereferenced_object_type_as_struct;
+    member_accessor.dereferenced_object = dereferenced_object;
+    member_accessor.dereferenced_object_type_scope =
+        type_resolver_.Resolve(member_accessor.dereferenced_object_type->name);
+    member_accessor.nonstatic_member_index =
+        dereferenced_object_type_as_struct->GetNonstaticMemberIndex(member_accessor.member);
     member_accessor.type = member_type;
 }
 
@@ -407,7 +425,7 @@ bool Typechecker::IsMethodCall(const Call& call) const
         return false;
     }
 
-    auto member = member_accessor->object_type->GetMember(member_accessor->member);
+    auto member = member_accessor->dereferenced_object_type->GetMember(member_accessor->member);
     return member->is_method;
 }
 
@@ -459,7 +477,7 @@ void Typechecker::CheckMethodCall(const Call& call)
 
     std::vector<std::shared_ptr<Type>> argument_types{};
 
-    auto this_type = dynamic_pointer_cast<MemberAccessor>(call.function)->object_type;
+    auto this_type = dynamic_pointer_cast<MemberAccessor>(call.function)->dereferenced_object_type;
     argument_types.push_back(std::make_shared<ReferenceType>(this_type, TypeQualifier::Mutable));
 
     std::ranges::for_each(*call.arguments, [&](auto argument) { argument->Accept(*this); });

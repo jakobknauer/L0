@@ -565,12 +565,12 @@ void Generator::Visit(const Variable& variable)
 
 void Generator::Visit(const MemberAccessor& member_accessor)
 {
-    auto struct_name = member_accessor.object_type->name;
+    auto struct_name = member_accessor.dereferenced_object_type->name;
 
-    member_accessor.object->Accept(*this);
+    member_accessor.dereferenced_object->Accept(*this);
     auto object_ptr = result_store_.GetResultAddress();
 
-    auto llvm_struct_type = type_converter_.Convert(*member_accessor.object_type);
+    auto llvm_struct_type = type_converter_.Convert(*member_accessor.dereferenced_object_type);
     auto llvm_member_type = type_converter_.GetValueDeclarationType(*member_accessor.type);
 
     if (member_accessor.nonstatic_member_index)
@@ -587,9 +587,9 @@ void Generator::Visit(const MemberAccessor& member_accessor)
     }
     else
     {
-        auto member = member_accessor.object_type->GetMember(member_accessor.member);
+        auto member = member_accessor.dereferenced_object_type->GetMember(member_accessor.member);
         auto static_initializer =
-            member_accessor.object_type_scope->GetLLVMValue(*member->default_initializer_global_name);
+            member_accessor.dereferenced_object_type_scope->GetLLVMValue(*member->default_initializer_global_name);
         auto static_initializer_as_global = llvm::dyn_cast<llvm::GlobalVariable>(static_initializer);
         if (!static_initializer_as_global)
         {
