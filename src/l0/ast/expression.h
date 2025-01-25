@@ -148,9 +148,10 @@ class MemberAccessor : public Expression
     std::shared_ptr<Expression> object;
     std::string member;
 
-    mutable std::shared_ptr<StructType> object_type;
+    mutable std::shared_ptr<StructType> dereferenced_object_type;
+    mutable std::shared_ptr<Scope> dereferenced_object_type_scope;
     mutable std::optional<std::size_t> nonstatic_member_index;
-    mutable std::shared_ptr<Scope> object_type_scope;
+    mutable std::shared_ptr<Expression> dereferenced_object;
 };
 
 using ArgumentList = std::vector<std::shared_ptr<Expression>>;

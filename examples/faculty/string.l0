@@ -47,10 +47,10 @@ fn string_to_i64 (string : &String) -> I64
 {
     result : mut = 0;
     i : mut = 0;
-    while i < string^.length():
+    while i < string.length():
     {
         result = result * 10;
-        result = result + c8_to_digit(string^.at(i));
+        result = result + c8_to_digit(string.at(i));
         i = i + 1;
     };
     return result;
@@ -94,87 +94,87 @@ struct String
 
     method cstring (this : &String) -> CString
     {
-        return this^._buffer;
+        return this._buffer;
     };
 
-    method length (this : &String) -> I64 { return this^._length; };
+    method length (this : &String) -> I64 { return this._length; };
 
-    method at (this : &String, index : I64) -> C8 { return (this^._buffer + index)^; };
+    method at (this : &String, index : I64) -> C8 { return (this._buffer + index)^; };
 
     method append_c8 (this : &mut String, char : C8) -> ()
     {
-        this^.ensure_capacity(this^._length + 2);
+        this.ensure_capacity(this._length + 2);
 
-        (this^._buffer + this^._length)^ = char;
-        (this^._buffer + this^._length + 1)^ = '\0';
+        (this._buffer + this._length)^ = char;
+        (this._buffer + this._length + 1)^ = '\0';
 
-        this^._length = this^._length + 1;
+        this._length = this._length + 1;
     };
 
     method append_i64 (this : &mut String, i64 : I64) -> ()
     {
         s := from_i64(i64);
-        this^.append(&s);
+        this.append(&s);
         s.free();
     };
 
     method append (this : &mut String, other : &String) -> ()
     {
-        this^.append_cstring(other^.cstring());
+        this.append_cstring(other.cstring());
     };
 
     method append_cstring (this : &mut String, other : CString) -> ()
     {
         length := cstring_len(other);
-        this^.ensure_capacity(this^._length + length + 1);
+        this.ensure_capacity(this._length + length + 1);
 
         i : mut = 0;
         while i < cstring_len(other):
         {
-            (this^._buffer + this^._length + i)^ = (other + i)^;
+            (this._buffer + this._length + i)^ = (other + i)^;
             i = i + 1;
         };
 
-        this^._length = this^._length + length;
-        (this^._buffer + this^._length)^ = '\0';
+        this._length = this._length + length;
+        (this._buffer + this._length)^ = '\0';
     };
 
     method ensure_capacity (this : &mut String, capacity : I64) -> ()
     {
-        if this^._capacity >= capacity:
+        if this._capacity >= capacity:
         {
             return;
         };
 
         new_data := new [capacity] C8;
         i : mut = 0;
-        while i < this^._length:
+        while i < this._length:
         {
-            (new_data + i)^ = (this^._buffer + i)^;
+            (new_data + i)^ = (this._buffer + i)^;
             i = i + 1;
         };
 
-        if this^._capacity > 0:
+        if this._capacity > 0:
         {
-            delete this^._buffer;
+            delete this._buffer;
         };
 
-        this^._buffer = new_data;
-        this^._capacity = capacity;
+        this._buffer = new_data;
+        this._capacity = capacity;
     };
 
     method clear (this : &mut String) -> ()
     {
-        this^.free();
-        this^._capacity = 0;
-        this^._length = 0;
+        this.free();
+        this._capacity = 0;
+        this._length = 0;
     };
 
     method free (this : &String) -> ()
     {
-        if this^._capacity > 0:
+        if this._capacity > 0:
         {
-            delete this^._buffer;
+            delete this._buffer;
         };
     };
 };

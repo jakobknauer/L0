@@ -5,7 +5,7 @@ fn print_ln () -> ()
 
 fn print_string (string : &String) -> ()
 {
-    printf(string^.cstring());
+    printf(string.cstring());
 };
 
 fn print_i64 (i64 : I64) -> ()
