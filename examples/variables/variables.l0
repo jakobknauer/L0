@@ -1,0 +1,26 @@
+fn main () -> ()
+{
+    # Define and initialize an immutable variable with an explicit type.
+    # The type I64 represents a 64-bit (8-byte) signed integer.
+    x : I64 = 5;
+
+    # The type of y is inferred as I64 from its initial value.
+    y := x + 2;
+
+    # The variable z is declared as mutable and can thus be reassigned.
+    z : mut I64 = 1;
+    z = x - y;
+
+    # A partial type annotation to declare the variable a as mutable - the rest of the type is inferred.
+    a : mut = z;
+    a = a * 3;
+
+    # Here are some other built-in types
+    b : Boolean = false;  # the other Boolean value is 'true'
+    c : C8 = 'c';  # a one byte character
+    s : CString = "Hello, World!";  # A C string, i.e. an array of bytes
+    
+    # The "Unit type" is denoted by () and only has one valid value - unit.
+    # The unit type is mostly needed for annotating the return type of functions without proper return value (void in other languages).
+    u : () = unit;  
+};

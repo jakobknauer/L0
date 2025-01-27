@@ -1,14 +1,15 @@
 # About
 
 L0 is statically typed, compiled programming language that I started as a hobby project to get into compilers and the LLVM toolchain.
+
 L0 features and characteristics:
-    - Strong and static typing
-    - Structures
-    - Type inference for local variables
-    - Immutability by default
-    - Functions as first-class citizens, higher-order functions, anonymous functions, closures
-    - Pointer semantics and arithmetic
-    - Manual memory management
+- Strong and static typing
+- Structures
+- Type inference for local variables
+- Immutability by default
+- Functions as first-class citizens, higher-order functions, anonymous functions, closures
+- Pointer semantics and arithmetic
+- Manual memory management
 
 ## Examples
 
@@ -17,19 +18,27 @@ This is a Hello World program in L0:
 ```
 fn main () -> ()
 {
-    print("Hello, World!");
+    printf("Hello, World!\n");
 };
 ```
 
-You can find more examples in [the examples directory](examples).
+You can find more examples in [the examples directory](examples):
+- [Variables](examples/variables/variables.l0)
+- [Control Flow and Booleans](examples/control-flow/control-flow.l0)
+- [References and Dynamic Allocations](examples/references/references.l0)
+- [Functions](examples/functions/functions.l0)
+- [Structs] (examples/structs/structs.l0)
+- [Closures](examples/closures/closures.l0)
+- [An interactive program for computing faculties](examples/faculty). This includes a String struct representing strings of dynamic size, conversion from and to integers, etc.
 
 ## Build
 
 To build the project itself, run
 
 ```shell
-cmake -B build -D CMAKE_CXX_COMPILER=clang++
-make -C build
+mkdir build && cd build
+cmake ..
+make
 ```
 
 ## Run

@@ -1,0 +1,74 @@
+# Define a struct with two members of type I64, both of which have default value 0.
+Point : type = struct
+{
+    x : I64 = 0;
+    y : I64 = 0;
+};
+
+
+# Define a struct the easier way
+struct Color
+{
+    # All three members of Color have default values. This becomes important down below!
+    r : mut I64 = 0;
+    g : mut I64 = 0;
+    b : mut I64 = 0;
+
+
+    # A method is like a function that is special in two ways:
+    # - It is "static", i.e. it will be the same for all instances of the struct - unlike for members of function type
+    # - When calling it, the first argument (a pointer to an instance of Color) is passed implicitely (see below)
+    method is_white (this : &Color) -> Boolean
+    {
+        # Access members with ".".
+        # Note that dereferencing 'this' is not necessary
+        return this.r == 255 && this.g == 255 && this.b == 255;
+    };
+
+
+    # A method where the first arguments is a reference to mut can manipulate the object
+    method darken (this : &mut Color, amount: I64) -> ()
+    {
+        this.r = this.r - amount;
+        this.g = this.g - amount;
+        this.b = this.b - amount;
+    };
+};
+
+
+fn main () -> ()
+{
+    # Create a point
+    p := Point { x = 3; };  # For members with a default value, we are free to specify a value.
+
+    # Access members using the dot syntax
+    if p.y == 0:
+    {
+        printf("y is zero!\n");
+    };
+
+    # Create a mutable point
+    q : mut = Point { x = 5; y = 6; };
+    # We can reassign q, as q is mutable.
+    q = p;
+    # But we can not reassign individual members of q, since x and y are not defined as mutable.
+    #   q.x = 10;  # Invalid!
+
+
+    # Create a dynamically allocated Color
+    color : &mut Color = new Color { r = 255; g = 255; b = 255; };
+
+    # Call the is_white method without specifying the "0th" argument.
+    if color.is_white():
+    {
+        printf("The color is white\n");
+    };
+    
+    color.darken(10);  # This works since color is reference to a mutable color
+    if !color.is_white():
+    {
+        printf("The color is no longer white\n");
+    };
+
+    delete color;
+};

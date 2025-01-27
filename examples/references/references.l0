@@ -1,0 +1,47 @@
+fn main () -> ()
+{
+    x := 5;
+
+    # create a reference to x
+    y : &I64 = &x;
+
+    # dereference y and copy to z
+    z : I64 = y^;
+
+
+    # create a reference to a mutable value
+    a : mut I64 = 3;
+    b : &mut I64 = &a;
+
+
+    # we can use b to reassign a:
+    b^ = 4;
+    if a == 4:
+    {
+        printf("a is equal to 4\n");
+    };
+
+    # Note: b itself is not mutable. Thus, reassigning b is invalid:
+    #      b = &x;  # Invalid!
+    # This is the difference between &mut I64 and mut &I64
+
+
+    # References can also point to dynamically allocated memory:
+    c : &mut I64 = new I64;
+    # Dynamically allocated memory must be deleted to avoid memory leaks:
+    delete c;  # Using c after free leads to undefined behavior
+
+
+    # We can also allocate arrays:
+    arr : &mut I64 = new [10] I64;
+    i : mut = 0;
+    while i < 10:
+    {
+        # Use pointer arithmetic to index into an array:
+        (arr + i)^ = i*i;
+        i = i + 1;
+    };
+
+    # Arrays must also be deleted:
+    delete arr;
+};

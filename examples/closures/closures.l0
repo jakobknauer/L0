@@ -3,13 +3,18 @@ fn main () -> I64
     a := 5;
     b := 2;
 
+    # f and g are closures capturing the variables a and b, respectively, by value.
+    # The type of both f and g is nevertheless (I64) -> I64
     f := $ [a] (x : I64) -> I64 { return x + a; };
     g := $ [b] (x : I64) -> I64 { return x * b; };
 
+    # h captures f and g
     h := $ [f, g] (x : I64) -> I64 { return f(g(x)); };
 
+    # Closures can be called like normal functions.
     result := h(3);
 
+    # However, the memory for the captured values is dynamically allocated and must be explicetely deleted:
     delete f;
     delete g;
     delete h;
