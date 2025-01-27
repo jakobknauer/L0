@@ -27,7 +27,7 @@ You can find more examples in [the examples directory](examples):
 - [Control Flow and Booleans](examples/control-flow/control-flow.l0)
 - [References and Dynamic Allocations](examples/references/references.l0)
 - [Functions](examples/functions/functions.l0)
-- [Structs] (examples/structs/structs.l0)
+- [Structs](examples/structs/structs.l0)
 - [Closures](examples/closures/closures.l0)
 - [An interactive program for computing faculties](examples/faculty). This includes a String struct representing strings of dynamic size, conversion from and to integers, etc.
 
