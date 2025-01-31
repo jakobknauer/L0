@@ -51,7 +51,7 @@ build/src/l0/main/l0c <file1.l0 file2.l0 ...>
 clang <file1.ll file2.ll ...> -o <output_file>
 
 # E.g. to build and run the faculty example:
-cd examples
+cd examples/faculty
 ../build/src/l0/main/l0c "faculty.l0" "math.l0" "print.l0" "read.l0" "string.l0"
 clang *.ll -o faculty
 ./faculty
