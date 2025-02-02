@@ -573,15 +573,17 @@ std::shared_ptr<Expression> Parser::ParseAtomicExpression()
         }
         case TokenType::Identifier:
         {
-            if (PeekNext().type == TokenType::OpeningBrace)
+            auto identifier = ParseIdentifier();
+            if (Peek().type == TokenType::OpeningBrace)
             {
-                return ParseInitializer();
+                auto member_initializer_list = ParseMemberInitializerList();
+                return std::make_shared<Initializer>(
+                    std::make_shared<SimpleTypeAnnotation>(identifier), std::move(member_initializer_list)
+                );
             }
             else
             {
-                Consume();
-                auto variable = std::make_shared<Variable>(std::any_cast<std::string>(token.data));
-                return variable;
+                return std::make_shared<Variable>(identifier);
             }
         }
         case TokenType::IntegerLiteral:
@@ -649,14 +651,6 @@ std::shared_ptr<Expression> Parser::ParseFunction()
     auto statements = ParseStatementBlock(TokenType::ClosingBrace);
     Expect(TokenType::ClosingBrace);
     return std::make_shared<Function>(parameters, captures, return_type, statements);
-}
-
-std::shared_ptr<Expression> Parser::ParseInitializer()
-{
-    auto annotation = ParseSimpleTypeAnnotation();
-    auto member_initializer_list = ParseMemberInitializerList();
-
-    return std::make_shared<Initializer>(annotation, member_initializer_list);
 }
 
 std::shared_ptr<Expression> Parser::ParseAllocation()
@@ -790,7 +784,8 @@ std::shared_ptr<CaptureList> Parser::ParseCaptureList()
     do
     {
         auto capture = Expect(TokenType::Identifier);
-        captures->push_back(std::make_shared<Variable>(std::any_cast<std::string>(capture.data)));
+        auto variable = std::make_shared<Variable>(Identifier{std::any_cast<std::string>(capture.data)});
+        captures->push_back(variable);
 
         Token next = Consume();
         switch (next.type)
@@ -886,8 +881,8 @@ std::shared_ptr<TypeAnnotation> Parser::TryParseUnqualifiedTypeAnnotation()
 
 std::shared_ptr<TypeAnnotation> Parser::ParseSimpleTypeAnnotation()
 {
-    Token token = Expect(TokenType::Identifier);
-    return std::make_shared<SimpleTypeAnnotation>(std::any_cast<std::string>(token.data));
+    auto identifier = ParseIdentifier();
+    return std::make_shared<SimpleTypeAnnotation>(identifier);
 }
 
 std::shared_ptr<TypeAnnotation> Parser::ParseReferenceTypeAnnotation()
@@ -916,7 +911,7 @@ std::shared_ptr<TypeAnnotation> Parser::ParseFunctionTypeAnnotation()
     }
     else if (arguments->empty())
     {
-        return std::make_shared<SimpleTypeAnnotation>(std::string{Typename::Unit});
+        return std::make_shared<SimpleTypeAnnotation>(Identifier{Typename::Unit});
     }
     else
     {
@@ -1121,6 +1116,22 @@ std::shared_ptr<Statement> Parser::ParseAlternativeMethodDeclaration()
     auto function = std::make_shared<Function>(parameters, nullptr, return_type, statements);
 
     return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), method_annotation, function);
+}
+
+Identifier Parser::ParseIdentifier()
+{
+    std::vector<std::string> parts{};
+
+    auto first = std::any_cast<std::string>(Expect(TokenType::Identifier).data);
+    parts.push_back(first);
+
+    while (ConsumeIf(TokenType::ColonColon))
+    {
+        auto next = std::any_cast<std::string>(Expect(TokenType::Identifier).data);
+        parts.push_back(next);
+    }
+
+    return Identifier{std::move(parts)};
 }
 
 ParserError::ParserError(std::string message)

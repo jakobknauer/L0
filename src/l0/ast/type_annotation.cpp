@@ -3,8 +3,8 @@
 namespace l0
 {
 
-SimpleTypeAnnotation::SimpleTypeAnnotation(std::string type)
-    : type{type}
+SimpleTypeAnnotation::SimpleTypeAnnotation(Identifier type_name)
+    : type_name{type_name}
 {
 }
 

@@ -83,6 +83,8 @@ std::string str(TokenType type)
             return "Dollar";
         case l0::TokenType::ColonEquals:
             return "ColonEquals";
+        case l0::TokenType::ColonColon:
+            return "ColonColon";
     }
     std::unreachable();
 }

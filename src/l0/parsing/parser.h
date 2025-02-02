@@ -45,6 +45,7 @@ class Parser : public IParser
     Token ExpectKeyword(std::string_view keyword);
 
     std::shared_ptr<Module> ParseModule();
+
     std::shared_ptr<StatementBlock> ParseStatementBlock(TokenType delimiter);
     std::shared_ptr<Statement> ParseStatement();
     std::shared_ptr<Statement> ParseDeclaration();
@@ -54,6 +55,7 @@ class Parser : public IParser
     std::shared_ptr<Statement> ParseConditionalStatement();
     std::shared_ptr<Statement> ParseWhileLoop();
     std::shared_ptr<Statement> ParseDeallocation();
+
     std::shared_ptr<Expression> ParseExpression();
     std::shared_ptr<Expression> ParseAssignment();
     std::shared_ptr<Expression> ParseDisjunction();
@@ -67,13 +69,14 @@ class Parser : public IParser
     std::shared_ptr<Expression> ParseCallsDerefsAndMemberAccessors();
     std::shared_ptr<Expression> ParseAtomicExpression();
     std::shared_ptr<Expression> ParseFunction();
-    std::shared_ptr<Expression> ParseInitializer();
     std::shared_ptr<Expression> ParseAllocation();
+
     std::shared_ptr<ArgumentList> ParseArgumentList();
     std::shared_ptr<ParameterDeclarationList> ParseParameterDeclarationList();
     std::shared_ptr<CaptureList> ParseCaptureList();
     std::shared_ptr<ParameterDeclaration> ParseParameterDeclaration();
     std::shared_ptr<MemberInitializerList> ParseMemberInitializerList();
+
     std::shared_ptr<TypeAnnotation> ParseTypeAnnotation();
     std::shared_ptr<TypeAnnotation> TryParseUnqualifiedTypeAnnotation();
     std::shared_ptr<TypeAnnotation> ParseSimpleTypeAnnotation();
@@ -81,6 +84,7 @@ class Parser : public IParser
     std::shared_ptr<TypeAnnotation> ParseFunctionTypeAnnotation();
     std::shared_ptr<TypeAnnotation> ParseMethodTypeAnnotation();
     std::shared_ptr<ParameterListAnnotation> ParseParameterListAnnotation();
+
     std::shared_ptr<TypeExpression> ParseStruct();
     std::shared_ptr<StructMemberDeclarationList> ParseStructMemberDeclarationList();
     std::shared_ptr<TypeExpression> ParseEnum();
@@ -89,6 +93,8 @@ class Parser : public IParser
     std::shared_ptr<Statement> ParseAlternativeFunctionDeclaration();
     std::shared_ptr<Statement> ParseAlternativeStructDeclaration();
     std::shared_ptr<Statement> ParseAlternativeMethodDeclaration();
+
+    Identifier ParseIdentifier();
 };
 
 class ParserError

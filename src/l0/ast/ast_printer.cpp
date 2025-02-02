@@ -301,7 +301,7 @@ void AstPrinter::Visit(const Allocation& allocation)
 void AstPrinter::Visit(const SimpleTypeAnnotation& sta)
 {
     PrintQualifier(sta.mutability);
-    out_ << sta.type;
+    out_ << sta.type_name;
 }
 
 void AstPrinter::Visit(const ReferenceTypeAnnotation& rta)

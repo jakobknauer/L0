@@ -4,6 +4,8 @@ add_library(
   ast_printer.h
   expression.cpp
   expression.h
+  identifier.cpp
+  identifier.h
   indent.cpp
   indent.h
   module.h

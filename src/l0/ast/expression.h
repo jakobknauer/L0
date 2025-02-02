@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 
+#include "l0/ast/identifier.h"
 #include "l0/ast/scope.h"
 #include "l0/types/types.h"
 
@@ -129,12 +130,12 @@ class BinaryOp : public Expression
 class Variable : public Expression
 {
    public:
-    Variable(std::string name);
+    Variable(Identifier name);
 
     void Accept(IConstExpressionVisitor& visitor) const override;
     void Accept(IExpressionVisitor& visitor) override;
 
-    std::string name;
+    Identifier name;
 
     mutable std::shared_ptr<Scope> scope;
 };

@@ -557,7 +557,7 @@ void Generator::Visit(const BinaryOp& binary_op)
 
 void Generator::Visit(const Variable& variable)
 {
-    llvm::Value* llvm_value = variable.scope->GetLLVMValue(variable.name);
+    llvm::Value* llvm_value = variable.scope->GetLLVMValue(variable.name.last());
     if (auto allocation = llvm::dyn_cast<llvm::AllocaInst>(llvm_value))
     {
         auto allocated_type = allocation->getAllocatedType();
@@ -821,8 +821,8 @@ void Generator::GenerateFunctionBody(
         {
             const Variable& capture = *function.captures->at(capture_index);
             const auto& capture_address =
-                builder_.CreateConstGEP2_32(context_struct, context_address, 0, capture_index, capture.name);
-            function.locals->SetLLVMValue(capture.name, capture_address);
+                builder_.CreateConstGEP2_32(context_struct, context_address, 0, capture_index, capture.name.last());
+            function.locals->SetLLVMValue(capture.name.last(), capture_address);
         }
     }
 
@@ -950,7 +950,7 @@ std::tuple<llvm::Value*, llvm::StructType*> Generator::GenerateClosureContext(co
             context_address,
             0,
             capture_index,
-            std::format("tmpgep_{}_capture_{}", function.global_name.value(), capture->name)
+            std::format("tmpgep_{}_capture_{}", function.global_name.value(), capture->name.last())
         );
         builder_.CreateStore(captured_value, member_address);
     }
