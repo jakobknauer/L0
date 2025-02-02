@@ -56,7 +56,7 @@ class IConstTypeExpressionVisitor
     virtual ~IConstTypeExpressionVisitor() = default;
 
     virtual void Visit(const StructExpression& struct_expression) = 0;
-    virtual void Visit([[maybe_unused]] const EnumExpression& enum_expression) {}
+    virtual void Visit(const EnumExpression& enum_expression) = 0;
 };
 
 class ITypeExpressionVisitor
@@ -65,7 +65,7 @@ class ITypeExpressionVisitor
     virtual ~ITypeExpressionVisitor() = default;
 
     virtual void Visit(StructExpression& struct_expression) = 0;
-    virtual void Visit([[maybe_unused]] EnumExpression& enum_expression) {}
+    virtual void Visit(EnumExpression& enum_expression) = 0;
 };
 
 };  // namespace l0

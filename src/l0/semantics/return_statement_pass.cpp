@@ -206,4 +206,6 @@ void ReturnStatementPass::Visit(StructExpression& struct_expression)
     }
 }
 
+void ReturnStatementPass::Visit(EnumExpression&) {}
+
 }  // namespace l0

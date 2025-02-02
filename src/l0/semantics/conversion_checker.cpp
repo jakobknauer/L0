@@ -129,4 +129,10 @@ void ConversionChecker::Visit(const StructType& struct_type)
     result_ = value_as_struct_type && (struct_type.name == value_as_struct_type->name);
 }
 
+void ConversionChecker::Visit(const EnumType& enum_type)
+{
+    auto value_as_struct_type = dynamic_pointer_cast<EnumType>(value_);
+    result_ = value_as_struct_type && (enum_type.name == value_as_struct_type->name);
+}
+
 }  // namespace l0::detail

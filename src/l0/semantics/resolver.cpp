@@ -201,6 +201,8 @@ void Resolver::Visit(const StructExpression& struct_expression)
     }
 }
 
+void Resolver::Visit(const EnumExpression&) {}
+
 std::shared_ptr<Scope> Resolver::Resolve(const std::string name)
 {
     for (auto scope : scopes_ | std::views::reverse)

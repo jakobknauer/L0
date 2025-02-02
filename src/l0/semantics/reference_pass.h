@@ -51,6 +51,7 @@ class ReferencePass : private IStatementVisitor, private IExpressionVisitor, pri
     void Visit(Allocation& allocation) override;
 
     void Visit(StructExpression& struct_expression) override;
+    void Visit(EnumExpression& enum_expression) override;
 
     bool IsLValue(std::shared_ptr<Expression> value) const;
 

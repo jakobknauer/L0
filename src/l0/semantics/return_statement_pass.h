@@ -53,6 +53,7 @@ class ReturnStatementPass : private IStatementVisitor, private IExpressionVisito
     void Visit(Allocation& allocation) override;
 
     void Visit(StructExpression& struct_expression) override;
+    void Visit(EnumExpression& enum_expression) override;
 };
 
 }  // namespace l0

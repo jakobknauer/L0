@@ -94,4 +94,9 @@ void TypeConverter::Visit(const StructType& struct_type)
     result_ = llvm_struct_type;
 }
 
+void TypeConverter::Visit(const EnumType&)
+{
+    result_ = llvm::IntegerType::getInt64Ty(context_);
+}
+
 }  // namespace l0
