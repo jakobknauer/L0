@@ -96,6 +96,8 @@ class BinaryOp : public Expression
         BooleanDisjunction,
         BooleanEquality,
         BooleanInequality,
+        CharacterAddition,
+        CharacterSubtraction,
         CharacterEquality,
         CharacterInequality,
         IntegerAddition,

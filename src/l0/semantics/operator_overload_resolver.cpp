@@ -18,39 +18,50 @@ OperatorOverloadResolver::OperatorOverloadResolver()
         {UnaryOp::Operator::Bang, {{boolean, {boolean, UnaryOp::Overload::BooleanNegation}}}},
     };
 
+    using BinOp = BinaryOp::Operator;
+    using BinOverload = BinaryOp::Overload;
     binary_operator_overloads_ = {
         {
-            BinaryOp::Operator::EqualsEquals,
+            BinOp::EqualsEquals,
             {
-                {boolean, boolean, {boolean, BinaryOp::Overload::BooleanEquality}},
-                {integer, integer, {boolean, BinaryOp::Overload::IntegerEquality}},
-                {character, character, {boolean, BinaryOp::Overload::CharacterEquality}},
+                {boolean, boolean, {boolean, BinOverload::BooleanEquality}},
+                {integer, integer, {boolean, BinOverload::IntegerEquality}},
+                {character, character, {boolean, BinOverload::CharacterEquality}},
             },
         },
         {
-            BinaryOp::Operator::BangEquals,
+            BinOp::BangEquals,
             {
-                {boolean, boolean, {boolean, BinaryOp::Overload::BooleanInequality}},
-                {integer, integer, {boolean, BinaryOp::Overload::IntegerInequality}},
-                {character, character, {boolean, BinaryOp::Overload::CharacterInequality}},
+                {boolean, boolean, {boolean, BinOverload::BooleanInequality}},
+                {integer, integer, {boolean, BinOverload::IntegerInequality}},
+                {character, character, {boolean, BinOverload::CharacterInequality}},
             },
         },
-
-        {BinaryOp::Operator::Plus, {{integer, integer, {integer, BinaryOp::Overload::IntegerAddition}}}},
-        {BinaryOp::Operator::Minus, {{integer, integer, {integer, BinaryOp::Overload::IntegerSubtraction}}}},
-        {BinaryOp::Operator::Asterisk, {{integer, integer, {integer, BinaryOp::Overload::IntegerMultiplication}}}},
-        {BinaryOp::Operator::Slash, {{integer, integer, {integer, BinaryOp::Overload::IntegerDivision}}}},
-        {BinaryOp::Operator::Percent, {{integer, integer, {integer, BinaryOp::Overload::IntegerRemainder}}}},
-
-        {BinaryOp::Operator::PipePipe, {{boolean, boolean, {boolean, BinaryOp::Overload::BooleanDisjunction}}}},
-        {BinaryOp::Operator::AmpersandAmpersand, {{boolean, boolean, {boolean, BinaryOp::Overload::BooleanConjunction}}}
+        {
+            BinOp::Plus,
+            {
+                {integer, integer, {integer, BinOverload::IntegerAddition}},
+                {character, integer, {character, BinOverload::CharacterAddition}},
+            },
         },
-
-        {BinaryOp::Operator::Less, {{integer, integer, {boolean, BinaryOp::Overload::IntegerLess}}}},
-        {BinaryOp::Operator::Greater, {{integer, integer, {boolean, BinaryOp::Overload::IntegerGreater}}}},
-        {BinaryOp::Operator::LessEquals, {{integer, integer, {boolean, BinaryOp::Overload::IntegerLessOrEquals}}}},
-        {BinaryOp::Operator::GreaterEquals, {{integer, integer, {boolean, BinaryOp::Overload::IntegerGreaterOrEquals}}}
+        {
+            BinOp::Minus,
+            {
+                {integer, integer, {integer, BinOverload::IntegerSubtraction}},
+                {character, character, {integer, BinOverload::CharacterSubtraction}},
+            },
         },
+        {BinOp::Asterisk, {{integer, integer, {integer, BinOverload::IntegerMultiplication}}}},
+        {BinOp::Slash, {{integer, integer, {integer, BinOverload::IntegerDivision}}}},
+        {BinOp::Percent, {{integer, integer, {integer, BinOverload::IntegerRemainder}}}},
+
+        {BinOp::PipePipe, {{boolean, boolean, {boolean, BinOverload::BooleanDisjunction}}}},
+        {BinOp::AmpersandAmpersand, {{boolean, boolean, {boolean, BinOverload::BooleanConjunction}}}},
+
+        {BinOp::Less, {{integer, integer, {boolean, BinOverload::IntegerLess}}}},
+        {BinOp::Greater, {{integer, integer, {boolean, BinOverload::IntegerGreater}}}},
+        {BinOp::LessEquals, {{integer, integer, {boolean, BinOverload::IntegerLessOrEquals}}}},
+        {BinOp::GreaterEquals, {{integer, integer, {boolean, BinOverload::IntegerGreaterOrEquals}}}},
     };
 }
 

@@ -34,6 +34,8 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     llvm::StructType* closure_type_;
     llvm::PointerType* pointer_type_;
     llvm::Type* int_type_;
+    llvm::Type* char_type_;
+    llvm::Type* bool_type_;
 
     TypeConverter type_converter_;
 
