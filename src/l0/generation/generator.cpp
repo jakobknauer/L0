@@ -39,6 +39,8 @@ Generator::Generator(llvm::LLVMContext& context, Module& module)
     pointer_type_ = llvm::PointerType::get(context_, 0);
     closure_type_ = llvm::StructType::getTypeByName(context_, "__closure");
     int_type_ = llvm::IntegerType::getInt64Ty(context_);
+    char_type_ = llvm::IntegerType::getInt8Ty(context_);
+    bool_type_ = llvm::IntegerType::getInt1Ty(context_);
 }
 
 llvm::Module* Generator::Generate()
@@ -393,13 +395,14 @@ void Generator::Visit(const UnaryOp& unary_op)
 {
     switch (unary_op.overload)
     {
-        case UnaryOp::Overload::IntegerIdentity:
+        using Overload = UnaryOp::Overload;
+        case Overload::IntegerIdentity:
         {
             unary_op.operand->Accept(*this);
             // leave result_ and result_address
             break;
         }
-        case UnaryOp::Overload::IntegerNegation:
+        case Overload::IntegerNegation:
         {
             unary_op.operand->Accept(*this);
             llvm::Value* operand = result_store_.GetResult();
@@ -407,7 +410,7 @@ void Generator::Visit(const UnaryOp& unary_op)
             result_store_.SetResult(result);
             break;
         }
-        case UnaryOp::Overload::BooleanNegation:
+        case Overload::BooleanNegation:
         {
             unary_op.operand->Accept(*this);
             llvm::Value* operand = result_store_.GetResult();
@@ -415,14 +418,14 @@ void Generator::Visit(const UnaryOp& unary_op)
             result_store_.SetResult(result);
             break;
         }
-        case UnaryOp::Overload::AddressOf:
+        case Overload::AddressOf:
         {
             unary_op.operand->Accept(*this);
             auto address = result_store_.GetResultAddress();
             result_store_.SetResult(address);
             break;
         }
-        case UnaryOp::Overload::Dereferenciation:
+        case Overload::Dereferenciation:
         {
             unary_op.operand->Accept(*this);
             auto address = result_store_.GetResult();
@@ -442,7 +445,8 @@ void Generator::Visit(const BinaryOp& binary_op)
 
     switch (binary_op.overload)
     {
-        case BinaryOp::Overload::ReferenceIndexation:
+        using Overload = BinaryOp::Overload;
+        case Overload::ReferenceIndexation:
         {
             auto reference_type = dynamic_pointer_cast<ReferenceType>(binary_op.left->type);
             auto llvm_type = type_converter_.Convert(*reference_type->base_type);
@@ -451,85 +455,100 @@ void Generator::Visit(const BinaryOp& binary_op)
             result_store_.SetResult(result);
             break;
         }
-        case BinaryOp::Overload::IntegerAddition:
+        case Overload::IntegerAddition:
         {
             auto result = builder_.CreateAdd(left, right, "addtmp");
             result_store_.SetResult(result);
             break;
         }
-        case BinaryOp::Overload::IntegerSubtraction:
+        case Overload::IntegerSubtraction:
         {
             auto result = builder_.CreateSub(left, right, "subtmp");
             result_store_.SetResult(result);
             break;
         }
-        case BinaryOp::Overload::IntegerMultiplication:
+        case Overload::IntegerMultiplication:
         {
             auto result = builder_.CreateMul(left, right, "multmp");
             result_store_.SetResult(result);
             break;
         }
-        case BinaryOp::Overload::IntegerDivision:
+        case Overload::IntegerDivision:
         {
             auto result = builder_.CreateSDiv(left, right, "sdivtmp");
             result_store_.SetResult(result);
             break;
         }
-        case BinaryOp::Overload::IntegerRemainder:
+        case Overload::IntegerRemainder:
         {
             auto result = builder_.CreateURem(left, right, "uremtmp");
             result_store_.SetResult(result);
             break;
         }
-        case BinaryOp::Overload::BooleanConjunction:
+        case Overload::BooleanConjunction:
         {
             auto result = builder_.CreateLogicalAnd(left, right, "andtmp");
             result_store_.SetResult(result);
             break;
         }
-        case BinaryOp::Overload::BooleanDisjunction:
+        case Overload::BooleanDisjunction:
         {
             auto result = builder_.CreateLogicalOr(left, right, "ortmp");
             result_store_.SetResult(result);
             break;
         }
-        case BinaryOp::Overload::BooleanEquality:
-        case BinaryOp::Overload::IntegerEquality:
-        case BinaryOp::Overload::CharacterEquality:
+        case Overload::BooleanEquality:
+        case Overload::IntegerEquality:
+        case Overload::CharacterEquality:
         {
             auto result = builder_.CreateICmpEQ(left, right, "eqtmp");
             result_store_.SetResult(result);
             break;
         }
-        case BinaryOp::Overload::BooleanInequality:
-        case BinaryOp::Overload::IntegerInequality:
-        case BinaryOp::Overload::CharacterInequality:
+        case Overload::BooleanInequality:
+        case Overload::IntegerInequality:
+        case Overload::CharacterInequality:
         {
             auto result = builder_.CreateICmpNE(left, right, "netmp");
             result_store_.SetResult(result);
             break;
         }
-        case BinaryOp::Overload::IntegerLess:
+        case Overload::IntegerLess:
         {
             auto result = builder_.CreateICmpSLT(left, right, "slttmp");
             result_store_.SetResult(result);
             break;
         }
-        case BinaryOp::Overload::IntegerGreater:
+        case Overload::IntegerGreater:
         {
             auto result = builder_.CreateICmpSGT(left, right, "sgttmp");
             result_store_.SetResult(result);
             break;
         }
-        case BinaryOp::Overload::IntegerLessOrEquals:
+        case Overload::IntegerLessOrEquals:
         {
             auto result = builder_.CreateICmpSLE(left, right, "sletmp");
             result_store_.SetResult(result);
             break;
         }
-        case BinaryOp::Overload::IntegerGreaterOrEquals:
+        case Overload::IntegerGreaterOrEquals:
         {
             auto result = builder_.CreateICmpSGE(left, right, "sgetmp");
+            result_store_.SetResult(result);
+            break;
+        }
+        case Overload::CharacterAddition:
+        {
+            auto right_as_i8 = builder_.CreateIntCast(right, char_type_, true, "castmp");
+            auto result = builder_.CreateAdd(left, right_as_i8, "addtmp");
+            result_store_.SetResult(result);
+            break;
+        }
+        case Overload::CharacterSubtraction:
+        {
+            auto left_as_i64 = builder_.CreateIntCast(left, int_type_, false, "castmp");
+            auto right_as_i64 = builder_.CreateIntCast(right, int_type_, false, "castmp");
+            auto result = builder_.CreateSub(left_as_i64, right_as_i64, "subtmp");
             result_store_.SetResult(result);
             break;
         }
@@ -647,22 +666,19 @@ void Generator::Visit(const UnitLiteral& literal)
 
 void Generator::Visit(const BooleanLiteral& literal)
 {
-    llvm::Type* type = llvm::Type::getInt1Ty(context_);
-    auto result = llvm::ConstantInt::get(type, literal.value ? 1 : 0);
+    auto result = llvm::ConstantInt::get(bool_type_, literal.value ? 1 : 0);
     result_store_.SetResult(result);
 }
 
 void Generator::Visit(const IntegerLiteral& literal)
 {
-    llvm::Type* type = llvm::Type::getInt64Ty(context_);
-    auto result = llvm::ConstantInt::get(type, literal.value);
+    auto result = llvm::ConstantInt::get(int_type_, literal.value);
     result_store_.SetResult(result);
 }
 
 void Generator::Visit(const CharacterLiteral& literal)
 {
-    llvm::Type* type = llvm::Type::getInt8Ty(context_);
-    auto result = llvm::ConstantInt::get(type, literal.value);
+    auto result = llvm::ConstantInt::get(char_type_, literal.value);
     result_store_.SetResult(result);
 }
 
