@@ -346,6 +346,19 @@ void AstPrinter::Visit(const StructExpression& struct_expression)
     out_ << "}";
 }
 
+void AstPrinter::Visit(const EnumExpression& enum_expression)
+{
+    out_ << Keyword::Enum;
+    out_ << "\n{\n";
+    ++indent_;
+    for (const auto& member : *enum_expression.members)
+    {
+        out_ << member->name << ";\n";
+    }
+    --indent_;
+    out_ << "}";
+}
+
 void AstPrinter::PrintQualifier(TypeAnnotationQualifier qualifier, std::string end)
 {
     switch (qualifier)

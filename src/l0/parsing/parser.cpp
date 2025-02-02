@@ -235,8 +235,24 @@ std::shared_ptr<Statement> Parser::ParseDeclaration()
     if (ConsumeIfKeyword(Keyword::Type))
     {
         Expect(TokenType::Equals);
-        auto definition = ParseStruct();
-        return std::make_shared<TypeDeclaration>(std::any_cast<std::string>(identifier.data), definition);
+        if (PeekIsKeyword(Keyword::Structure))
+        {
+            auto definition = ParseStruct();
+            return std::make_shared<TypeDeclaration>(std::any_cast<std::string>(identifier.data), definition);
+        }
+        else if (PeekIsKeyword(Keyword::Enum))
+        {
+            auto definition = ParseEnum();
+            return std::make_shared<TypeDeclaration>(std::any_cast<std::string>(identifier.data), definition);
+        }
+        else
+        {
+            throw ParserError(std::format(
+                "Expected keyword 'struct' or 'enum', got token '{}' of type  '{}' instead.",
+                Peek().lexeme,
+                str(Peek().type)
+            ));
+        }
     }
     else
     {
@@ -971,11 +987,11 @@ std::shared_ptr<ParameterListAnnotation> Parser::ParseParameterListAnnotation()
 std::shared_ptr<TypeExpression> Parser::ParseStruct()
 {
     ExpectKeyword(Keyword::Structure);
-    auto members = ParseMemberDeclarationList();
+    auto members = ParseStructMemberDeclarationList();
     return std::make_shared<StructExpression>(members);
 }
 
-std::shared_ptr<StructMemberDeclarationList> Parser::ParseMemberDeclarationList()
+std::shared_ptr<StructMemberDeclarationList> Parser::ParseStructMemberDeclarationList()
 {
     auto members = std::make_shared<StructMemberDeclarationList>();
     Expect(TokenType::OpeningBrace);
@@ -993,6 +1009,29 @@ std::shared_ptr<StructMemberDeclarationList> Parser::ParseMemberDeclarationList(
         }
         Expect(TokenType::Semicolon);
         members->push_back(member_as_declaration);
+    }
+    Expect(TokenType::ClosingBrace);
+    return members;
+}
+
+std::shared_ptr<TypeExpression> Parser::ParseEnum()
+{
+    ExpectKeyword(Keyword::Enum);
+    auto members = ParseEnumMemberDeclarationList();
+    return std::make_shared<EnumExpression>(members);
+}
+
+std::shared_ptr<EnumMemberDeclarationList> Parser::ParseEnumMemberDeclarationList()
+{
+    auto members = std::make_shared<EnumMemberDeclarationList>();
+    Expect(TokenType::OpeningBrace);
+    while (ConsumeAll(TokenType::Semicolon).type != TokenType::ClosingBrace)
+    {
+        auto member = Expect(TokenType::Identifier);
+        Expect(TokenType::Semicolon);
+        EnumMemberDeclaration member_declaration{};
+        member_declaration.name = std::any_cast<std::string>(member.data);
+        members->push_back(std::make_shared<EnumMemberDeclaration>(member_declaration));
     }
     Expect(TokenType::ClosingBrace);
     return members;
@@ -1052,7 +1091,7 @@ std::shared_ptr<Statement> Parser::ParseAlternativeStructDeclaration()
     ExpectKeyword(Keyword::Structure);
     auto identifier = Expect(TokenType::Identifier);
 
-    auto members = ParseMemberDeclarationList();
+    auto members = ParseStructMemberDeclarationList();
 
     auto struct_expression = std::make_shared<StructExpression>(members);
     return std::make_shared<TypeDeclaration>(std::any_cast<std::string>(identifier.data), struct_expression);

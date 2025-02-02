@@ -28,6 +28,7 @@ Lexer::Lexer(std::istream& input)
           Keyword::Constant,
           Keyword::Delete,
           Keyword::Else,
+          Keyword::Enum,
           Keyword::False,
           Keyword::Function,
           Keyword::If,

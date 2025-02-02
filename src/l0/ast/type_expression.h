@@ -33,12 +33,30 @@ class StructExpression : public TypeExpression
     std::shared_ptr<StructMemberDeclarationList> members;
 };
 
+struct EnumMemberDeclaration
+{
+    std::string name;
+};
+using EnumMemberDeclarationList = std::vector<std::shared_ptr<EnumMemberDeclaration>>;
+
+class EnumExpression : public TypeExpression
+{
+   public:
+    EnumExpression(std::shared_ptr<EnumMemberDeclarationList> members);
+
+    void Accept(IConstTypeExpressionVisitor& visitor) const override;
+    void Accept(ITypeExpressionVisitor& visitor) override;
+
+    std::shared_ptr<EnumMemberDeclarationList> members;
+};
+
 class IConstTypeExpressionVisitor
 {
    public:
     virtual ~IConstTypeExpressionVisitor() = default;
 
     virtual void Visit(const StructExpression& struct_expression) = 0;
+    virtual void Visit([[maybe_unused]] const EnumExpression& enum_expression) {}
 };
 
 class ITypeExpressionVisitor
@@ -47,6 +65,7 @@ class ITypeExpressionVisitor
     virtual ~ITypeExpressionVisitor() = default;
 
     virtual void Visit(StructExpression& struct_expression) = 0;
+    virtual void Visit([[maybe_unused]] EnumExpression& enum_expression) {}
 };
 
 };  // namespace l0

@@ -82,7 +82,9 @@ class Parser : public IParser
     std::shared_ptr<TypeAnnotation> ParseMethodTypeAnnotation();
     std::shared_ptr<ParameterListAnnotation> ParseParameterListAnnotation();
     std::shared_ptr<TypeExpression> ParseStruct();
-    std::shared_ptr<StructMemberDeclarationList> ParseMemberDeclarationList();
+    std::shared_ptr<StructMemberDeclarationList> ParseStructMemberDeclarationList();
+    std::shared_ptr<TypeExpression> ParseEnum();
+    std::shared_ptr<EnumMemberDeclarationList> ParseEnumMemberDeclarationList();
 
     std::shared_ptr<Statement> ParseAlternativeFunctionDeclaration();
     std::shared_ptr<Statement> ParseAlternativeStructDeclaration();
