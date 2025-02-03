@@ -1,6 +1,7 @@
 #include "l0/semantics/global_scope_builder.h"
 
 #include <format>
+#include <ranges>
 
 #include "l0/ast/statement.h"
 #include "l0/ast/type_expression.h"
@@ -43,7 +44,7 @@ void GlobalScopeBuilder::FillTypeDetails(std::shared_ptr<TypeDeclaration> type_d
         auto enum_type = dynamic_pointer_cast<EnumType>(type_declaration->type);
         if (!enum_type)
         {
-            throw SemanticError("Expected type of type declaration to be of enum type.");
+            throw SemanticError("Expected type of type declaration to be enum type.");
         }
         FillEnumDetails(enum_type, enum_expression);
     }
@@ -92,9 +93,14 @@ void GlobalScopeBuilder::FillStructDetails(
 
 void GlobalScopeBuilder::FillEnumDetails(std::shared_ptr<EnumType> type, std::shared_ptr<EnumExpression> definition)
 {
-    for (auto& member : *definition->members)
+    for (const auto& [index, member] : *definition->members | std::views::enumerate)
     {
         type->members->push_back(std::make_shared<EnumMember>(member->name));
+
+        Identifier full_member_name{{type->name, member->name}};
+
+        module_.globals->DeclareVariable(full_member_name);
+        module_.globals->SetVariableType(full_member_name, type);
     }
 }
 

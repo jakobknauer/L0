@@ -179,7 +179,7 @@ void Typechecker::Visit(const BinaryOp& binary_op)
 
 void Typechecker::Visit(const Variable& variable)
 {
-    variable.type = variable.scope->GetVariableType(variable.name.last());
+    variable.type = variable.scope->GetVariableType(variable.name);
 }
 
 void Typechecker::Visit(const MemberAccessor& member_accessor)
@@ -280,7 +280,7 @@ void Typechecker::Visit(const Function& function)
         {
             capture->Accept(*this);
             auto capture_type = capture->type;
-            function.locals->SetVariableType(capture->name.last(), capture_type);
+            function.locals->SetVariableType(capture->name, capture_type);
         }
     }
 

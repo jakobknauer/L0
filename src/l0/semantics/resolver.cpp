@@ -145,7 +145,7 @@ void Resolver::Visit(const Function& function)
         for (const auto& capture : *function.captures)
         {
             capture->Accept(*this);
-            function.locals->DeclareVariable(capture->name.last());
+            function.locals->DeclareVariable(capture->name);
         }
     }
 
@@ -207,12 +207,12 @@ std::shared_ptr<Scope> Resolver::Resolve(const Identifier& identifier)
 {
     for (auto scope : scopes_ | std::views::reverse)
     {
-        if (scope->IsVariableDeclared(identifier.last()))
+        if (scope->IsVariableDeclared(identifier))
         {
             return scope;
         }
     }
-    throw SemanticError(std::format("Cannot resolve variable '{}'.", identifier.last()));
+    throw SemanticError(std::format("Cannot resolve variable '{}'.", identifier.ToString()));
 }
 
 }  // namespace l0

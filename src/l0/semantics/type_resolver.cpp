@@ -47,27 +47,27 @@ std::shared_ptr<FunctionType> TypeResolver::Convert(const Function& function)
 std::shared_ptr<Scope> TypeResolver::Resolve(const Identifier& identifier)
 {
     // TODO reverse order?
-    if (module_.environment->IsTypeDeclared(identifier.last()))
+    if (module_.environment->IsTypeDeclared(identifier.ToString()))
     {
         return module_.environment;
     }
-    if (module_.externals->IsTypeDeclared(identifier.last()))
+    if (module_.externals->IsTypeDeclared(identifier.ToString()))
     {
         return module_.externals;
     }
-    else if (module_.globals->IsTypeDeclared(identifier.last()))
+    else if (module_.globals->IsTypeDeclared(identifier.ToString()))
     {
         return module_.globals;
     }
     else
     {
-        throw SemanticError(std::format("Cannot resolve type name '{}'.", identifier.last()));
+        throw SemanticError(std::format("Cannot resolve type name '{}'.", identifier.ToString()));
     }
 }
 
 std::shared_ptr<Type> TypeResolver::GetTypeByName(const Identifier& identifier)
 {
-    return Resolve(identifier)->GetTypeDefinition(identifier.last());
+    return Resolve(identifier)->GetTypeDefinition(identifier.ToString());
 }
 
 void TypeResolver::Visit(const SimpleTypeAnnotation& sta)
