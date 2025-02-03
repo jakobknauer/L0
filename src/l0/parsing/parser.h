@@ -92,6 +92,7 @@ class Parser : public IParser
 
     std::shared_ptr<Statement> ParseAlternativeFunctionDeclaration();
     std::shared_ptr<Statement> ParseAlternativeStructDeclaration();
+    std::shared_ptr<Statement> ParseAlternativeEnumDeclaration();
     std::shared_ptr<Statement> ParseAlternativeMethodDeclaration();
 
     Identifier ParseIdentifier();

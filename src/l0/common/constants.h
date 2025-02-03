@@ -11,7 +11,7 @@ namespace l0::Keyword
 constexpr std::string_view Constant{"const"};
 constexpr std::string_view Delete{"delete"};
 constexpr std::string_view Else{"else"};
-constexpr std::string_view Enum{"enum"};
+constexpr std::string_view Enumeration{"enum"};
 constexpr std::string_view False{"false"};
 constexpr std::string_view Function{"fn"};
 constexpr std::string_view If{"if"};

@@ -221,6 +221,10 @@ std::shared_ptr<Statement> Parser::ParseStatement()
     {
         return ParseAlternativeStructDeclaration();
     }
+    else if (PeekIsKeyword(Keyword::Enumeration))
+    {
+        return ParseAlternativeEnumDeclaration();
+    }
     else if (PeekIsKeyword(Keyword::Method))
     {
         return ParseAlternativeMethodDeclaration();
@@ -240,7 +244,7 @@ std::shared_ptr<Statement> Parser::ParseDeclaration()
             auto definition = ParseStruct();
             return std::make_shared<TypeDeclaration>(std::any_cast<std::string>(identifier.data), definition);
         }
-        else if (PeekIsKeyword(Keyword::Enum))
+        else if (PeekIsKeyword(Keyword::Enumeration))
         {
             auto definition = ParseEnum();
             return std::make_shared<TypeDeclaration>(std::any_cast<std::string>(identifier.data), definition);
@@ -1011,7 +1015,7 @@ std::shared_ptr<StructMemberDeclarationList> Parser::ParseStructMemberDeclaratio
 
 std::shared_ptr<TypeExpression> Parser::ParseEnum()
 {
-    ExpectKeyword(Keyword::Enum);
+    ExpectKeyword(Keyword::Enumeration);
     auto members = ParseEnumMemberDeclarationList();
     return std::make_shared<EnumExpression>(members);
 }
@@ -1090,6 +1094,17 @@ std::shared_ptr<Statement> Parser::ParseAlternativeStructDeclaration()
 
     auto struct_expression = std::make_shared<StructExpression>(members);
     return std::make_shared<TypeDeclaration>(std::any_cast<std::string>(identifier.data), struct_expression);
+}
+
+std::shared_ptr<Statement> Parser::ParseAlternativeEnumDeclaration()
+{
+    ExpectKeyword(Keyword::Enumeration);
+    auto identifier = Expect(TokenType::Identifier);
+
+    auto members = ParseEnumMemberDeclarationList();
+
+    auto enum_expression = std::make_shared<EnumExpression>(members);
+    return std::make_shared<TypeDeclaration>(std::any_cast<std::string>(identifier.data), enum_expression);
 }
 
 std::shared_ptr<Statement> Parser::ParseAlternativeMethodDeclaration()

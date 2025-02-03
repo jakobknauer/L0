@@ -348,7 +348,7 @@ void AstPrinter::Visit(const StructExpression& struct_expression)
 
 void AstPrinter::Visit(const EnumExpression& enum_expression)
 {
-    out_ << Keyword::Enum;
+    out_ << Keyword::Enumeration;
     out_ << "\n{\n";
     ++indent_;
     for (const auto& member : *enum_expression.members)
