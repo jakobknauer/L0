@@ -527,6 +527,7 @@ void Generator::Visit(const BinaryOp& binary_op)
         case Overload::BooleanEquality:
         case Overload::IntegerEquality:
         case Overload::CharacterEquality:
+        case Overload::EnumMemberEquality:
         {
             auto result = builder_.CreateICmpEQ(left, right, "eqtmp");
             result_store_.SetResult(result);
@@ -535,6 +536,7 @@ void Generator::Visit(const BinaryOp& binary_op)
         case Overload::BooleanInequality:
         case Overload::IntegerInequality:
         case Overload::CharacterInequality:
+        case Overload::EnumMemberInequality:
         {
             auto result = builder_.CreateICmpNE(left, right, "netmp");
             result_store_.SetResult(result);

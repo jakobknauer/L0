@@ -113,6 +113,8 @@ class BinaryOp : public Expression
         IntegerRemainder,
         IntegerSubtraction,
         ReferenceIndexation,
+        EnumMemberEquality,
+        EnumMemberInequality
     };
 
     BinaryOp(std::shared_ptr<Expression> left, std::shared_ptr<Expression> right, Operator op);

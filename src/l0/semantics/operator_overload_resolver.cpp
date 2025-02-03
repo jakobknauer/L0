@@ -119,6 +119,19 @@ OperatorOverloadResolver::BinaryOpResolution OperatorOverloadResolver::ResolveBi
             return {lhs, BinaryOp::Overload::ReferenceIndexation};
         }
     }
+    if (op == BinaryOp::Operator::EqualsEquals || op == BinaryOp::Operator::BangEquals)
+    {
+        auto lhs_as_enum = dynamic_pointer_cast<EnumType>(lhs);
+        auto rhs_as_enum = dynamic_pointer_cast<EnumType>(rhs);
+
+        if (lhs_as_enum && rhs_as_enum && *lhs_as_enum == *rhs_as_enum)
+        {
+            auto boolean = std::make_shared<BooleanType>(TypeQualifier::Constant);
+            auto overload = (op == BinaryOp::Operator::EqualsEquals) ? BinaryOp::Overload::EnumMemberEquality
+                                                                     : BinaryOp::Overload::EnumMemberInequality;
+            return {boolean, overload};
+        }
+    }
 
     if (!binary_operator_overloads_.contains(op))
     {
