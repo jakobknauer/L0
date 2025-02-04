@@ -55,7 +55,7 @@ void BinaryOp::Accept(IExpressionVisitor& visitor)
     visitor.Visit(*this);
 }
 
-Variable::Variable(std::string name)
+Variable::Variable(Identifier name)
     : name{name}
 {
 }

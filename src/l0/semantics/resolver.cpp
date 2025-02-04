@@ -201,16 +201,18 @@ void Resolver::Visit(const StructExpression& struct_expression)
     }
 }
 
-std::shared_ptr<Scope> Resolver::Resolve(const std::string name)
+void Resolver::Visit(const EnumExpression&) {}
+
+std::shared_ptr<Scope> Resolver::Resolve(const Identifier& identifier)
 {
     for (auto scope : scopes_ | std::views::reverse)
     {
-        if (scope->IsVariableDeclared(name))
+        if (scope->IsVariableDeclared(identifier))
         {
             return scope;
         }
     }
-    throw SemanticError(std::format("Cannot resolve variable '{}'.", name));
+    throw SemanticError(std::format("Cannot resolve variable '{}'.", identifier.ToString()));
 }
 
 }  // namespace l0

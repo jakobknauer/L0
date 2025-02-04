@@ -2,8 +2,9 @@
 #define L0_AST_TYPE_ANNOTATION_H
 
 #include <memory>
-#include <string>
 #include <vector>
+
+#include "l0/ast/identifier.h"
 
 namespace l0
 {
@@ -30,11 +31,11 @@ class TypeAnnotation
 class SimpleTypeAnnotation : public TypeAnnotation
 {
    public:
-    SimpleTypeAnnotation(std::string type);
+    SimpleTypeAnnotation(Identifier type_name);
 
     void Accept(ITypeAnnotationVisitor& visitor) const override;
 
-    std::string type;
+    Identifier type_name;
 };
 
 class ReferenceTypeAnnotation : public TypeAnnotation

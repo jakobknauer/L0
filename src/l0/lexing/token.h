@@ -52,6 +52,7 @@ enum class TokenType
     Arrow,
     Dollar,
     ColonEquals,
+    ColonColon,
 };
 
 std::string str(TokenType type);

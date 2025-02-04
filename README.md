@@ -28,6 +28,7 @@ You can find more examples in [the examples directory](examples):
 - [References and Dynamic Allocations](examples/references/references.l0)
 - [Functions](examples/functions/functions.l0)
 - [Structs](examples/structs/structs.l0)
+- [Enums](examples/enums/enums.l0)
 - [Closures](examples/closures/closures.l0)
 - [An interactive program for computing faculties](examples/faculty). This includes a String struct representing strings of dynamic size, conversion from and to integers, etc.
 

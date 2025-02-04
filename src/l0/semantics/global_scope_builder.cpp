@@ -1,6 +1,7 @@
 #include "l0/semantics/global_scope_builder.h"
 
 #include <format>
+#include <ranges>
 
 #include "l0/ast/statement.h"
 #include "l0/ast/type_expression.h"
@@ -29,19 +30,35 @@ void GlobalScopeBuilder::Run()
 
 void GlobalScopeBuilder::FillTypeDetails(std::shared_ptr<TypeDeclaration> type_declaration)
 {
-    auto struct_expression = dynamic_pointer_cast<StructExpression>(type_declaration->definition);
-    if (!struct_expression)
+    if (auto struct_expression = dynamic_pointer_cast<StructExpression>(type_declaration->definition))
     {
-        throw SemanticError("Only structs expressions are allowed as type definitions.");
+        auto struct_type = dynamic_pointer_cast<StructType>(type_declaration->type);
+        if (!struct_type)
+        {
+            throw SemanticError("Expected type of type declaration to be of struct type.");
+        }
+        FillStructDetails(struct_type, struct_expression);
     }
-
-    auto struct_type = dynamic_pointer_cast<StructType>(type_declaration->type);
-    if (!struct_type)
+    else if (auto enum_expression = dynamic_pointer_cast<EnumExpression>(type_declaration->definition))
     {
-        throw SemanticError("Expected type of type declaration to be of struct type.");
+        auto enum_type = dynamic_pointer_cast<EnumType>(type_declaration->type);
+        if (!enum_type)
+        {
+            throw SemanticError("Expected type of type declaration to be enum type.");
+        }
+        FillEnumDetails(enum_type, enum_expression);
     }
+    else
+    {
+        throw SemanticError("Only struct or enum expressions are allowed as type definitions.");
+    }
+}
 
-    for (auto& member_declaration : *struct_expression->members)
+void GlobalScopeBuilder::FillStructDetails(
+    std::shared_ptr<StructType> type, std::shared_ptr<StructExpression> definition
+)
+{
+    for (auto& member_declaration : *definition->members)
     {
         auto member = std::make_shared<StructMember>();
         member->name = member_declaration->variable;
@@ -60,17 +77,30 @@ void GlobalScopeBuilder::FillTypeDetails(std::shared_ptr<TypeDeclaration> type_d
 
         if (member->default_initializer)
         {
-            member->default_initializer_global_name = std::format("{}::{}", struct_type->name, member->name);
+            member->default_initializer_global_name = std::format("{}::{}", type->name, member->name);
             module_.globals->DeclareVariable(*member->default_initializer_global_name);
             module_.globals->SetVariableType(*member->default_initializer_global_name, member->type);
         }
         if (auto function = std::dynamic_pointer_cast<Function>(member->default_initializer))
         {
-            function->global_name = std::format("__fn__{}::{}", struct_type->name, member->name);
+            function->global_name = std::format("__fn__{}::{}", type->name, member->name);
             module_.callables.push_back(function);
         }
 
-        struct_type->members->push_back(member);
+        type->members->push_back(member);
+    }
+}
+
+void GlobalScopeBuilder::FillEnumDetails(std::shared_ptr<EnumType> type, std::shared_ptr<EnumExpression> definition)
+{
+    for (const auto& [index, member] : *definition->members | std::views::enumerate)
+    {
+        type->members->push_back(std::make_shared<EnumMember>(member->name));
+
+        Identifier full_member_name{{type->name, member->name}};
+
+        module_.globals->DeclareVariable(full_member_name);
+        module_.globals->SetVariableType(full_member_name, type);
     }
 }
 

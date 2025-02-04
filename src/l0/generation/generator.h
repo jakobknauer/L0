@@ -47,6 +47,8 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
     void DeclareCallable(std::shared_ptr<Function> function);
 
     void DefineTypes();
+    void DefineStructType(const StructType& type);
+    void DefineEnumType(const EnumType& type);
     void DefineGlobalVariables();
     void DefineCallables();
 

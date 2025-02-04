@@ -44,35 +44,35 @@ std::shared_ptr<FunctionType> TypeResolver::Convert(const Function& function)
     return std::make_shared<FunctionType>(parameters, return_type, TypeQualifier::Constant);
 }
 
-std::shared_ptr<Scope> TypeResolver::Resolve(std::string_view name)
+std::shared_ptr<Scope> TypeResolver::Resolve(const Identifier& identifier)
 {
     // TODO reverse order?
-    if (module_.environment->IsTypeDeclared(name))
+    if (module_.environment->IsTypeDeclared(identifier.ToString()))
     {
         return module_.environment;
     }
-    if (module_.externals->IsTypeDeclared(name))
+    if (module_.externals->IsTypeDeclared(identifier.ToString()))
     {
         return module_.externals;
     }
-    else if (module_.globals->IsTypeDeclared(name))
+    else if (module_.globals->IsTypeDeclared(identifier.ToString()))
     {
         return module_.globals;
     }
     else
     {
-        throw SemanticError(std::format("Cannot resolve type name '{}'.", name));
+        throw SemanticError(std::format("Cannot resolve type name '{}'.", identifier.ToString()));
     }
 }
 
-std::shared_ptr<Type> TypeResolver::GetTypeByName(std::string_view name)
+std::shared_ptr<Type> TypeResolver::GetTypeByName(const Identifier& identifier)
 {
-    return Resolve(name)->GetTypeDefinition(name);
+    return Resolve(identifier)->GetTypeDefinition(identifier.ToString());
 }
 
 void TypeResolver::Visit(const SimpleTypeAnnotation& sta)
 {
-    auto type = GetTypeByName(sta.type);
+    auto type = GetTypeByName(sta.type_name);
     auto mutability = Convert(sta.mutability);
     result_ = ModifyQualifier(*type, mutability);
 }

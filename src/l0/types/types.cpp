@@ -223,6 +223,31 @@ bool StructType::Equals(const Type& other) const
     return this->name == real_other->name;
 }
 
+EnumType::EnumType(std::string name, std::shared_ptr<EnumMemberList> members, TypeQualifier mutability)
+    : Type{mutability},
+      name{name},
+      members{members}
+{
+}
+
+std::string EnumType::ToString() const
+{
+    return str(mutability) + name;
+}
+
+void EnumType::Accept(IConstTypeVisitor& visitor) const
+{
+    visitor.Visit(*this);
+}
+
+bool EnumType::Equals(const Type& other) const
+{
+    const EnumType* real_other = static_cast<const EnumType*>(&other);
+
+    // TODO proper check?
+    return this->name == real_other->name;
+}
+
 namespace
 {
 
@@ -273,6 +298,11 @@ class ModifyQualifierVisitor : private IConstTypeVisitor
     void Visit(const StructType& struct_type)
     {
         result_ = std::make_shared<StructType>(struct_type.name, struct_type.members, qualifier_);
+    }
+
+    void Visit(const EnumType& enum_type)
+    {
+        result_ = std::make_shared<EnumType>(enum_type.name, enum_type.members, qualifier_);
     }
 };
 

@@ -28,6 +28,7 @@ class TypeConverter : private IConstTypeVisitor
     void Visit(const CharacterType& character_type) override;
     void Visit(const FunctionType& function_type) override;
     void Visit(const StructType& struct_type) override;
+    void Visit(const EnumType& enum_type) override;
 
     llvm::LLVMContext& context_;
     llvm::Type* result_;

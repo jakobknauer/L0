@@ -45,8 +45,9 @@ class Resolver : private IConstExpressionVisitor, private IConstStatementVisitor
     void Visit(const Allocation& allocation) override;
 
     void Visit(const StructExpression& struct_expression) override;
+    void Visit(const EnumExpression& enum_expression) override;
 
-    std::shared_ptr<Scope> Resolve(const std::string name);
+    std::shared_ptr<Scope> Resolve(const Identifier& identifier);
 };
 
 }  // namespace l0

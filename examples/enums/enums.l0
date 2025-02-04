@@ -1,0 +1,45 @@
+enum CharacterType
+{
+    Alpha;
+    Num;
+    Punctuation;
+};
+
+fn classify (c : C8) -> CharacterType
+{
+    if (c - '0') >= 0 && ('9' - c) >= 0:
+    {
+        return CharacterType::Num;
+    }
+    else if (c - 'A' >= 0 && 'Z' - c >= 0) || (c - 'a' >= 0 && 'z' - c >= 0):
+    {
+        return CharacterType::Alpha;
+    }
+    else:
+    {
+        return CharacterType::Punctuation;
+    };
+};
+
+fn to_string (c : CharacterType) -> CString
+{
+    if c == CharacterType::Alpha:
+    {
+        return "Alpha";
+    }
+    else if c == CharacterType::Num:
+    {
+        return "Num";
+    }
+    else:
+    {
+        return "Punctuation";
+    };
+};
+
+fn main () -> ()
+{
+    c := getchar();
+    classification := classify(c);
+    printf(to_string(classification)); 
+};

@@ -159,6 +159,25 @@ class StructType : public Type
     bool Equals(const Type& other) const override;
 };
 
+using EnumMember = std::string;
+using EnumMemberList = std::vector<std::shared_ptr<EnumMember>>;
+
+class EnumType : public Type
+{
+   public:
+    EnumType(std::string name, std::shared_ptr<EnumMemberList> members, TypeQualifier mutability);
+
+    std::string ToString() const override;
+
+    void Accept(IConstTypeVisitor& visitor) const override;
+
+    const std::string name;
+    std::shared_ptr<EnumMemberList> members;
+
+   protected:
+    bool Equals(const Type& other) const override;
+};
+
 class IConstTypeVisitor
 {
    public:
@@ -171,6 +190,7 @@ class IConstTypeVisitor
     virtual void Visit(const CharacterType& integer_type) = 0;
     virtual void Visit(const FunctionType& function_type) = 0;
     virtual void Visit(const StructType& struct_type) = 0;
+    virtual void Visit(const EnumType& struct_type) = 0;
 };
 
 std::shared_ptr<Type> ModifyQualifier(const Type& type, TypeQualifier qualifier);

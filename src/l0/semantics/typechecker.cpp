@@ -226,7 +226,7 @@ void Typechecker::Visit(const MemberAccessor& member_accessor)
     member_accessor.dereferenced_object_type = dereferenced_object_type_as_struct;
     member_accessor.dereferenced_object = dereferenced_object;
     member_accessor.dereferenced_object_type_scope =
-        type_resolver_.Resolve(member_accessor.dereferenced_object_type->name);
+        type_resolver_.Resolve(Identifier{member_accessor.dereferenced_object_type->name});  // TODO find clean solution
     member_accessor.nonstatic_member_index =
         dereferenced_object_type_as_struct->GetNonstaticMemberIndex(member_accessor.member);
     member_accessor.type = member_type;
@@ -359,7 +359,7 @@ void Typechecker::Visit(const Initializer& initializer)
     }
 
     initializer.type = annotated_type;
-    initializer.type_scope = type_resolver_.Resolve(struct_type->name);
+    initializer.type_scope = type_resolver_.Resolve(Identifier{struct_type->name});
 }
 
 void Typechecker::Visit(const Allocation& allocation)

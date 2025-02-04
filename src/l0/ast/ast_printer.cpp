@@ -301,7 +301,7 @@ void AstPrinter::Visit(const Allocation& allocation)
 void AstPrinter::Visit(const SimpleTypeAnnotation& sta)
 {
     PrintQualifier(sta.mutability);
-    out_ << sta.type;
+    out_ << sta.type_name;
 }
 
 void AstPrinter::Visit(const ReferenceTypeAnnotation& rta)
@@ -341,6 +341,19 @@ void AstPrinter::Visit(const StructExpression& struct_expression)
     for (const auto& statement : *struct_expression.members)
     {
         Print(*statement);
+    }
+    --indent_;
+    out_ << "}";
+}
+
+void AstPrinter::Visit(const EnumExpression& enum_expression)
+{
+    out_ << Keyword::Enumeration;
+    out_ << "\n{\n";
+    ++indent_;
+    for (const auto& member : *enum_expression.members)
+    {
+        out_ << member->name << ";\n";
     }
     --indent_;
     out_ << "}";

@@ -3,6 +3,7 @@
 #include <format>
 #include <ranges>
 
+#include "l0/ast/identifier.h"
 #include "l0/common/constants.h"
 
 namespace l0
@@ -28,6 +29,7 @@ Lexer::Lexer(std::istream& input)
           Keyword::Constant,
           Keyword::Delete,
           Keyword::Else,
+          Keyword::Enumeration,
           Keyword::False,
           Keyword::Function,
           Keyword::If,
@@ -76,6 +78,7 @@ Lexer::Lexer(std::istream& input)
         {":=", TokenType::ColonEquals},
         {"<=", TokenType::LessEquals},
         {">=", TokenType::GreaterEquals},
+        {"::", TokenType::ColonColon},
     };
 
     for (auto c : single_character_operators_ | std::views::keys)

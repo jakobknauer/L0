@@ -162,6 +162,8 @@ void ReferencePass::Visit(StructExpression& struct_expression)
     }
 }
 
+void ReferencePass::Visit(EnumExpression&) {}
+
 bool ReferencePass::IsLValue(std::shared_ptr<Expression> value) const
 {
     if (auto variable = dynamic_pointer_cast<Variable>(value))
