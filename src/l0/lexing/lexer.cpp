@@ -257,7 +257,7 @@ Token Lexer::ReadCharacterLiteral()
     }
     Read();
 
-    char8_t character = current_;
+    char character = current_;
     if (character == '\\')
     {
         Read();
