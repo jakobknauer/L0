@@ -114,7 +114,6 @@ void AstPrinter::Visit(const ConditionalStatement& conditional_statement)
 
     if (conditional_statement.else_block)
     {
-        return;
         out_ << "\n" << Keyword::Else << "\n";
         conditional_statement.else_block->Accept(*this);
     }

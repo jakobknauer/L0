@@ -274,7 +274,7 @@ Token Lexer::ReadCharacterLiteral()
     Skip();
     return Token{
         .type = TokenType::CharacterLiteral,
-        .lexeme = std::format("'{}'", character),
+        .lexeme = std::format("'{}'", (char)character),
         .data = character,
     };
 }
