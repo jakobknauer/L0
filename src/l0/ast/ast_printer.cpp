@@ -8,6 +8,8 @@
 namespace l0
 {
 
+using namespace detail;
+
 template <std::ranges::input_range R, class UnaryFunc, class InterleaveUnaryFunc>
 void interleaved_for_each(R&& r, UnaryFunc f, InterleaveUnaryFunc interleave)
 {
@@ -204,12 +206,12 @@ void AstPrinter::Visit(const IntegerLiteral& literal)
 
 void AstPrinter::Visit(const CharacterLiteral& literal)
 {
-    out_ << "'" << static_cast<char>(literal.value) << "'";
+    out_ << "'" << sanitize_escape_sequences(static_cast<char>(literal.value)) << "'";
 }
 
 void AstPrinter::Visit(const StringLiteral& literal)
 {
-    out_ << "\"" << literal.value << "\"";
+    out_ << "\"" << sanitize_escape_sequences(literal.value) << "\"";
 }
 
 void AstPrinter::Visit(const Function& function)
@@ -379,6 +381,9 @@ void AstPrinter::PrintQualifier(TypeAnnotationQualifier qualifier, std::string e
     }
 }
 
+namespace detail
+{
+
 std::string str(UnaryOp::Operator op)
 {
     switch (op)
@@ -430,5 +435,38 @@ std::string str(BinaryOp::Operator op)
     }
     std::unreachable();
 }
+
+std::string sanitize_escape_sequences(std::string_view str)
+{
+    using std::string_literals::operator""s;
+    static constexpr std::array<std::pair<std::string, std::string>, 6> ESCAPE_SEQUENCES = {
+        std::make_pair("\\", "\\\\"),
+        std::make_pair("\"", "\\\""),
+        std::make_pair("\'", "\\\'"),
+        std::make_pair("\n", "\\n"),
+        std::make_pair("\t", "\\t"),
+        std::make_pair("\0"s, "\\0"),
+    };
+
+    std::string output{str};
+    for (const auto& [pattern, replacement] : ESCAPE_SEQUENCES)
+    {
+        size_t pos = 0;
+        while ((pos = output.find(pattern, pos)) != std::string::npos)
+        {
+            output.replace(pos, pattern.length(), replacement);
+            pos += replacement.length();
+        }
+    }
+    return output;
+}
+
+std::string sanitize_escape_sequences(char chr)
+{
+    std::string str{1, chr};
+    return sanitize_escape_sequences(str);
+}
+
+}  // namespace detail
 
 }  // namespace l0
