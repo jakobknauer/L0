@@ -60,8 +60,16 @@ class AstPrinter : IConstExpressionVisitor, IConstStatementVisitor, ITypeAnnotat
     detail::Indent indent_;
 };
 
+namespace detail
+{
+
 std::string str(UnaryOp::Operator op);
 std::string str(BinaryOp::Operator op);
+
+std::string sanitize_escape_sequences(std::string_view str);
+std::string sanitize_escape_sequences(char chr);
+
+}  // namespace detail
 
 }  // namespace l0
 
