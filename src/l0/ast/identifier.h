@@ -17,6 +17,7 @@ class Identifier
     Identifier(std::vector<std::string> parts);
 
     std::string ToString() const;
+    Identifier GetPrefix() const;
 
     bool operator==(const Identifier& other) const;
     Identifier& operator+=(const Identifier& other);

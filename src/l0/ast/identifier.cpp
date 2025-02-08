@@ -40,6 +40,12 @@ std::string Identifier::ToString() const
     return ss.str();
 }
 
+Identifier Identifier::GetPrefix() const
+{
+    std::vector prefix(std::begin(parts), std::end(parts) - 1);
+    return Identifier{prefix};
+}
+
 bool Identifier::operator==(const Identifier& other) const
 {
     return this->parts == other.parts;
