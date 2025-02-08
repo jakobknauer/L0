@@ -46,16 +46,15 @@ std::shared_ptr<FunctionType> TypeResolver::Convert(const Function& function)
 
 std::shared_ptr<Scope> TypeResolver::Resolve(const Identifier& identifier)
 {
-    // TODO reverse order?
-    if (module_.environment->IsTypeDeclared(identifier.ToString()))
+    if (module_.environment->IsTypeDeclared(identifier))
     {
         return module_.environment;
     }
-    if (module_.externals->IsTypeDeclared(identifier.ToString()))
+    if (module_.externals->IsTypeDeclared(identifier))
     {
         return module_.externals;
     }
-    else if (module_.globals->IsTypeDeclared(identifier.ToString()))
+    else if (module_.globals->IsTypeDeclared(identifier))
     {
         return module_.globals;
     }
@@ -67,7 +66,7 @@ std::shared_ptr<Scope> TypeResolver::Resolve(const Identifier& identifier)
 
 std::shared_ptr<Type> TypeResolver::GetTypeByName(const Identifier& identifier)
 {
-    return Resolve(identifier)->GetTypeDefinition(identifier.ToString());
+    return Resolve(identifier)->GetTypeDefinition(identifier);
 }
 
 void TypeResolver::Visit(const SimpleTypeAnnotation& sta)

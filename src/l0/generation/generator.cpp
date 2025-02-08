@@ -74,7 +74,7 @@ void Generator::DeclareTypes()
         auto type = ast_module_.externals->GetTypeDefinition(type_name);
         if (dynamic_pointer_cast<StructType>(type))
         {
-            llvm::StructType::create(context_, type_name);
+            llvm::StructType::create(context_, type_name.ToString());
         }
     }
     for (const auto& type_name : ast_module_.globals->GetTypes())
@@ -82,7 +82,7 @@ void Generator::DeclareTypes()
         auto type = ast_module_.globals->GetTypeDefinition(type_name);
         if (dynamic_pointer_cast<StructType>(type))
         {
-            llvm::StructType::create(context_, type_name);
+            llvm::StructType::create(context_, type_name.ToString());
         }
     }
 }
@@ -109,7 +109,7 @@ void Generator::DeclareEnvironmentVariables()
             true,
             llvm::GlobalValue::InternalLinkage,
             closure,
-            std::format("{}", environment_symbol.ToString())
+            environment_symbol.ToString()
         );
         ast_module_.environment->SetLLVMValue(environment_symbol, global_var);
     }

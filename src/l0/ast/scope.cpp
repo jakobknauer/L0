@@ -3,135 +3,135 @@
 namespace l0
 {
 
-void Scope::DeclareVariable(Identifier name)
+void Scope::DeclareVariable(Identifier identifier)
 {
-    if (IsVariableDeclared(name))
+    if (IsVariableDeclared(identifier))
     {
-        throw ScopeError(std::format("Variable was '{}' declared before.", name.ToString()));
+        throw ScopeError(std::format("Variable was '{}' declared before.", identifier.ToString()));
     }
 
-    variables_.insert(name);
+    variables_.insert(identifier);
 }
 
-void Scope::DeclareVariable(Identifier name, std::shared_ptr<Type> type)
+void Scope::DeclareVariable(Identifier identifier, std::shared_ptr<Type> type)
 {
-    DeclareVariable(name);
-    SetVariableType(name, type);
+    DeclareVariable(identifier);
+    SetVariableType(identifier, type);
 }
 
-bool Scope::IsVariableDeclared(Identifier name) const
+bool Scope::IsVariableDeclared(Identifier identifier) const
 {
-    return variables_.contains(name);
+    return variables_.contains(identifier);
 }
 
-void Scope::SetVariableType(Identifier name, std::shared_ptr<Type> type)
+void Scope::SetVariableType(Identifier identifier, std::shared_ptr<Type> type)
 {
-    if (!IsVariableDeclared(name))
+    if (!IsVariableDeclared(identifier))
     {
-        throw ScopeError(std::format("Cannot set type of undeclared variable '{}'.", name.ToString()));
+        throw ScopeError(std::format("Cannot set type of undeclared variable '{}'.", identifier.ToString()));
     }
 
-    if (IsVariableTypeSet(name))
+    if (IsVariableTypeSet(identifier))
     {
-        throw ScopeError(std::format("Type of variable '{}' was set before.", name.ToString()));
+        throw ScopeError(std::format("Type of variable '{}' was set before.", identifier.ToString()));
     }
 
-    variable_types_.insert(std::make_pair(name, type));
+    variable_types_.insert(std::make_pair(identifier, type));
 }
 
-bool Scope::IsVariableTypeSet(Identifier name) const
+bool Scope::IsVariableTypeSet(Identifier identifier) const
 {
-    return variable_types_.contains(name);
+    return variable_types_.contains(identifier);
 }
 
-std::shared_ptr<Type> Scope::GetVariableType(Identifier name) const
+std::shared_ptr<Type> Scope::GetVariableType(Identifier identifier) const
 {
-    if (!IsVariableDeclared(name))
+    if (!IsVariableDeclared(identifier))
     {
-        throw ScopeError(std::format("Cannot get type of undeclared variable '{}'.", name.ToString()));
+        throw ScopeError(std::format("Cannot get type of undeclared variable '{}'.", identifier.ToString()));
     }
 
-    if (!IsVariableTypeSet(name))
+    if (!IsVariableTypeSet(identifier))
     {
-        throw ScopeError(std::format("Type of variable '{}' is undefined.", name.ToString()));
+        throw ScopeError(std::format("Type of variable '{}' is undefined.", identifier.ToString()));
     }
 
-    return variable_types_.at(name);
+    return variable_types_.at(identifier);
 }
 
-void Scope::SetLLVMValue(Identifier name, llvm::Value* llvm_value)
+void Scope::SetLLVMValue(Identifier identifier, llvm::Value* llvm_value)
 {
-    if (!IsVariableDeclared(name))
+    if (!IsVariableDeclared(identifier))
     {
-        throw ScopeError(std::format("Cannot set LLVM Value of undeclared variable '{}'.", name.ToString()));
+        throw ScopeError(std::format("Cannot set LLVM Value of undeclared variable '{}'.", identifier.ToString()));
     }
 
-    if (llvm_values_.contains(name))
+    if (llvm_values_.contains(identifier))
     {
-        throw ScopeError(std::format("LLVM Value of variable '{}' was set before.", name.ToString()));
+        throw ScopeError(std::format("LLVM Value of variable '{}' was set before.", identifier.ToString()));
     }
 
-    llvm_values_.insert({name, llvm_value});
+    llvm_values_.insert({identifier, llvm_value});
 }
 
-llvm::Value* Scope::GetLLVMValue(Identifier name) const
+llvm::Value* Scope::GetLLVMValue(Identifier identifier) const
 {
-    if (!IsVariableDeclared(name))
+    if (!IsVariableDeclared(identifier))
     {
-        throw ScopeError(std::format("Cannot get LLVM Value of undeclared variable '{}'.", name.ToString()));
+        throw ScopeError(std::format("Cannot get LLVM Value of undeclared variable '{}'.", identifier.ToString()));
     }
 
-    if (!llvm_values_.contains(name))
+    if (!llvm_values_.contains(identifier))
     {
-        throw ScopeError(std::format("LLVM Value of variable '{}' is undefined.", name.ToString()));
+        throw ScopeError(std::format("LLVM Value of variable '{}' is undefined.", identifier.ToString()));
     }
 
-    return llvm_values_.at(name);
+    return llvm_values_.at(identifier);
 }
 
-void Scope::DeclareType(std::string_view name)
+void Scope::DeclareType(Identifier identifier)
 {
-    if (IsTypeDeclared(std::string{name}))
+    if (IsTypeDeclared(identifier))
     {
-        throw ScopeError(std::format("Type '{}' was declared before.", name));
+        throw ScopeError(std::format("Type '{}' was declared before.", identifier.ToString()));
     }
 
-    types_.insert(std::string{name});
+    types_.insert(identifier);
 }
 
-bool Scope::IsTypeDeclared(std::string_view name) const
+bool Scope::IsTypeDeclared(Identifier identifier) const
 {
-    return types_.contains(std::string{name});
+    return types_.contains(identifier);
 }
 
-void Scope::DefineType(std::string_view name, std::shared_ptr<Type> type)
+void Scope::DefineType(Identifier identifier, std::shared_ptr<Type> type)
 {
-    if (!IsTypeDeclared(name))
+    if (!IsTypeDeclared(identifier))
     {
-        throw ScopeError(std::format("Type '{}' is undefined.", name));
+        throw ScopeError(std::format("Type '{}' is undefined.", identifier.ToString()));
     }
 
-    if (IsTypeDefined(name))
+    if (IsTypeDefined(identifier))
     {
-        throw ScopeError(std::format("Type '{}' was defined before.", name));
+        throw ScopeError(std::format("Type '{}' was defined before.", identifier.ToString()));
     }
 
-    type_definitions_.insert({std::string{name}, type});
+    type_definitions_.insert({identifier, type});
 }
 
-bool Scope::IsTypeDefined(std::string_view name) const
+bool Scope::IsTypeDefined(Identifier identifier) const
 {
-    return type_definitions_.contains(std::string{name});
+    return type_definitions_.contains(identifier);
 }
 
-std::shared_ptr<Type> Scope::GetTypeDefinition(std::string_view name) const
+std::shared_ptr<Type> Scope::GetTypeDefinition(Identifier identifier) const
 {
-    if (!IsTypeDefined(name))
+    if (!IsTypeDefined(identifier))
     {
-        throw ScopeError(std::format("Type '{}' is undefined.", name));
+        throw ScopeError(std::format("Type '{}' is undefined.", identifier.ToString()));
     }
 
-    return type_definitions_.at(std::string{name});
+    return type_definitions_.at(identifier);
 }
 
 void Scope::Clear()
@@ -146,25 +146,25 @@ const std::unordered_set<Identifier>& Scope::GetVariables() const
     return variables_;
 }
 
-const std::unordered_set<std::string>& Scope::GetTypes() const
+const std::unordered_set<Identifier>& Scope::GetTypes() const
 {
     return types_;
 }
 
 void Scope::UpdateTypes(const Scope& other)
 {
-    for (const auto& [name, definition] : other.type_definitions_)
+    for (const auto& [identifier, definition] : other.type_definitions_)
     {
-        DeclareType(name);
-        DefineType(name, definition);
+        DeclareType(identifier);
+        DefineType(identifier, definition);
     }
 }
 
 void Scope::UpdateVariables(const Scope& other)
 {
-    for (const auto& [name, type] : other.variable_types_)
+    for (const auto& [identifier, type] : other.variable_types_)
     {
-        DeclareVariable(name, type);
+        DeclareVariable(identifier, type);
     }
 }
 
