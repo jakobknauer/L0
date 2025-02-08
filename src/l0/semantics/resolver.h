@@ -1,6 +1,10 @@
 #ifndef L0_SEMANTICS_DECLARATION_CHECKER_H
 #define L0_SEMANTICS_DECLARATION_CHECKER_H
 
+#include <memory>
+#include <optional>
+#include <stack>
+
 #include "l0/ast/expression.h"
 #include "l0/ast/module.h"
 #include "l0/ast/scope.h"
@@ -19,6 +23,7 @@ class Resolver : private IConstExpressionVisitor, private IConstStatementVisitor
    private:
     const Module& module_;
     std::vector<std::shared_ptr<Scope>> scopes_{};
+    std::stack<Identifier> namespaces_{};
 
     void Visit(const StatementBlock& statement_block) override;
     void Visit(const Declaration& declaration) override;
@@ -47,7 +52,8 @@ class Resolver : private IConstExpressionVisitor, private IConstStatementVisitor
     void Visit(const StructExpression& struct_expression) override;
     void Visit(const EnumExpression& enum_expression) override;
 
-    std::shared_ptr<Scope> Resolve(const Identifier& identifier);
+    std::optional<std::shared_ptr<Scope>> Resolve(const Identifier& identifier);
+    std::pair<std::shared_ptr<Scope>, Identifier> Resolve(const Identifier& identifier, const Identifier& namespace_);
 };
 
 }  // namespace l0

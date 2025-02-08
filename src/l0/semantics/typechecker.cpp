@@ -15,18 +15,25 @@ Typechecker::Typechecker(Module& module)
 
 void Typechecker::Check()
 {
-    for (auto global_declaration : module_.global_declarations)
+    try
     {
-        CheckGlobalDeclaration(*global_declaration);
-    }
-
-    for (auto global_type_declaration : module_.global_type_declarations)
-    {
-        auto type = global_type_declaration->type;
-        if (auto struct_type = dynamic_pointer_cast<StructType>(type))
+        for (auto global_declaration : module_.global_declarations)
         {
-            CheckStruct(*struct_type);
+            CheckGlobalDeclaration(*global_declaration);
         }
+
+        for (auto global_type_declaration : module_.global_type_declarations)
+        {
+            auto type = global_type_declaration->type;
+            if (auto struct_type = dynamic_pointer_cast<StructType>(type))
+            {
+                CheckStruct(*struct_type);
+            }
+        }
+    }
+    catch (const ScopeError& se)
+    {
+        throw SemanticError(std::format("Caught ScopeError: '{}'.", se.GetMessage()));
     }
 }
 
@@ -182,7 +189,7 @@ void Typechecker::Visit(const BinaryOp& binary_op)
 
 void Typechecker::Visit(const Variable& variable)
 {
-    variable.type = variable.scope->GetVariableType(variable.name);
+    variable.type = variable.scope->GetVariableType(variable.resolved_name);
 }
 
 void Typechecker::Visit(const MemberAccessor& member_accessor)

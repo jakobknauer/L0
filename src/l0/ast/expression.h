@@ -140,6 +140,7 @@ class Variable : public Expression
     Identifier name;
 
     mutable std::shared_ptr<Scope> scope;
+    mutable Identifier resolved_name;
 };
 
 class MemberAccessor : public Expression

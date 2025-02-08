@@ -586,7 +586,7 @@ void Generator::Visit(const BinaryOp& binary_op)
 
 void Generator::Visit(const Variable& variable)
 {
-    llvm::Value* llvm_value = variable.scope->GetLLVMValue(variable.name);
+    llvm::Value* llvm_value = variable.scope->GetLLVMValue(variable.resolved_name);
     if (auto allocation = llvm::dyn_cast<llvm::AllocaInst>(llvm_value))
     {
         auto allocated_type = allocation->getAllocatedType();
