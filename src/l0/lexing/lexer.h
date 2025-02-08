@@ -2,7 +2,6 @@
 #define L0_LEXING_LEXER_H
 
 #include <istream>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 

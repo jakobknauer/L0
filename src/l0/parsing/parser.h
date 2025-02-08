@@ -30,6 +30,7 @@ class Parser : public IParser
    private:
     const std::vector<Token>& tokens_;
     std::size_t pos_{0};
+    Identifier current_namespace_{};
 
     Token Peek();
     Token PeekNext();
@@ -46,9 +47,12 @@ class Parser : public IParser
 
     std::shared_ptr<Module> ParseModule();
 
+    std::shared_ptr<StatementBlock> ParseNamespaceStatementBlock(TokenType delimiter);
     std::shared_ptr<StatementBlock> ParseStatementBlock(TokenType delimiter);
+    std::shared_ptr<Statement> ParseGlobalStatement();
     std::shared_ptr<Statement> ParseStatement();
     std::shared_ptr<Statement> ParseDeclaration();
+    std::variant<std::shared_ptr<Declaration>, std::shared_ptr<TypeDeclaration>> ParseGlobalDeclaration();
     std::shared_ptr<Statement> ParseUnannotatedDeclaration();
     std::shared_ptr<Statement> ParseExpressionStatement();
     std::shared_ptr<Statement> ParseReturnStatement();
@@ -90,10 +94,10 @@ class Parser : public IParser
     std::shared_ptr<TypeExpression> ParseEnum();
     std::shared_ptr<EnumMemberDeclarationList> ParseEnumMemberDeclarationList();
 
-    std::shared_ptr<Statement> ParseAlternativeFunctionDeclaration();
-    std::shared_ptr<Statement> ParseAlternativeStructDeclaration();
-    std::shared_ptr<Statement> ParseAlternativeEnumDeclaration();
-    std::shared_ptr<Statement> ParseAlternativeMethodDeclaration();
+    std::shared_ptr<Declaration> ParseAlternativeFunctionDeclaration();
+    std::shared_ptr<TypeDeclaration> ParseAlternativeStructDeclaration();
+    std::shared_ptr<TypeDeclaration> ParseAlternativeEnumDeclaration();
+    std::shared_ptr<Declaration> ParseAlternativeMethodDeclaration();
 
     Identifier ParseIdentifier();
 };

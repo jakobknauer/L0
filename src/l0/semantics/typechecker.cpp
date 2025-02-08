@@ -42,7 +42,9 @@ void Typechecker::Visit(const Declaration& declaration)
 {
     if (!declaration.initializer)
     {
-        throw SemanticError(std::format("Local variable '{}' does not have an initializer.", declaration.variable));
+        throw SemanticError(
+            std::format("Local variable '{}' does not have an initializer.", declaration.identifier.ToString())
+        );
     }
 
     declaration.initializer->Accept(*this);
@@ -52,11 +54,12 @@ void Typechecker::Visit(const Declaration& declaration)
     if (!coerced_type)
     {
         throw SemanticError(std::format(
-            "Could not coerce type annotation and initializer type for variable '{}'.", declaration.variable
+            "Could not coerce type annotation and initializer type for variable '{}'.",
+            declaration.identifier.ToString()
         ));
     }
 
-    declaration.scope->SetVariableType(declaration.variable, coerced_type);
+    declaration.scope->SetVariableType(declaration.identifier, coerced_type);
 }
 
 void Typechecker::Visit(const TypeDeclaration&)
@@ -210,7 +213,7 @@ void Typechecker::Visit(const MemberAccessor& member_accessor)
     {
         throw SemanticError(std::format(
             "Struct '{}' does not have a member named '{}'.",
-            dereferenced_object_type_as_struct->name,
+            dereferenced_object_type_as_struct->identifier.ToString(),
             member_accessor.member
         ));
     }
@@ -226,7 +229,8 @@ void Typechecker::Visit(const MemberAccessor& member_accessor)
     member_accessor.dereferenced_object_type = dereferenced_object_type_as_struct;
     member_accessor.dereferenced_object = dereferenced_object;
     member_accessor.dereferenced_object_type_scope =
-        type_resolver_.Resolve(Identifier{member_accessor.dereferenced_object_type->name});  // TODO find clean solution
+        type_resolver_.Resolve(Identifier{member_accessor.dereferenced_object_type->identifier}
+        );  // TODO find clean solution
     member_accessor.nonstatic_member_index =
         dereferenced_object_type_as_struct->GetNonstaticMemberIndex(member_accessor.member);
     member_accessor.type = member_type;
@@ -314,16 +318,18 @@ void Typechecker::Visit(const Initializer& initializer)
         const std::string& member_name = member_initializer->member;
         if (!struct_type->HasMember(member_name))
         {
-            throw SemanticError(
-                std::format("Struct '{}' does not have a member named '{}'.", struct_type->name, member_name)
-            );
+            throw SemanticError(std::format(
+                "Struct '{}' does not have a member named '{}'.", struct_type->identifier.ToString(), member_name
+            ));
         }
         auto member = struct_type->GetMember(member_initializer->member);
         if (member->is_static)
         {
-            throw SemanticError(
-                std::format("Static member '{}' of struct '{}' cannot be initialized.", member->name, struct_type->name)
-            );
+            throw SemanticError(std::format(
+                "Static member '{}' of struct '{}' cannot be initialized.",
+                member->name,
+                struct_type->identifier.ToString()
+            ));
         }
 
         if (explicitely_initialized_members.contains(member_name))
@@ -359,7 +365,7 @@ void Typechecker::Visit(const Initializer& initializer)
     }
 
     initializer.type = annotated_type;
-    initializer.type_scope = type_resolver_.Resolve(Identifier{struct_type->name});
+    initializer.type_scope = type_resolver_.Resolve(Identifier{struct_type->identifier});
 }
 
 void Typechecker::Visit(const Allocation& allocation)
@@ -515,13 +521,13 @@ void Typechecker::CheckGlobalDeclaration(const Declaration& declaration)
     declaration.initializer->Accept(*this);
     auto initializer_type = declaration.initializer->type;
 
-    auto declared_type = module_.globals->GetVariableType(declaration.variable);
+    auto declared_type = module_.globals->GetVariableType(declaration.identifier);
 
     if (!conversion_checker_.CheckCompatibility(declared_type, initializer_type))
     {
         throw SemanticError(std::format(
             "Global variable '{}' is declared with type '{}', but initializer is of incompatible type '{}'.",
-            declaration.variable,
+            declaration.identifier.ToString(),
             declared_type->ToString(),
             initializer_type->ToString()
         ));

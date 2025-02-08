@@ -41,11 +41,11 @@ void Resolver::Visit(const Declaration& declaration)
     }
 
     auto scope = scopes_.back();
-    if (scope->IsVariableDeclared(declaration.variable))
+    if (scope->IsVariableDeclared(declaration.identifier))
     {
-        throw SemanticError(std::format("Duplicate declaration of local variable '{}'.", declaration.variable));
+        throw SemanticError(std::format("Duplicate declaration of local variable '{}'.", declaration.identifier.ToString()));
     }
-    scope->DeclareVariable(declaration.variable);
+    scope->DeclareVariable(declaration.identifier);
     declaration.scope = scope;
 }
 

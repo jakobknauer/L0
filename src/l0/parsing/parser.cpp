@@ -171,8 +171,39 @@ Token Parser::ConsumeAll(TokenType type)
 std::shared_ptr<Module> Parser::ParseModule()
 {
     auto module = std::make_shared<Module>();
-    module->statements = ParseStatementBlock(TokenType::EndOfFile);
+    module->statements = ParseNamespaceStatementBlock(TokenType::EndOfFile);
     return module;
+}
+
+std::shared_ptr<StatementBlock> Parser::ParseNamespaceStatementBlock(TokenType delimiter)
+{
+    std::vector<std::shared_ptr<Statement>> statements{};
+    while (ConsumeAll(TokenType::Semicolon).type != delimiter)
+    {
+        if (ConsumeIfKeyword(Keyword::Namespace))
+        {
+            auto namespace_name = ParseIdentifier();
+            auto old_namespace = current_namespace_;
+            current_namespace_ += namespace_name;
+
+            Expect(TokenType::OpeningBrace);
+            auto nested_statements = ParseNamespaceStatementBlock(TokenType::ClosingBrace);
+            Expect(TokenType::ClosingBrace);
+
+            statements.insert(
+                std::end(statements), std::begin(nested_statements->statements), std::end(nested_statements->statements)
+            );
+
+            current_namespace_ = old_namespace;
+        }
+        else
+        {
+            auto statement = ParseGlobalStatement();
+            Expect(TokenType::Semicolon);
+            statements.push_back(statement);
+        }
+    }
+    return std::make_shared<StatementBlock>(statements);
 }
 
 std::shared_ptr<StatementBlock> Parser::ParseStatementBlock(TokenType delimiter)
@@ -185,6 +216,53 @@ std::shared_ptr<StatementBlock> Parser::ParseStatementBlock(TokenType delimiter)
         statements.push_back(statement);
     }
     return std::make_shared<StatementBlock>(statements);
+}
+
+std::shared_ptr<Statement> Parser::ParseGlobalStatement()
+{
+    std::variant<std::shared_ptr<Declaration>, std::shared_ptr<TypeDeclaration>> statement;
+    if (Peek().type == TokenType::Identifier && PeekNext().type == TokenType::Colon)
+    {
+        statement = ParseGlobalDeclaration();
+    }
+    else if (PeekIsKeyword(Keyword::Function))
+    {
+        statement = ParseAlternativeFunctionDeclaration();
+    }
+    else if (PeekIsKeyword(Keyword::Structure))
+    {
+        statement = ParseAlternativeStructDeclaration();
+    }
+    else if (PeekIsKeyword(Keyword::Enumeration))
+    {
+        statement = ParseAlternativeEnumDeclaration();
+    }
+    else
+    {
+        throw ParserError(std::format(
+            "Expected identifier, or keywords 'fn', 'struct', or 'enum', got token '{}' of type '{}' instead.",
+            Peek().lexeme,
+            str(Peek().type)
+        ));
+    }
+
+    return std::visit(
+        [this](auto&& arg) -> std::shared_ptr<Statement>
+        {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, std::shared_ptr<Declaration>>)
+            {
+                arg->identifier = current_namespace_ + arg->identifier;
+                return arg;
+            }
+            else if constexpr (std::is_same_v<T, std::shared_ptr<TypeDeclaration>>)
+            {
+                arg->identifier = current_namespace_ + arg->identifier;
+                return arg;
+            }
+        },
+        statement
+    );
 }
 
 std::shared_ptr<Statement> Parser::ParseStatement()
@@ -233,6 +311,19 @@ std::shared_ptr<Statement> Parser::ParseStatement()
 }
 
 std::shared_ptr<Statement> Parser::ParseDeclaration()
+{
+    auto identifier = Expect(TokenType::Identifier);
+    Expect(TokenType::Colon);
+    auto annotation = ParseTypeAnnotation();
+    std::shared_ptr<Expression> initializer{nullptr};
+    if (ConsumeIf(TokenType::Equals))
+    {
+        initializer = ParseExpression();
+    }
+    return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), annotation, initializer);
+}
+
+std::variant<std::shared_ptr<Declaration>, std::shared_ptr<TypeDeclaration>> Parser::ParseGlobalDeclaration()
 {
     auto identifier = Expect(TokenType::Identifier);
     Expect(TokenType::Colon);
@@ -1060,7 +1151,7 @@ std::shared_ptr<MemberInitializerList> Parser::ParseMemberInitializerList()
     return member_initializer_list;
 }
 
-std::shared_ptr<Statement> Parser::ParseAlternativeFunctionDeclaration()
+std::shared_ptr<Declaration> Parser::ParseAlternativeFunctionDeclaration()
 {
     ExpectKeyword(Keyword::Function);
 
@@ -1085,7 +1176,7 @@ std::shared_ptr<Statement> Parser::ParseAlternativeFunctionDeclaration()
     return std::make_shared<Declaration>(std::any_cast<std::string>(identifier.data), type_annotation, function);
 }
 
-std::shared_ptr<Statement> Parser::ParseAlternativeStructDeclaration()
+std::shared_ptr<TypeDeclaration> Parser::ParseAlternativeStructDeclaration()
 {
     ExpectKeyword(Keyword::Structure);
     auto identifier = Expect(TokenType::Identifier);
@@ -1096,7 +1187,7 @@ std::shared_ptr<Statement> Parser::ParseAlternativeStructDeclaration()
     return std::make_shared<TypeDeclaration>(std::any_cast<std::string>(identifier.data), struct_expression);
 }
 
-std::shared_ptr<Statement> Parser::ParseAlternativeEnumDeclaration()
+std::shared_ptr<TypeDeclaration> Parser::ParseAlternativeEnumDeclaration()
 {
     ExpectKeyword(Keyword::Enumeration);
     auto identifier = Expect(TokenType::Identifier);
@@ -1107,7 +1198,7 @@ std::shared_ptr<Statement> Parser::ParseAlternativeEnumDeclaration()
     return std::make_shared<TypeDeclaration>(std::any_cast<std::string>(identifier.data), enum_expression);
 }
 
-std::shared_ptr<Statement> Parser::ParseAlternativeMethodDeclaration()
+std::shared_ptr<Declaration> Parser::ParseAlternativeMethodDeclaration()
 {
     ExpectKeyword(Keyword::Method);
 

@@ -36,23 +36,23 @@ void TopLevelAnalyzer::Run()
 
 void TopLevelAnalyzer::DeclareType(std::shared_ptr<TypeDeclaration> type_declaration)
 {
-    module_.globals->DeclareType(type_declaration->name);
+    module_.globals->DeclareType(type_declaration->identifier.ToString());
 
     if (dynamic_pointer_cast<StructExpression>(type_declaration->definition))
     {
         auto type = std::make_shared<StructType>(
-            type_declaration->name, std::make_shared<StructMemberList>(), TypeQualifier::Constant
+            type_declaration->identifier, std::make_shared<StructMemberList>(), TypeQualifier::Constant
         );
         type_declaration->type = type;
-        module_.globals->DefineType(type_declaration->name, type);
+        module_.globals->DefineType(type_declaration->identifier.ToString(), type);
     }
     else if (dynamic_pointer_cast<EnumExpression>(type_declaration->definition))
     {
         auto type = std::make_shared<EnumType>(
-            type_declaration->name, std::make_shared<EnumMemberList>(), TypeQualifier::Constant
+            type_declaration->identifier, std::make_shared<EnumMemberList>(), TypeQualifier::Constant
         );
         type_declaration->type = type;
-        module_.globals->DefineType(type_declaration->name, type);
+        module_.globals->DefineType(type_declaration->identifier.ToString(), type);
     }
 }
 

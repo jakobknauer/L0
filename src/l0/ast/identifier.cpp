@@ -6,6 +6,8 @@
 namespace l0
 {
 
+Identifier::Identifier() {}
+
 Identifier::Identifier(std::string_view only_part)
     : parts{std::string{only_part}}
 {
@@ -41,6 +43,19 @@ std::string Identifier::ToString() const
 bool Identifier::operator==(const Identifier& other) const
 {
     return this->parts == other.parts;
+}
+
+Identifier& Identifier::operator+=(const Identifier& other)
+{
+    parts.insert(std::end(parts), std::begin(other.parts), std::end(other.parts));
+    return *this;
+}
+
+Identifier Identifier::operator+(const Identifier& other) const
+{
+    Identifier result{*this};
+    result += other;
+    return result;
 }
 
 std::ostream& operator<<(std::ostream& stream, const Identifier& identifier)

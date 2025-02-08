@@ -186,7 +186,7 @@ void Generator::DefineTypes()
 
 void Generator::DefineStructType(const StructType& type)
 {
-    auto llvm_struct_type = llvm::StructType::getTypeByName(context_, type.name);
+    auto llvm_struct_type = llvm::StructType::getTypeByName(context_, type.identifier.ToString());
 
     // clang-format off
     auto non_static_members = *type.members
@@ -215,7 +215,7 @@ void Generator::DefineEnumType(const EnumType& type)
 {
     for (const auto& [index, member] : *type.members | std::views::enumerate)
     {
-        Identifier full_member_name{{type.name, *member}};
+        Identifier full_member_name = type.identifier + *member;
         const auto llvm_value = ast_module_.globals->GetLLVMValue(full_member_name);
         const auto global_var = llvm::dyn_cast<llvm::GlobalVariable>(llvm_value);
         global_var->setInitializer(llvm::ConstantInt::get(int_type_, index));
@@ -226,7 +226,7 @@ void Generator::DefineGlobalVariables()
 {
     for (const auto& global_declaration : ast_module_.global_declarations)
     {
-        if (global_declaration->variable == "main")
+        if (global_declaration->identifier == "main")
         {
             continue;
         }
@@ -234,7 +234,7 @@ void Generator::DefineGlobalVariables()
         global_declaration->initializer->Accept(*this);
         auto initializer = llvm::dyn_cast<llvm::Constant>(result_store_.GetResult());
 
-        const auto llvm_value = ast_module_.globals->GetLLVMValue(global_declaration->variable);
+        const auto llvm_value = ast_module_.globals->GetLLVMValue(global_declaration->identifier);
         const auto global_var = llvm::dyn_cast<llvm::GlobalVariable>(llvm_value);
 
         global_var->setInitializer(initializer);
@@ -269,11 +269,11 @@ void Generator::Visit(const Declaration& declaration)
     declaration.initializer->Accept(*this);
     llvm::Value* initializer = result_store_.GetResult();
 
-    std::shared_ptr<Type> type = declaration.scope->GetVariableType(declaration.variable);
+    std::shared_ptr<Type> type = declaration.scope->GetVariableType(declaration.identifier);
     llvm::Type* llvm_type = type_converter_.GetValueDeclarationType(*type);
-    llvm::AllocaInst* alloca = GenerateAlloca(builder_, llvm_type, declaration.variable);
+    llvm::AllocaInst* alloca = GenerateAlloca(builder_, llvm_type, declaration.identifier.ToString());
 
-    declaration.scope->SetLLVMValue(declaration.variable, alloca);
+    declaration.scope->SetLLVMValue(declaration.identifier, alloca);
     builder_.CreateStore(initializer, alloca);
 
     result_store_.Clear();
@@ -613,7 +613,7 @@ void Generator::Visit(const Variable& variable)
 
 void Generator::Visit(const MemberAccessor& member_accessor)
 {
-    auto struct_name = member_accessor.dereferenced_object_type->name;
+    auto struct_name = member_accessor.dereferenced_object_type->identifier.ToString();
 
     member_accessor.dereferenced_object->Accept(*this);
     auto object_ptr = result_store_.GetResultAddress();
@@ -780,7 +780,7 @@ void Generator::Visit(const Initializer& initializer)
         );
     }
 
-    const std::string object_name = std::format("init_{}", struct_type->name);
+    const std::string object_name = std::format("init_{}", struct_type->identifier.ToString());
 
     llvm::Type* llvm_type = type_converter_.Convert(*initializer.type);
     auto alloca = GenerateAlloca(builder_, llvm_type, std::format("address_{}", object_name));
@@ -796,7 +796,7 @@ void Generator::Visit(const Initializer& initializer)
             alloca,
             0,
             member_index.value(),
-            std::format("address_{}.{}::{}", object_name, struct_type->name, name)
+            std::format("address_{}.{}::{}", object_name, struct_type->identifier.ToString(), name)
         );
         builder_.CreateStore(init_value, member_address);
     }

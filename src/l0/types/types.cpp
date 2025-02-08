@@ -171,16 +171,16 @@ bool FunctionType::Equals(const Type& other) const
         );
 }
 
-StructType::StructType(std::string name, std::shared_ptr<StructMemberList> members, TypeQualifier mutability)
+StructType::StructType(Identifier identifier, std::shared_ptr<StructMemberList> members, TypeQualifier mutability)
     : Type{mutability},
-      name{name},
+      identifier{identifier},
       members{members}
 {
 }
 
 std::string StructType::ToString() const
 {
-    return str(mutability) + name;
+    return str(mutability) + identifier.ToString();
 }
 
 void StructType::Accept(IConstTypeVisitor& visitor) const
@@ -220,19 +220,19 @@ bool StructType::Equals(const Type& other) const
     const StructType* real_other = static_cast<const StructType*>(&other);
 
     // TODO proper check?
-    return this->name == real_other->name;
+    return this->identifier == real_other->identifier;
 }
 
-EnumType::EnumType(std::string name, std::shared_ptr<EnumMemberList> members, TypeQualifier mutability)
+EnumType::EnumType(Identifier identifier, std::shared_ptr<EnumMemberList> members, TypeQualifier mutability)
     : Type{mutability},
-      name{name},
+      identifier{identifier},
       members{members}
 {
 }
 
 std::string EnumType::ToString() const
 {
-    return str(mutability) + name;
+    return str(mutability) + identifier.ToString();
 }
 
 void EnumType::Accept(IConstTypeVisitor& visitor) const
@@ -245,7 +245,7 @@ bool EnumType::Equals(const Type& other) const
     const EnumType* real_other = static_cast<const EnumType*>(&other);
 
     // TODO proper check?
-    return this->name == real_other->name;
+    return this->identifier == real_other->identifier;
 }
 
 namespace
@@ -297,12 +297,12 @@ class ModifyQualifierVisitor : private IConstTypeVisitor
 
     void Visit(const StructType& struct_type)
     {
-        result_ = std::make_shared<StructType>(struct_type.name, struct_type.members, qualifier_);
+        result_ = std::make_shared<StructType>(struct_type.identifier, struct_type.members, qualifier_);
     }
 
     void Visit(const EnumType& enum_type)
     {
-        result_ = std::make_shared<EnumType>(enum_type.name, enum_type.members, qualifier_);
+        result_ = std::make_shared<EnumType>(enum_type.identifier, enum_type.members, qualifier_);
     }
 };
 
