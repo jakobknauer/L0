@@ -20,7 +20,7 @@ class TypeResolver : private ITypeAnnotationVisitor
     TypeQualifier Convert(TypeAnnotationQualifier qualifier);
     std::shared_ptr<FunctionType> Convert(const Function& function, Identifier namespace_);
     std::shared_ptr<Type> GetTypeByName(const Identifier& identifier, Identifier namespace_);
-    std::shared_ptr<Scope> Resolve(const Identifier& identifier, Identifier namespace_);
+    std::pair<std::shared_ptr<Scope>, Identifier> Resolve(const Identifier& identifier, Identifier namespace_);
 
    private:
     const Module& module_;

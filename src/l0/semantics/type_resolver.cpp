@@ -45,18 +45,18 @@ std::shared_ptr<FunctionType> TypeResolver::Convert(const Function& function, Id
     return std::make_shared<FunctionType>(parameters, return_type, TypeQualifier::Constant);
 }
 
-std::shared_ptr<Scope> TypeResolver::Resolve(const Identifier& identifier, [[maybe_unused]] Identifier namespace_)
+std::pair<std::shared_ptr<Scope>, Identifier> TypeResolver::Resolve(const Identifier& identifier, Identifier namespace_)
 {
     auto global_resolution = Resolve(identifier);
     if (global_resolution)
     {
-        return *global_resolution;
+        return {*global_resolution, identifier};
     }
 
     auto resolution_in_namespace = Resolve(namespace_ + identifier);
     if (resolution_in_namespace)
     {
-        return *resolution_in_namespace;
+        return {*resolution_in_namespace, namespace_ + identifier};
     }
 
     throw SemanticError(std::format("Cannot resolve type name '{}'.", identifier.ToString()));
@@ -84,7 +84,8 @@ std::optional<std::shared_ptr<Scope>> TypeResolver::Resolve(const Identifier& id
 
 std::shared_ptr<Type> TypeResolver::GetTypeByName(const Identifier& identifier, Identifier namespace_)
 {
-    return Resolve(identifier, namespace_)->GetTypeDefinition(identifier);
+    const auto& [scope, actual_identifier] =  Resolve(identifier, namespace_);
+    return scope->GetTypeDefinition(actual_identifier);
 }
 
 void TypeResolver::Visit(const SimpleTypeAnnotation& sta)

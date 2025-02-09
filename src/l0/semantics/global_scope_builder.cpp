@@ -2,6 +2,7 @@
 
 #include <format>
 #include <ranges>
+#include <print>
 
 #include "l0/ast/statement.h"
 #include "l0/ast/type_expression.h"
