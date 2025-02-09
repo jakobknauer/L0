@@ -4,7 +4,8 @@ L0 is statically typed, compiled programming language that I started as a hobby 
 
 L0 features and characteristics:
 - Strong and static typing
-- Structures
+- Structures and enums
+- Namespaces
 - Type inference for local variables
 - Immutability by default
 - Functions as first-class citizens, higher-order functions, anonymous functions, closures
@@ -27,6 +28,7 @@ You can find more examples in [the examples directory](examples):
 - [Control Flow and Booleans](examples/control-flow/control-flow.l0)
 - [References and Dynamic Allocations](examples/references/references.l0)
 - [Functions](examples/functions/functions.l0)
+- [Namespaces](examples/namespaces/namespaces.l0)
 - [Structs](examples/structs/structs.l0)
 - [Enums](examples/enums/enums.l0)
 - [Closures](examples/closures/closures.l0)
