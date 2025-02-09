@@ -12,8 +12,9 @@ TypeResolver::TypeResolver(const Module& module)
 {
 }
 
-std::shared_ptr<Type> TypeResolver::Convert(const TypeAnnotation& annotation)
+std::shared_ptr<Type> TypeResolver::Convert(const TypeAnnotation& annotation, Identifier namespace_)
 {
+    this->namespace_ = namespace_;
     annotation.Accept(*this);
     return result_;
 }
@@ -31,48 +32,65 @@ TypeQualifier TypeResolver::Convert(TypeAnnotationQualifier qualifier)
     std::unreachable();
 }
 
-std::shared_ptr<FunctionType> TypeResolver::Convert(const Function& function)
+std::shared_ptr<FunctionType> TypeResolver::Convert(const Function& function, Identifier namespace_)
 {
     auto parameters = std::make_shared<std::vector<std::shared_ptr<Type>>>();
     for (auto& parameter : *function.parameters)
     {
-        parameters->push_back(Convert(*parameter->annotation));
+        parameters->push_back(Convert(*parameter->annotation, namespace_));
     }
 
-    auto return_type = Convert(*function.return_type_annotation);
+    auto return_type = Convert(*function.return_type_annotation, namespace_);
 
     return std::make_shared<FunctionType>(parameters, return_type, TypeQualifier::Constant);
 }
 
-std::shared_ptr<Scope> TypeResolver::Resolve(const Identifier& identifier)
+std::pair<std::shared_ptr<Scope>, Identifier> TypeResolver::Resolve(const Identifier& identifier, Identifier namespace_)
 {
-    // TODO reverse order?
-    if (module_.environment->IsTypeDeclared(identifier.ToString()))
+    auto global_resolution = Resolve(identifier);
+    if (global_resolution)
+    {
+        return {*global_resolution, identifier};
+    }
+
+    auto resolution_in_namespace = Resolve(namespace_ + identifier);
+    if (resolution_in_namespace)
+    {
+        return {*resolution_in_namespace, namespace_ + identifier};
+    }
+
+    throw SemanticError(std::format("Cannot resolve type name '{}'.", identifier.ToString()));
+}
+
+std::optional<std::shared_ptr<Scope>> TypeResolver::Resolve(const Identifier& identifier)
+{
+    if (module_.environment->IsTypeDeclared(identifier))
     {
         return module_.environment;
     }
-    if (module_.externals->IsTypeDeclared(identifier.ToString()))
+    if (module_.externals->IsTypeDeclared(identifier))
     {
         return module_.externals;
     }
-    else if (module_.globals->IsTypeDeclared(identifier.ToString()))
+    else if (module_.globals->IsTypeDeclared(identifier))
     {
         return module_.globals;
     }
     else
     {
-        throw SemanticError(std::format("Cannot resolve type name '{}'.", identifier.ToString()));
+        return std::nullopt;
     }
 }
 
-std::shared_ptr<Type> TypeResolver::GetTypeByName(const Identifier& identifier)
+std::shared_ptr<Type> TypeResolver::GetTypeByName(const Identifier& identifier, Identifier namespace_)
 {
-    return Resolve(identifier)->GetTypeDefinition(identifier.ToString());
+    const auto& [scope, actual_identifier] =  Resolve(identifier, namespace_);
+    return scope->GetTypeDefinition(actual_identifier);
 }
 
 void TypeResolver::Visit(const SimpleTypeAnnotation& sta)
 {
-    auto type = GetTypeByName(sta.type_name);
+    auto type = GetTypeByName(sta.type_name, namespace_);
     auto mutability = Convert(sta.mutability);
     result_ = ModifyQualifier(*type, mutability);
 }

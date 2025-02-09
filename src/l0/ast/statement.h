@@ -37,15 +37,15 @@ class StatementBlock : public Statement
 class Declaration : public Statement
 {
    public:
-    Declaration(std::string variable, std::shared_ptr<Expression> initializer);
+    Declaration(Identifier identifier, std::shared_ptr<Expression> initializer);
     Declaration(
-        std::string variable, std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Expression> initializer
+        Identifier identifier, std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Expression> initializer
     );
 
     void Accept(IConstStatementVisitor& visitor) const override;
     void Accept(IStatementVisitor& visitor) override;
 
-    std::string variable;
+    Identifier identifier;
     std::shared_ptr<TypeAnnotation> annotation;
     std::shared_ptr<Expression> initializer;
 
@@ -55,12 +55,12 @@ class Declaration : public Statement
 class TypeDeclaration : public Statement
 {
    public:
-    TypeDeclaration(std::string name, std::shared_ptr<TypeExpression> definition);
+    TypeDeclaration(Identifier identifier, std::shared_ptr<TypeExpression> definition);
 
     void Accept(IConstStatementVisitor& visitor) const override;
     void Accept(IStatementVisitor& visitor) override;
 
-    std::string name;
+    Identifier identifier;
     std::shared_ptr<TypeExpression> definition;
 
     mutable std::shared_ptr<Type> type;

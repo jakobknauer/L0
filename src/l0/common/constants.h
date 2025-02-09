@@ -17,6 +17,7 @@ constexpr std::string_view Function{"fn"};
 constexpr std::string_view If{"if"};
 constexpr std::string_view Method{"method"};
 constexpr std::string_view Mutable{"mut"};
+constexpr std::string_view Namespace{"namespace"};
 constexpr std::string_view New{"new"};
 constexpr std::string_view Return{"return"};
 constexpr std::string_view Structure{"struct"};

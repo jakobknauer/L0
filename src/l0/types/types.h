@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "l0/ast/identifier.h"
+
 namespace l0
 {
 
@@ -142,13 +144,13 @@ using StructMemberList = std::vector<std::shared_ptr<StructMember>>;
 class StructType : public Type
 {
    public:
-    StructType(std::string name, std::shared_ptr<StructMemberList> members, TypeQualifier mutability);
+    StructType(Identifier identifier, std::shared_ptr<StructMemberList> members, TypeQualifier mutability);
 
     std::string ToString() const override;
 
     void Accept(IConstTypeVisitor& visitor) const override;
 
-    const std::string name;
+    const Identifier identifier;
     std::shared_ptr<StructMemberList> members;
 
     bool HasMember(std::string name) const;
@@ -165,13 +167,13 @@ using EnumMemberList = std::vector<std::shared_ptr<EnumMember>>;
 class EnumType : public Type
 {
    public:
-    EnumType(std::string name, std::shared_ptr<EnumMemberList> members, TypeQualifier mutability);
+    EnumType(Identifier identifier, std::shared_ptr<EnumMemberList> members, TypeQualifier mutability);
 
     std::string ToString() const override;
 
     void Accept(IConstTypeVisitor& visitor) const override;
 
-    const std::string name;
+    const Identifier identifier;
     std::shared_ptr<EnumMemberList> members;
 
    protected:

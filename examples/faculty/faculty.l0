@@ -4,10 +4,10 @@ fn main () -> I64
     {
         printf("Enter a number: ");
         line := read_ln();
-        n := string_to_i64(&line);
+        n := string::string_to_i64(&line);
         fac_n := fac(n);
 
-        s : mut = from_cstring("Faculty of ");
+        s : mut = string::from_cstring("Faculty of ");
         s.append_i64(n);
         s.append_cstring(" is ");
         s.append_i64(fac_n);

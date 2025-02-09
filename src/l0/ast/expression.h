@@ -140,6 +140,7 @@ class Variable : public Expression
     Identifier name;
 
     mutable std::shared_ptr<Scope> scope;
+    mutable Identifier resolved_name;
 };
 
 class MemberAccessor : public Expression
@@ -248,7 +249,8 @@ class Function : public Expression
         std::shared_ptr<ParameterDeclarationList> parameters,
         std::shared_ptr<CaptureList> captures,
         std::shared_ptr<TypeAnnotation> return_type_annotation,
-        std::shared_ptr<StatementBlock> body
+        std::shared_ptr<StatementBlock> body,
+        Identifier namespace_
     );
 
     void Accept(IConstExpressionVisitor& visitor) const override;
@@ -258,6 +260,7 @@ class Function : public Expression
     std::shared_ptr<CaptureList> captures;
     std::shared_ptr<TypeAnnotation> return_type_annotation;
     std::shared_ptr<StatementBlock> body;
+    Identifier namespace_;
 
     mutable std::shared_ptr<Scope> locals = std::make_shared<Scope>();
     mutable std::optional<std::string> global_name{};

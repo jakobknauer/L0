@@ -19,6 +19,8 @@ void Resolver::Check()
     scopes_.push_back(module_.externals);
     scopes_.push_back(module_.globals);
 
+    namespaces_.push(Identifier{});
+
     for (auto callable : module_.callables)
     {
         callable->Accept(*this);
@@ -41,11 +43,13 @@ void Resolver::Visit(const Declaration& declaration)
     }
 
     auto scope = scopes_.back();
-    if (scope->IsVariableDeclared(declaration.variable))
+    if (scope->IsVariableDeclared(declaration.identifier))
     {
-        throw SemanticError(std::format("Duplicate declaration of local variable '{}'.", declaration.variable));
+        throw SemanticError(
+            std::format("Duplicate declaration of local variable '{}'.", declaration.identifier.ToString())
+        );
     }
-    scope->DeclareVariable(declaration.variable);
+    scope->DeclareVariable(declaration.identifier);
     declaration.scope = scope;
 }
 
@@ -115,7 +119,9 @@ void Resolver::Visit(const BinaryOp& binary_op)
 
 void Resolver::Visit(const Variable& variable)
 {
-    variable.scope = Resolve(variable.name);
+    const auto [scope, resolved_name] = Resolve(variable.name, namespaces_.top());
+    variable.scope = scope;
+    variable.resolved_name = resolved_name;
 }
 
 void Resolver::Visit(const MemberAccessor& member_accessor)
@@ -162,7 +168,9 @@ void Resolver::Visit(const Function& function)
         function.locals->DeclareVariable(param_decl->name);
     }
 
+    namespaces_.push(function.namespace_);
     function.body->Accept(*this);
+    namespaces_.pop();
 
     scopes_ = scopes_backup;
 }
@@ -190,20 +198,17 @@ void Resolver::Visit(const Allocation& allocation)
     }
 }
 
-void Resolver::Visit(const StructExpression& struct_expression)
+void Resolver::Visit(const StructExpression&)
 {
-    for (const auto& member_declaration : *struct_expression.members)
-    {
-        if (member_declaration->initializer)
-        {
-            member_declaration->initializer->Accept(*this);
-        }
-    }
+    throw SemanticError("Obsolete");
 }
 
-void Resolver::Visit(const EnumExpression&) {}
+void Resolver::Visit(const EnumExpression&)
+{
+    throw SemanticError("Obsolete");
+}
 
-std::shared_ptr<Scope> Resolver::Resolve(const Identifier& identifier)
+std::optional<std::shared_ptr<Scope>> Resolver::Resolve(const Identifier& identifier)
 {
     for (auto scope : scopes_ | std::views::reverse)
     {
@@ -212,6 +217,25 @@ std::shared_ptr<Scope> Resolver::Resolve(const Identifier& identifier)
             return scope;
         }
     }
+    return std::nullopt;
+}
+
+std::pair<std::shared_ptr<Scope>, Identifier> Resolver::Resolve(
+    const Identifier& identifier, const Identifier& namespace_
+)
+{
+    auto global_resolution = Resolve(identifier);
+    if (global_resolution)
+    {
+        return {*global_resolution, identifier};
+    }
+
+    auto resolution_in_namespace = Resolve(namespace_ + identifier);
+    if (resolution_in_namespace)
+    {
+        return {*resolution_in_namespace, namespace_ + identifier};
+    }
+
     throw SemanticError(std::format("Cannot resolve variable '{}'.", identifier.ToString()));
 }
 

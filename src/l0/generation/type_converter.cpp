@@ -90,7 +90,7 @@ void TypeConverter::Visit(const FunctionType& function_type)
 
 void TypeConverter::Visit(const StructType& struct_type)
 {
-    auto llvm_struct_type = llvm::StructType::getTypeByName(context_, struct_type.name);
+    auto llvm_struct_type = llvm::StructType::getTypeByName(context_, struct_type.identifier.ToString());
     result_ = llvm_struct_type;
 }
 

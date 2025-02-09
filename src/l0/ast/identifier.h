@@ -10,14 +10,18 @@ namespace l0
 class Identifier
 {
    public:
+    Identifier();
     Identifier(std::string_view only_part);
     Identifier(std::string only_part);
     Identifier(const char* only_part);
     Identifier(std::vector<std::string> parts);
 
     std::string ToString() const;
+    Identifier GetPrefix() const;
 
     bool operator==(const Identifier& other) const;
+    Identifier& operator+=(const Identifier& other);
+    Identifier operator+(const Identifier& other) const;
 
     friend std::ostream& operator<<(std::ostream& stream, const Identifier& identifier);
 

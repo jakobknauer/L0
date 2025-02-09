@@ -20,7 +20,7 @@ bool ConversionChecker::CheckCompatibility(std::shared_ptr<Type> target, std::sh
 }
 
 std::shared_ptr<Type> ConversionChecker::Coerce(
-    std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Type> actual
+    std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Type> actual, Identifier namespace_
 )
 {
     if (!annotation)
@@ -41,7 +41,7 @@ std::shared_ptr<Type> ConversionChecker::Coerce(
         }
     }
 
-    auto annotated_type = resolver_.Convert(*annotation);
+    auto annotated_type = resolver_.Convert(*annotation, namespace_);
     if (CheckCompatibility(annotated_type, actual))
     {
         return annotated_type;
@@ -126,13 +126,13 @@ void ConversionChecker::Visit(const FunctionType& function_type)
 void ConversionChecker::Visit(const StructType& struct_type)
 {
     auto value_as_struct_type = dynamic_pointer_cast<StructType>(value_);
-    result_ = value_as_struct_type && (struct_type.name == value_as_struct_type->name);
+    result_ = value_as_struct_type && (struct_type.identifier == value_as_struct_type->identifier);
 }
 
 void ConversionChecker::Visit(const EnumType& enum_type)
 {
     auto value_as_struct_type = dynamic_pointer_cast<EnumType>(value_);
-    result_ = value_as_struct_type && (enum_type.name == value_as_struct_type->name);
+    result_ = value_as_struct_type && (enum_type.identifier == value_as_struct_type->identifier);
 }
 
 }  // namespace l0::detail

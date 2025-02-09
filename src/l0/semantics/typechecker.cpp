@@ -17,7 +17,9 @@ void Typechecker::Check()
 {
     for (auto global_declaration : module_.global_declarations)
     {
+        namespaces_.push(global_declaration->identifier.GetPrefix());
         CheckGlobalDeclaration(*global_declaration);
+        namespaces_.pop();
     }
 
     for (auto global_type_declaration : module_.global_type_declarations)
@@ -25,7 +27,9 @@ void Typechecker::Check()
         auto type = global_type_declaration->type;
         if (auto struct_type = dynamic_pointer_cast<StructType>(type))
         {
+            namespaces_.push(global_type_declaration->identifier.GetPrefix());
             CheckStruct(*struct_type);
+            namespaces_.pop();
         }
     }
 }
@@ -42,21 +46,25 @@ void Typechecker::Visit(const Declaration& declaration)
 {
     if (!declaration.initializer)
     {
-        throw SemanticError(std::format("Local variable '{}' does not have an initializer.", declaration.variable));
+        throw SemanticError(
+            std::format("Local variable '{}' does not have an initializer.", declaration.identifier.ToString())
+        );
     }
 
     declaration.initializer->Accept(*this);
 
-    auto coerced_type = conversion_checker_.Coerce(declaration.annotation, declaration.initializer->type);
+    auto coerced_type =
+        conversion_checker_.Coerce(declaration.annotation, declaration.initializer->type, namespaces_.top());
 
     if (!coerced_type)
     {
         throw SemanticError(std::format(
-            "Could not coerce type annotation and initializer type for variable '{}'.", declaration.variable
+            "Could not coerce type annotation and initializer type for variable '{}'.",
+            declaration.identifier.ToString()
         ));
     }
 
-    declaration.scope->SetVariableType(declaration.variable, coerced_type);
+    declaration.scope->SetVariableType(declaration.identifier, coerced_type);
 }
 
 void Typechecker::Visit(const TypeDeclaration&)
@@ -78,7 +86,7 @@ void Typechecker::Visit(const ConditionalStatement& conditional_statement)
 {
     conditional_statement.condition->Accept(*this);
     if (!conversion_checker_.CheckCompatibility(
-            conditional_statement.condition->type, type_resolver_.GetTypeByName(Typename::Boolean)
+            conditional_statement.condition->type, type_resolver_.GetTypeByName(Typename::Boolean, Identifier{})
         ))
     {
         throw SemanticError(std::format(
@@ -98,7 +106,7 @@ void Typechecker::Visit(const WhileLoop& while_loop)
 {
     while_loop.condition->Accept(*this);
     if (!conversion_checker_.CheckCompatibility(
-            while_loop.condition->type, type_resolver_.GetTypeByName(Typename::Boolean)
+            while_loop.condition->type, type_resolver_.GetTypeByName(Typename::Boolean, Identifier{})
         ))
     {
         throw SemanticError(std::format(
@@ -179,7 +187,7 @@ void Typechecker::Visit(const BinaryOp& binary_op)
 
 void Typechecker::Visit(const Variable& variable)
 {
-    variable.type = variable.scope->GetVariableType(variable.name);
+    variable.type = variable.scope->GetVariableType(variable.resolved_name);
 }
 
 void Typechecker::Visit(const MemberAccessor& member_accessor)
@@ -210,7 +218,7 @@ void Typechecker::Visit(const MemberAccessor& member_accessor)
     {
         throw SemanticError(std::format(
             "Struct '{}' does not have a member named '{}'.",
-            dereferenced_object_type_as_struct->name,
+            dereferenced_object_type_as_struct->identifier.ToString(),
             member_accessor.member
         ));
     }
@@ -226,7 +234,8 @@ void Typechecker::Visit(const MemberAccessor& member_accessor)
     member_accessor.dereferenced_object_type = dereferenced_object_type_as_struct;
     member_accessor.dereferenced_object = dereferenced_object;
     member_accessor.dereferenced_object_type_scope =
-        type_resolver_.Resolve(Identifier{member_accessor.dereferenced_object_type->name});  // TODO find clean solution
+        type_resolver_.Resolve(member_accessor.dereferenced_object_type->identifier, Identifier{})
+            .first;  // TODO find clean solution
     member_accessor.nonstatic_member_index =
         dereferenced_object_type_as_struct->GetNonstaticMemberIndex(member_accessor.member);
     member_accessor.type = member_type;
@@ -249,27 +258,27 @@ void Typechecker::Visit(const Call& call)
 
 void Typechecker::Visit(const UnitLiteral& literal)
 {
-    literal.type = type_resolver_.GetTypeByName(Typename::Unit);
+    literal.type = type_resolver_.GetTypeByName(Typename::Unit, Identifier{});
 }
 
 void Typechecker::Visit(const BooleanLiteral& literal)
 {
-    literal.type = type_resolver_.GetTypeByName(Typename::Boolean);
+    literal.type = type_resolver_.GetTypeByName(Typename::Boolean, Identifier{});
 }
 
 void Typechecker::Visit(const IntegerLiteral& literal)
 {
-    literal.type = type_resolver_.GetTypeByName(Typename::Integer);
+    literal.type = type_resolver_.GetTypeByName(Typename::Integer, Identifier{});
 }
 
 void Typechecker::Visit(const CharacterLiteral& literal)
 {
-    literal.type = type_resolver_.GetTypeByName(Typename::Character);
+    literal.type = type_resolver_.GetTypeByName(Typename::Character, Identifier{});
 }
 
 void Typechecker::Visit(const StringLiteral& literal)
 {
-    literal.type = type_resolver_.GetTypeByName(Typename::CString);
+    literal.type = type_resolver_.GetTypeByName(Typename::CString, Identifier{});
 }
 
 void Typechecker::Visit(const Function& function)
@@ -287,11 +296,11 @@ void Typechecker::Visit(const Function& function)
     auto parameters = std::make_shared<std::vector<std::shared_ptr<Type>>>();
     for (const auto& param_decl : *function.parameters)
     {
-        auto param_type = type_resolver_.Convert(*param_decl->annotation);
+        auto param_type = type_resolver_.Convert(*param_decl->annotation, namespaces_.top());
         function.locals->SetVariableType(param_decl->name, param_type);
         parameters->push_back(param_type);
     }
-    auto return_type = type_resolver_.Convert(*function.return_type_annotation);
+    auto return_type = type_resolver_.Convert(*function.return_type_annotation, namespaces_.top());
     function.type = std::make_shared<FunctionType>(parameters, return_type, TypeQualifier::Constant);
 
     function.body->Accept(*this);
@@ -299,7 +308,7 @@ void Typechecker::Visit(const Function& function)
 
 void Typechecker::Visit(const Initializer& initializer)
 {
-    auto annotated_type = type_resolver_.Convert(*initializer.annotation);
+    auto annotated_type = type_resolver_.Convert(*initializer.annotation, namespaces_.top());
     auto struct_type = dynamic_pointer_cast<StructType>(annotated_type);
     if (!struct_type)
     {
@@ -314,16 +323,18 @@ void Typechecker::Visit(const Initializer& initializer)
         const std::string& member_name = member_initializer->member;
         if (!struct_type->HasMember(member_name))
         {
-            throw SemanticError(
-                std::format("Struct '{}' does not have a member named '{}'.", struct_type->name, member_name)
-            );
+            throw SemanticError(std::format(
+                "Struct '{}' does not have a member named '{}'.", struct_type->identifier.ToString(), member_name
+            ));
         }
         auto member = struct_type->GetMember(member_initializer->member);
         if (member->is_static)
         {
-            throw SemanticError(
-                std::format("Static member '{}' of struct '{}' cannot be initialized.", member->name, struct_type->name)
-            );
+            throw SemanticError(std::format(
+                "Static member '{}' of struct '{}' cannot be initialized.",
+                member->name,
+                struct_type->identifier.ToString()
+            ));
         }
 
         if (explicitely_initialized_members.contains(member_name))
@@ -359,7 +370,7 @@ void Typechecker::Visit(const Initializer& initializer)
     }
 
     initializer.type = annotated_type;
-    initializer.type_scope = type_resolver_.Resolve(Identifier{struct_type->name});
+    initializer.type_scope = type_resolver_.Resolve(struct_type->identifier, namespaces_.top()).first;
 }
 
 void Typechecker::Visit(const Allocation& allocation)
@@ -367,7 +378,7 @@ void Typechecker::Visit(const Allocation& allocation)
     if (allocation.size)
     {
         allocation.size->Accept(*this);
-        auto integer_type = type_resolver_.GetTypeByName(Typename::Integer);
+        auto integer_type = type_resolver_.GetTypeByName(Typename::Integer, Identifier{});
         if (*allocation.size->type != *integer_type)
         {
             throw SemanticError(std::format(
@@ -377,7 +388,7 @@ void Typechecker::Visit(const Allocation& allocation)
     }
 
     allocation.annotation->mutability = TypeAnnotationQualifier::Mutable;
-    auto allocated_type = type_resolver_.Convert(*allocation.annotation);
+    auto allocated_type = type_resolver_.Convert(*allocation.annotation, namespaces_.top());
     allocation.allocated_type = allocated_type;
     allocation.type = std::make_shared<ReferenceType>(allocation.allocated_type, TypeQualifier::Constant);
 
@@ -515,13 +526,13 @@ void Typechecker::CheckGlobalDeclaration(const Declaration& declaration)
     declaration.initializer->Accept(*this);
     auto initializer_type = declaration.initializer->type;
 
-    auto declared_type = module_.globals->GetVariableType(declaration.variable);
+    auto declared_type = module_.globals->GetVariableType(declaration.identifier);
 
     if (!conversion_checker_.CheckCompatibility(declared_type, initializer_type))
     {
         throw SemanticError(std::format(
             "Global variable '{}' is declared with type '{}', but initializer is of incompatible type '{}'.",
-            declaration.variable,
+            declaration.identifier.ToString(),
             declared_type->ToString(),
             initializer_type->ToString()
         ));

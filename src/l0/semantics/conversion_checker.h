@@ -15,7 +15,7 @@ class ConversionChecker : IConstTypeVisitor
    public:
     ConversionChecker(TypeResolver& resolver);
     bool CheckCompatibility(std::shared_ptr<Type> target, std::shared_ptr<Type> value);
-    std::shared_ptr<Type> Coerce(std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Type> actual);
+    std::shared_ptr<Type> Coerce(std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Type> actual, Identifier namespace_);
 
    private:
     TypeResolver& resolver_;

@@ -16,15 +16,18 @@ class TypeResolver : private ITypeAnnotationVisitor
    public:
     TypeResolver(const Module& module);
 
-    std::shared_ptr<Type> Convert(const TypeAnnotation& annotation);
+    std::shared_ptr<Type> Convert(const TypeAnnotation& annotation, Identifier namespace_);
     TypeQualifier Convert(TypeAnnotationQualifier qualifier);
-    std::shared_ptr<FunctionType> Convert(const Function& function);
-    std::shared_ptr<Scope> Resolve(const Identifier& identifier);
-    std::shared_ptr<Type> GetTypeByName(const Identifier& identifier);
+    std::shared_ptr<FunctionType> Convert(const Function& function, Identifier namespace_);
+    std::shared_ptr<Type> GetTypeByName(const Identifier& identifier, Identifier namespace_);
+    std::pair<std::shared_ptr<Scope>, Identifier> Resolve(const Identifier& identifier, Identifier namespace_);
 
    private:
     const Module& module_;
     std::shared_ptr<Type> result_;
+    Identifier namespace_;
+
+    std::optional<std::shared_ptr<Scope>> Resolve(const Identifier& identifier);
 
     void Visit(const SimpleTypeAnnotation& sta) override;
     void Visit(const ReferenceTypeAnnotation& rta) override;

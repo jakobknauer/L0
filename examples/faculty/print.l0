@@ -3,14 +3,14 @@ fn print_ln () -> ()
     printf("\n");
 };
 
-fn print_string (string : &String) -> ()
+fn print_string (string : &string::String) -> ()
 {
     printf(string.cstring());
 };
 
 fn print_i64 (i64 : I64) -> ()
 {
-    s := from_i64(i64);
+    s := string::from_i64(i64);
     print_string(&s);
     s.free();
 };

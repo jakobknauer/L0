@@ -18,15 +18,15 @@ void StatementBlock::Accept(IStatementVisitor& visitor)
     visitor.Visit(*this);
 }
 
-Declaration::Declaration(std::string variable, std::shared_ptr<Expression> initializer)
-    : Declaration{variable, nullptr, initializer}
+Declaration::Declaration(Identifier identifier, std::shared_ptr<Expression> initializer)
+    : Declaration{identifier, nullptr, initializer}
 {
 }
 
 Declaration::Declaration(
-    std::string variable, std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Expression> initializer
+    Identifier identifier, std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Expression> initializer
 )
-    : variable{variable},
+    : identifier{identifier},
       annotation{annotation},
       initializer{initializer}
 {
@@ -42,8 +42,8 @@ void Declaration::Accept(IStatementVisitor& visitor)
     visitor.Visit(*this);
 }
 
-TypeDeclaration::TypeDeclaration(std::string name, std::shared_ptr<TypeExpression> definition)
-    : name{name},
+TypeDeclaration::TypeDeclaration(Identifier identifier, std::shared_ptr<TypeExpression> definition)
+    : identifier{identifier},
       definition{definition}
 {
 }

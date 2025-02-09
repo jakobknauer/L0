@@ -2,6 +2,7 @@
 
 #include <format>
 #include <ranges>
+#include <print>
 
 #include "l0/ast/statement.h"
 #include "l0/ast/type_expression.h"
@@ -61,29 +62,29 @@ void GlobalScopeBuilder::FillStructDetails(
     for (auto& member_declaration : *definition->members)
     {
         auto member = std::make_shared<StructMember>();
-        member->name = member_declaration->variable;
+        member->name = member_declaration->identifier.ToString();
         member->default_initializer = member_declaration->initializer;
 
         if (auto method_annotation = dynamic_pointer_cast<MethodTypeAnnotation>(member_declaration->annotation))
         {
-            member->type = type_resolver_.Convert(*method_annotation->function_type);
+            member->type = type_resolver_.Convert(*method_annotation->function_type, type->identifier.GetPrefix());
             member->is_method = true;
             member->is_static = true;
         }
         else
         {
-            member->type = type_resolver_.Convert(*member_declaration->annotation);
+            member->type = type_resolver_.Convert(*member_declaration->annotation, type->identifier.GetPrefix());
         }
 
         if (member->default_initializer)
         {
-            member->default_initializer_global_name = std::format("{}::{}", type->name, member->name);
+            member->default_initializer_global_name = std::format("{}::{}", type->identifier.ToString(), member->name);
             module_.globals->DeclareVariable(*member->default_initializer_global_name);
             module_.globals->SetVariableType(*member->default_initializer_global_name, member->type);
         }
         if (auto function = std::dynamic_pointer_cast<Function>(member->default_initializer))
         {
-            function->global_name = std::format("__fn__{}::{}", type->name, member->name);
+            function->global_name = std::format("__fn__{}::{}", type->identifier.ToString(), member->name);
             module_.callables.push_back(function);
         }
 
@@ -97,7 +98,7 @@ void GlobalScopeBuilder::FillEnumDetails(std::shared_ptr<EnumType> type, std::sh
     {
         type->members->push_back(std::make_shared<EnumMember>(member->name));
 
-        Identifier full_member_name{{type->name, member->name}};
+        Identifier full_member_name = type->identifier + member->name;
 
         module_.globals->DeclareVariable(full_member_name);
         module_.globals->SetVariableType(full_member_name, type);
@@ -106,15 +107,19 @@ void GlobalScopeBuilder::FillEnumDetails(std::shared_ptr<EnumType> type, std::sh
 
 void GlobalScopeBuilder::DeclareVariable(std::shared_ptr<Declaration> declaration)
 {
-    if (module_.globals->IsVariableDeclared(declaration->variable))
+    if (module_.globals->IsVariableDeclared(declaration->identifier))
     {
-        throw SemanticError(std::format("Duplicate declaration of global variable '{}'.", declaration->variable));
+        throw SemanticError(
+            std::format("Duplicate declaration of global variable '{}'.", declaration->identifier.ToString())
+        );
     }
 
     auto function = dynamic_pointer_cast<Function>(declaration->initializer);
     if (!function)
     {
-        throw SemanticError(std::format("Initializer of global variable must be a function.", declaration->variable));
+        throw SemanticError(
+            std::format("Initializer of global variable must be a function.", declaration->identifier.ToString())
+        );
     }
 
     if (!declaration->annotation)
@@ -127,14 +132,15 @@ void GlobalScopeBuilder::DeclareVariable(std::shared_ptr<Declaration> declaratio
         throw SemanticError(std::format("Globals may not be declared mutable."));
     }
 
-    std::shared_ptr<Type> type = type_resolver_.Convert(*declaration->annotation);
+    std::shared_ptr<Type> type = type_resolver_.Convert(*declaration->annotation, declaration->identifier.GetPrefix());
 
-    module_.globals->DeclareVariable(declaration->variable);
-    module_.globals->SetVariableType(declaration->variable, type);
+    module_.globals->DeclareVariable(declaration->identifier);
+    module_.globals->SetVariableType(declaration->identifier, type);
 
     declaration->scope = module_.globals;
 
-    function->global_name = declaration->variable == "main" ? "main" : std::format("__fn__{}", declaration->variable);
+    function->global_name =
+        declaration->identifier == "main" ? "main" : std::format("__fn__{}", declaration->identifier.ToString());
     module_.callables.push_back(function);
 }
 

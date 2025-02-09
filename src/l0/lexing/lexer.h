@@ -2,7 +2,6 @@
 #define L0_LEXING_LEXER_H
 
 #include <istream>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -40,11 +39,7 @@ class Lexer : public ILexer
     char current_{};
     std::istream& input_;
 
-    std::unordered_map<char, TokenType> single_character_operators_;
-    std::unordered_map<std::string, TokenType> two_character_operators_;
     std::unordered_set<char> operator_characters_;
-    std::unordered_set<std::string_view> keywords_;
-    std::unordered_map<char, char> escape_sequences_;
 };
 
 class LexerError
@@ -56,6 +51,15 @@ class LexerError
    private:
     const std::string message_;
 };
+
+namespace detail
+{
+
+bool IsValidFirstIdentifierCharacter(char c);
+
+bool IsValidIdentifierCharacter(char c);
+
+}  // namespace detail
 
 }  // namespace l0
 

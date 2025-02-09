@@ -1,0 +1,56 @@
+fn main () -> ()
+{
+    # fully qualified function calls
+    A::f();
+    A::B::C::f();
+};
+
+# everything in between { ... } belongs to namespace A
+namespace A
+{
+    fn f () -> ()  # full name A::f
+    {
+        printf("A::f\n");
+        g();  # calls A::g
+        h();  # calls global function h
+        A::h();  # calls A::h
+    };
+
+    fn g () -> ()  # full name A::g
+    {
+        printf("A::g\n");
+    };
+
+    fn h () -> ()  # full name A::h
+    {
+        printf("A::h\n");
+    };
+
+    fn i () -> () # full name A::i
+    {
+        printf("A::i\n");
+    };
+    
+    # nested namespace - everything in between { ... } belongs to namespace A::B::C
+    namespace B::C
+    {
+        fn f () -> ()  # full name A::B::C::f
+        {
+            printf("A::B::C::f\n");
+            g();  # calls A::B::C::g
+            h();  # calls global function h
+            A::i();  # calling i() would not work as resolution only considers the global and the current namespace
+        };
+    }
+}
+
+# qualified declaration - full name A::B::C::g
+fn A::B::C::g () -> ()
+{
+    printf("A::B::C::g\n");
+};
+
+fn h () -> ()  # full name h
+{
+    printf("h\n");
+};

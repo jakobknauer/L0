@@ -68,7 +68,7 @@ void AstPrinter::Visit(const StatementBlock& statement_block)
 
 void AstPrinter::Visit(const Declaration& declaration)
 {
-    out_ << declaration.variable;
+    out_ << declaration.identifier;
     out_ << " :";
 
     if (declaration.annotation)
@@ -91,7 +91,7 @@ void AstPrinter::Visit(const Declaration& declaration)
 
 void AstPrinter::Visit(const TypeDeclaration& type_declaration)
 {
-    out_ << type_declaration.name << " : " << Keyword::Type << " = ";
+    out_ << type_declaration.identifier << " : " << Keyword::Type << " = ";
     type_declaration.definition->Accept(*this);
 }
 
