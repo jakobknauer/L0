@@ -53,6 +53,9 @@ int main(int argc, char* argv[])
     std::println("Building global scope");
     for (const auto& module : modules)
     {
+        std::println("\tFor module '{}'", module->name);
+
+        std::println("\t\tUpdating externals");
         for (const auto& other_module : modules)
         {
             if (other_module->name != module->name)
@@ -61,6 +64,7 @@ int main(int argc, char* argv[])
             }
         }
 
+        std::println("\t\tRun GlobalScopeBuilder");
         try
         {
             GlobalScopeBuilder{*module}.Run();
@@ -68,6 +72,11 @@ int main(int argc, char* argv[])
         catch (const SemanticError& err)
         {
             std::println("Semantic error occured: {}", err.GetMessage());
+            exit(-1);
+        }
+        catch (const ScopeError& err)
+        {
+            std::println("Scope error occured: {}", err.GetMessage());
             exit(-1);
         }
     }
@@ -96,6 +105,7 @@ int main(int argc, char* argv[])
                       | std::views::transform([&](auto module) { return GenerateIRForModule(*module, context); })
                       | std::ranges::to<std::vector>();
 
+    std::println("Saving IR to filesystem");
     for (const auto& [module, llvm_module] : std::views::zip(modules, llvm_modules))
     {
         fs::path output_path{module->source_path};
@@ -110,7 +120,7 @@ int main(int argc, char* argv[])
         output_file << code;
     }
 
-    std::println("Leaving.");
+    std::println("Leaving");
 }
 
 namespace l0
@@ -118,10 +128,10 @@ namespace l0
 
 std::shared_ptr<l0::Module> GetModule(const fs::path& input_path)
 {
-    std::println("Loading source file '{}'", input_path.string());
+    std::println("\tLoading source file '{}'", input_path.string());
     std::ifstream input_file{input_path};
 
-    std::println("Lexical analysis");
+    std::println("\t\tLexical analysis");
     std::vector<Token> tokens;
     try
     {
@@ -133,7 +143,7 @@ std::shared_ptr<l0::Module> GetModule(const fs::path& input_path)
         exit(-1);
     }
 
-    std::println("Syntactical analysis");
+    std::println("\t\tSyntactical analysis");
     std::shared_ptr<Module> module;
     try
     {
@@ -150,10 +160,10 @@ std::shared_ptr<l0::Module> GetModule(const fs::path& input_path)
 
     DeclareExternals(*module);
 
-    std::println("Result:");
-    AstPrinter{std::cout}.Print(*module);
+//    std::println("Result:");
+//    AstPrinter{std::cout}.Print(*module);
 
-    std::println("Analyzing top level statements");
+    std::println("\t\tAnalyzing top level statements");
     try
     {
         TopLevelAnalyzer{*module}.Run();
@@ -198,9 +208,9 @@ void SemanticCheckModule(l0::Module& module)
 {
     using namespace l0;
 
-    std::println("Checking module '{}'", module.name);
+    std::println("\tFor module '{}'", module.name);
 
-    std::println("Resolving variables");
+    std::println("\t\tResolving variables");
     try
     {
         Resolver{module}.Check();
@@ -211,7 +221,7 @@ void SemanticCheckModule(l0::Module& module)
         exit(-1);
     }
 
-    std::println("Checking types");
+    std::println("\t\tChecking types");
     try
     {
         Typechecker{module}.Check();
@@ -222,7 +232,7 @@ void SemanticCheckModule(l0::Module& module)
         exit(-1);
     }
 
-    std::println("Checking return statements");
+    std::println("\t\tChecking return statements");
     try
     {
         ReturnStatementPass{module}.Run();
@@ -233,7 +243,7 @@ void SemanticCheckModule(l0::Module& module)
         exit(-1);
     }
 
-    std::println("Reference pass");
+    std::println("\t\tReference pass");
     try
     {
         ReferencePass{module}.Run();
@@ -249,7 +259,7 @@ llvm::Module* GenerateIRForModule(l0::Module& module, llvm::LLVMContext& context
 {
     using namespace l0;
 
-    std::println("Generating IR for module '{}'", module.name);
+    std::println("\tFor module '{}'", module.name);
     try
     {
         llvm::Module* llvm_module = Generator{context, module}.Generate();
