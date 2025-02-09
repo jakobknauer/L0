@@ -20,7 +20,7 @@ bool ConversionChecker::CheckCompatibility(std::shared_ptr<Type> target, std::sh
 }
 
 std::shared_ptr<Type> ConversionChecker::Coerce(
-    std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Type> actual
+    std::shared_ptr<TypeAnnotation> annotation, std::shared_ptr<Type> actual, Identifier namespace_
 )
 {
     if (!annotation)
@@ -41,7 +41,7 @@ std::shared_ptr<Type> ConversionChecker::Coerce(
         }
     }
 
-    auto annotated_type = resolver_.Convert(*annotation);
+    auto annotated_type = resolver_.Convert(*annotation, namespace_);
     if (CheckCompatibility(annotated_type, actual))
     {
         return annotated_type;

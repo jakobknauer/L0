@@ -66,13 +66,13 @@ void GlobalScopeBuilder::FillStructDetails(
 
         if (auto method_annotation = dynamic_pointer_cast<MethodTypeAnnotation>(member_declaration->annotation))
         {
-            member->type = type_resolver_.Convert(*method_annotation->function_type);
+            member->type = type_resolver_.Convert(*method_annotation->function_type, type->identifier.GetPrefix());
             member->is_method = true;
             member->is_static = true;
         }
         else
         {
-            member->type = type_resolver_.Convert(*member_declaration->annotation);
+            member->type = type_resolver_.Convert(*member_declaration->annotation, type->identifier.GetPrefix());
         }
 
         if (member->default_initializer)
@@ -131,7 +131,7 @@ void GlobalScopeBuilder::DeclareVariable(std::shared_ptr<Declaration> declaratio
         throw SemanticError(std::format("Globals may not be declared mutable."));
     }
 
-    std::shared_ptr<Type> type = type_resolver_.Convert(*declaration->annotation);
+    std::shared_ptr<Type> type = type_resolver_.Convert(*declaration->annotation, declaration->identifier.GetPrefix());
 
     module_.globals->DeclareVariable(declaration->identifier);
     module_.globals->SetVariableType(declaration->identifier, type);

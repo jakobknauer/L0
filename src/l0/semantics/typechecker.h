@@ -2,6 +2,7 @@
 #define L0_SEMANTICS_TYPECHECKER_H
 
 #include <memory>
+#include <stack>
 
 #include "l0/ast/expression.h"
 #include "l0/ast/module.h"
@@ -26,6 +27,8 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
     detail::TypeResolver type_resolver_{module_};
     detail::OperatorOverloadResolver operator_overload_resolver_{};
     detail::ConversionChecker conversion_checker_{type_resolver_};
+
+    std::stack<Identifier> namespaces_{};
 
     void Visit(const StatementBlock& statement_block) override;
     void Visit(const Declaration& declaration) override;
