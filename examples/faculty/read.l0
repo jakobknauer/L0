@@ -1,6 +1,6 @@
-fn read_ln () -> String
+fn read_ln () -> string::String
 {
-    s : mut = String{ _buffer = new [1] C8; };
+    s : mut = string::String{ _buffer = new [1] C8; };
     c : mut = getchar();
     while c != '\n':
     {
