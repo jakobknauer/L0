@@ -11,11 +11,8 @@
 namespace l0
 {
 
-class Module
+struct Module
 {
-   public:
-    std::shared_ptr<StatementBlock> statements{};
-
     std::string name;
     std::filesystem::path source_path;
 
