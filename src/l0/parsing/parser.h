@@ -47,9 +47,9 @@ class Parser : public IParser
 
     std::shared_ptr<Module> ParseModule();
 
-    std::shared_ptr<StatementBlock> ParseNamespaceStatementBlock(TokenType delimiter);
+    void ParseNamespaceStatementBlock(TokenType delimiter, Module& module);
     std::shared_ptr<StatementBlock> ParseStatementBlock(TokenType delimiter);
-    std::shared_ptr<Statement> ParseGlobalStatement();
+    void ParseGlobalStatement(Module& module);
     std::shared_ptr<Statement> ParseStatement();
     std::shared_ptr<Statement> ParseDeclaration();
     std::variant<std::shared_ptr<Declaration>, std::shared_ptr<TypeDeclaration>> ParseGlobalDeclaration();

@@ -171,13 +171,12 @@ Token Parser::ConsumeAll(TokenType type)
 std::shared_ptr<Module> Parser::ParseModule()
 {
     auto module = std::make_shared<Module>();
-    module->statements = ParseNamespaceStatementBlock(TokenType::EndOfFile);
+    ParseNamespaceStatementBlock(TokenType::EndOfFile, *module);
     return module;
 }
 
-std::shared_ptr<StatementBlock> Parser::ParseNamespaceStatementBlock(TokenType delimiter)
+void Parser::ParseNamespaceStatementBlock(TokenType delimiter, Module& module)
 {
-    std::vector<std::shared_ptr<Statement>> statements{};
     while (ConsumeAll(TokenType::Semicolon).type != delimiter)
     {
         if (ConsumeIfKeyword(Keyword::Namespace))
@@ -187,23 +186,17 @@ std::shared_ptr<StatementBlock> Parser::ParseNamespaceStatementBlock(TokenType d
             current_namespace_ += namespace_name;
 
             Expect(TokenType::OpeningBrace);
-            auto nested_statements = ParseNamespaceStatementBlock(TokenType::ClosingBrace);
+            ParseNamespaceStatementBlock(TokenType::ClosingBrace, module);
             Expect(TokenType::ClosingBrace);
-
-            statements.insert(
-                std::end(statements), std::begin(nested_statements->statements), std::end(nested_statements->statements)
-            );
 
             current_namespace_ = old_namespace;
         }
         else
         {
-            auto statement = ParseGlobalStatement();
+            ParseGlobalStatement(module);
             Expect(TokenType::Semicolon);
-            statements.push_back(statement);
         }
     }
-    return std::make_shared<StatementBlock>(statements);
 }
 
 std::shared_ptr<StatementBlock> Parser::ParseStatementBlock(TokenType delimiter)
@@ -218,7 +211,7 @@ std::shared_ptr<StatementBlock> Parser::ParseStatementBlock(TokenType delimiter)
     return std::make_shared<StatementBlock>(statements);
 }
 
-std::shared_ptr<Statement> Parser::ParseGlobalStatement()
+void Parser::ParseGlobalStatement(Module& module)
 {
     std::variant<std::shared_ptr<Declaration>, std::shared_ptr<TypeDeclaration>> statement;
     if (Peek().type == TokenType::Identifier && PeekNext().type == TokenType::Colon)
@@ -246,19 +239,19 @@ std::shared_ptr<Statement> Parser::ParseGlobalStatement()
         ));
     }
 
-    return std::visit(
-        [this](auto&& arg) -> std::shared_ptr<Statement>
+    std::visit(
+        [this, &module](auto&& arg) -> void
         {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, std::shared_ptr<Declaration>>)
             {
                 arg->identifier = current_namespace_ + arg->identifier;
-                return arg;
+                module.global_declarations.push_back(arg);
             }
             else if constexpr (std::is_same_v<T, std::shared_ptr<TypeDeclaration>>)
             {
                 arg->identifier = current_namespace_ + arg->identifier;
-                return arg;
+                module.global_type_declarations.push_back(arg);
             }
         },
         statement

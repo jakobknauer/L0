@@ -37,9 +37,13 @@ AstPrinter::AstPrinter(std::ostream& out)
 
 void AstPrinter::Print(Module& module)
 {
-    for (const auto& statement : module.statements->statements)
+    for (const auto& declaration : module.global_declarations)
     {
-        Print(*statement);
+        Print(*declaration);
+    }
+    for (const auto& type_declaration : module.global_type_declarations)
+    {
+        Print(*type_declaration);
     }
 };
 

@@ -23,7 +23,7 @@ class GlobalScopeBuilder
     void DeclareVariable(std::shared_ptr<Declaration> declaration);
 
     Module& module_;
-    detail::TypeResolver type_resolver_{module_};
+    detail::TypeResolver type_resolver_;
 };
 
 }  // namespace l0

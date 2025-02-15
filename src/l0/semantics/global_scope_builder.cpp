@@ -1,8 +1,8 @@
 #include "l0/semantics/global_scope_builder.h"
 
 #include <format>
-#include <ranges>
 #include <print>
+#include <ranges>
 
 #include "l0/ast/statement.h"
 #include "l0/ast/type_expression.h"
@@ -13,7 +13,8 @@ namespace l0
 {
 
 GlobalScopeBuilder::GlobalScopeBuilder(Module& module)
-    : module_{module}
+    : module_{module},
+      type_resolver_{module}
 {
 }
 
