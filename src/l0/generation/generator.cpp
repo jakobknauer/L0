@@ -12,10 +12,7 @@
 
 #include "l0/generation/generator_error.h"
 
-namespace l0
-{
-
-namespace
+namespace l0::detail
 {
 
 std::string GetLambdaName()
@@ -26,8 +23,6 @@ std::string GetLambdaName()
 
 constexpr std::string kAllocationBlockName{"allocas"};
 constexpr std::string kEntryBlockName{"entry"};
-
-}  // namespace
 
 Generator::Generator(llvm::LLVMContext& context, Module& module)
     : ast_module_{module},
@@ -43,7 +38,7 @@ Generator::Generator(llvm::LLVMContext& context, Module& module)
     bool_type_ = llvm::IntegerType::getInt1Ty(context_);
 }
 
-llvm::Module* Generator::Generate()
+void Generator::Run()
 {
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -64,7 +59,7 @@ llvm::Module* Generator::Generate()
     llvm::GlobalDCEPass global_dce_pass{};
     global_dce_pass.run(*llvm_module_, mam);
 
-    return llvm_module_;
+    ast_module_.intermediate_representation = llvm_module_;
 }
 
 void Generator::DeclareTypes()
@@ -1159,4 +1154,4 @@ llvm::AllocaInst* GenerateAlloca(llvm::IRBuilder<>& builder, llvm::Type* type, s
     return alloca;
 }
 
-}  // namespace l0
+}  // namespace l0::detail

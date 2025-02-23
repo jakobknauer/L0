@@ -4,7 +4,7 @@
 #include <print>
 
 #include "l0/common/constants.h"
-#include "l0/generation/generator.h"
+#include "l0/generation/generation.h"
 #include "l0/generation/generator_error.h"
 #include "l0/lexing/lexer.h"
 #include "l0/lexing/token.h"
@@ -255,7 +255,7 @@ void CompilerDriver::GenerateIRForModule(Module& module)
 {
     try
     {
-        module.intermediate_representation = Generator{context_, module}.Generate();
+        l0::GenerateIR(module, context_);
     }
     catch (const GeneratorError& ge)
     {

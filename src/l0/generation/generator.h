@@ -13,7 +13,7 @@
 #include "l0/ast/statement.h"
 #include "l0/generation/type_converter.h"
 
-namespace l0
+namespace l0::detail
 {
 
 class Generator : private IConstExpressionVisitor, IConstStatementVisitor
@@ -21,7 +21,7 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
    public:
     Generator(llvm::LLVMContext& context, Module& module);
 
-    llvm::Module* Generate();
+    void Run();
 
    private:
     Module& ast_module_;
@@ -123,6 +123,6 @@ class Generator : private IConstExpressionVisitor, IConstStatementVisitor
 
 llvm::AllocaInst* GenerateAlloca(llvm::IRBuilder<>& builder, llvm::Type* type, std::string name);
 
-}  // namespace l0
+}  // namespace l0::detail
 
 #endif
