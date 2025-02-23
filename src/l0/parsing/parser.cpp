@@ -10,14 +10,34 @@
 namespace l0
 {
 
+std::unique_ptr<Module> Parse(const std::vector<Token>& tokens)
+{
+    return detail::Parser{tokens}.Parse();
+}
+
+ParserError::ParserError(std::string message)
+    : message_{message}
+{
+}
+
+std::string ParserError::GetMessage() const
+{
+    return message_;
+}
+
+namespace detail
+{
+
 Parser::Parser(const std::vector<Token>& tokens)
     : tokens_{tokens}
 {
 }
 
-std::shared_ptr<Module> Parser::Parse()
+std::unique_ptr<Module> Parser::Parse()
 {
-    return ParseModule();
+    auto module = std::make_unique<Module>();
+    ParseNamespaceStatementBlock(TokenType::EndOfFile, *module);
+    return module;
 }
 
 Token Parser::Peek()
@@ -166,13 +186,6 @@ Token Parser::ConsumeAll(TokenType type)
         ;
     }
     return Peek();
-}
-
-std::shared_ptr<Module> Parser::ParseModule()
-{
-    auto module = std::make_shared<Module>();
-    ParseNamespaceStatementBlock(TokenType::EndOfFile, *module);
-    return module;
 }
 
 void Parser::ParseNamespaceStatementBlock(TokenType delimiter, Module& module)
@@ -1262,14 +1275,6 @@ Identifier Parser::ParseIdentifier()
     return Identifier{std::move(parts)};
 }
 
-ParserError::ParserError(std::string message)
-    : message_{message}
-{
-}
-
-std::string ParserError::GetMessage() const
-{
-    return message_;
-}
+}  // namespace detail
 
 }  // namespace l0

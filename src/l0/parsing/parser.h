@@ -14,18 +14,26 @@
 namespace l0
 {
 
-class IParser
+std::unique_ptr<Module> Parse(const std::vector<Token>& tokens);
+
+class ParserError
 {
    public:
-    virtual ~IParser() = default;
-    virtual std::shared_ptr<Module> Parse() = 0;
+    ParserError(std::string message);
+    std::string GetMessage() const;
+
+   private:
+    const std::string message_;
 };
 
-class Parser : public IParser
+namespace detail
+{
+
+class Parser
 {
    public:
     Parser(const std::vector<Token>& tokens);
-    virtual std::shared_ptr<Module> Parse() override;
+    std::unique_ptr<Module> Parse();
 
    private:
     const std::vector<Token>& tokens_;
@@ -45,11 +53,10 @@ class Parser : public IParser
     Token Expect(std::initializer_list<TokenType> types);
     Token ExpectKeyword(std::string_view keyword);
 
-    std::shared_ptr<Module> ParseModule();
-
     void ParseNamespaceStatementBlock(TokenType delimiter, Module& module);
-    std::shared_ptr<StatementBlock> ParseStatementBlock(TokenType delimiter);
     void ParseGlobalStatement(Module& module);
+
+    std::shared_ptr<StatementBlock> ParseStatementBlock(TokenType delimiter);
     std::shared_ptr<Statement> ParseStatement();
     std::shared_ptr<Statement> ParseDeclaration();
     std::variant<std::shared_ptr<Declaration>, std::shared_ptr<TypeDeclaration>> ParseGlobalDeclaration();
@@ -102,15 +109,7 @@ class Parser : public IParser
     Identifier ParseIdentifier();
 };
 
-class ParserError
-{
-   public:
-    ParserError(std::string message);
-    std::string GetMessage() const;
-
-   private:
-    const std::string message_;
-};
+}  // namespace detail
 
 }  // namespace l0
 

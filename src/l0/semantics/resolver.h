@@ -10,7 +10,7 @@
 #include "l0/ast/scope.h"
 #include "l0/ast/statement.h"
 
-namespace l0
+namespace l0::detail
 {
 
 class Resolver : private IConstExpressionVisitor, private IConstStatementVisitor, private IConstTypeExpressionVisitor
@@ -18,7 +18,7 @@ class Resolver : private IConstExpressionVisitor, private IConstStatementVisitor
    public:
     Resolver(const Module& module);
 
-    void Check();
+    void Run();
 
    private:
     const Module& module_;
@@ -56,6 +56,6 @@ class Resolver : private IConstExpressionVisitor, private IConstStatementVisitor
     std::pair<std::shared_ptr<Scope>, Identifier> Resolve(const Identifier& identifier, const Identifier& namespace_);
 };
 
-}  // namespace l0
+}  // namespace l0::detail
 
 #endif

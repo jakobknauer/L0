@@ -6,7 +6,7 @@
 #include "l0/ast/module.h"
 #include "l0/semantics/type_resolver.h"
 
-namespace l0
+namespace l0::detail
 {
 
 class GlobalScopeBuilder
@@ -26,6 +26,6 @@ class GlobalScopeBuilder
     detail::TypeResolver type_resolver_;
 };
 
-}  // namespace l0
+}  // namespace l0::detail
 
 #endif

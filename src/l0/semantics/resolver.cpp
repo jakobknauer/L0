@@ -4,7 +4,7 @@
 
 #include "l0/semantics/semantic_error.h"
 
-namespace l0
+namespace l0::detail
 {
 
 Resolver::Resolver(const Module& module)
@@ -12,8 +12,9 @@ Resolver::Resolver(const Module& module)
 {
 }
 
-void Resolver::Check()
+void Resolver::Run()
 {
+    // TODO check if building this list of scopes is required, as this is also done in Visit(const Callable&)
     scopes_.clear();
     scopes_.push_back(module_.environment);
     scopes_.push_back(module_.externals);
@@ -155,24 +156,23 @@ void Resolver::Visit(const Function& function)
         }
     }
 
-    auto scopes_backup = scopes_;
-
-    scopes_.clear();
-    scopes_.push_back(module_.environment);
-    scopes_.push_back(module_.externals);
-    scopes_.push_back(module_.globals);
-    scopes_.push_back(function.locals);
-
     for (const auto& param_decl : *function.parameters)
     {
         function.locals->DeclareVariable(param_decl->name);
     }
 
+    auto scopes_backup = std::move(scopes_);
+    scopes_.clear();
+    scopes_.push_back(module_.environment);
+    scopes_.push_back(module_.externals);
+    scopes_.push_back(module_.globals);
+    scopes_.push_back(function.locals);
     namespaces_.push(function.namespace_);
-    function.body->Accept(*this);
-    namespaces_.pop();
 
-    scopes_ = scopes_backup;
+    function.body->Accept(*this);
+
+    namespaces_.pop();
+    scopes_ = std::move(scopes_backup);
 }
 
 void Resolver::Visit(const Initializer& initializer)
@@ -239,4 +239,4 @@ std::pair<std::shared_ptr<Scope>, Identifier> Resolver::Resolve(
     throw SemanticError(std::format("Cannot resolve variable '{}'.", identifier.ToString()));
 }
 
-}  // namespace l0
+}  // namespace l0::detail

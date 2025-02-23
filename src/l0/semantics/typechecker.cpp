@@ -5,7 +5,7 @@
 #include "l0/common/constants.h"
 #include "l0/semantics/semantic_error.h"
 
-namespace l0
+namespace l0::detail
 {
 
 Typechecker::Typechecker(Module& module)
@@ -13,7 +13,7 @@ Typechecker::Typechecker(Module& module)
 {
 }
 
-void Typechecker::Check()
+void Typechecker::Run()
 {
     for (auto global_declaration : module_.global_declarations)
     {
@@ -564,4 +564,4 @@ void Typechecker::CheckStruct(const StructType& struct_type)
     }
 }
 
-}  // namespace l0
+}  // namespace l0::detail

@@ -12,7 +12,7 @@
 #include "l0/semantics/type_resolver.h"
 #include "l0/types/types.h"
 
-namespace l0
+namespace l0::detail
 {
 
 class Typechecker : private IConstExpressionVisitor, private IConstStatementVisitor
@@ -20,7 +20,7 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
    public:
     Typechecker(Module& module);
 
-    void Check();
+    void Run();
 
    private:
     Module& module_;
@@ -64,6 +64,6 @@ class Typechecker : private IConstExpressionVisitor, private IConstStatementVisi
     void CheckStruct(const StructType& struct_type);
 };
 
-}  // namespace l0
+}  // namespace l0::detail
 
 #endif

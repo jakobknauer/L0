@@ -1,6 +1,8 @@
 #include "l0/semantics/top_level_analyzer.h"
 
-namespace l0
+#include "l0/semantics/semantic_error.h"
+
+namespace l0::detail
 {
 
 TopLevelAnalyzer::TopLevelAnalyzer(Module& module)
@@ -36,6 +38,10 @@ void TopLevelAnalyzer::DeclareType(std::shared_ptr<TypeDeclaration> type_declara
         type_declaration->type = type;
         module_.globals->DefineType(type_declaration->identifier, type);
     }
+    else
+    {
+        throw SemanticError("Encountered an unsupported type declaration.");
+    }
 }
 
-}  // namespace l0
+}  // namespace l0::detail

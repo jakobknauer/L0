@@ -14,6 +14,8 @@ add_library(
   return_statement_pass.h
   semantic_error.cpp
   semantic_error.h
+  semantics.cpp
+  semantics.h
   top_level_analyzer.cpp
   top_level_analyzer.h
   type_resolver.cpp

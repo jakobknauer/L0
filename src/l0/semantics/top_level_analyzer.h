@@ -1,11 +1,11 @@
-#ifndef L0_SEMANTICS_TOP_LEVEL_ANALYZER
-#define L0_SEMANTICS_TOP_LEVEL_ANALYZER
+#ifndef L0_SEMANTICS_TOP_LEVEL_ANALYZER_H
+#define L0_SEMANTICS_TOP_LEVEL_ANALYZER_H
 
 #include <memory>
 
 #include "l0/ast/module.h"
 
-namespace l0
+namespace l0::detail
 {
 
 class TopLevelAnalyzer
@@ -21,6 +21,6 @@ class TopLevelAnalyzer
     Module& module_;
 };
 
-}  // namespace l0
+}  // namespace l0::detail
 
 #endif

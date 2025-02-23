@@ -9,7 +9,7 @@
 #include "l0/semantics/semantic_error.h"
 #include "l0/types/types.h"
 
-namespace l0
+namespace l0::detail
 {
 
 GlobalScopeBuilder::GlobalScopeBuilder(Module& module)
@@ -145,4 +145,4 @@ void GlobalScopeBuilder::DeclareVariable(std::shared_ptr<Declaration> declaratio
     module_.callables.push_back(function);
 }
 
-}  // namespace l0
+}  // namespace l0::detail
