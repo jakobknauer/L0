@@ -6,10 +6,11 @@
 namespace l0
 {
 
-void RunTopLevelAnalysis(Module& module);
-void BuildGlobalScope(Module& module);
+void DeclareGlobalTypes(Module& module);
+void FillGlobalTypes(Module& module);
+void DeclareGlobalVariables(Module& module);
 void BuildAndResolveLocalScopes(Module& module);
-void RunTypecheck(Module& module);
+void CheckTypes(Module& module);
 void CheckReturnStatements(Module& module);
 void CheckReferences(Module& module);
 

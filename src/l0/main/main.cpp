@@ -16,7 +16,8 @@ int main(int argc, char* argv[])
     driver.DeclareEnvironmentSymbols();
     driver.DeclareGlobalTypes();
     driver.DeclareExternalTypes();
-    driver.DefineGlobalSymbols();
+    driver.FillGlobalTypes();
+    driver.DeclareGlobalVariables();
     driver.DeclareExternalVariables();
     driver.RunSemanticAnalysis();
     driver.GenerateIR();

@@ -2,8 +2,10 @@ add_library(
   semantics
   conversion_checker.cpp
   conversion_checker.h
-  global_scope_builder.cpp
-  global_scope_builder.h
+  declare_variables.cpp
+  declare_variables.h
+  fill_types.cpp
+  fill_types.h
   operator_overload_resolver.cpp
   operator_overload_resolver.h
   reference_pass.cpp

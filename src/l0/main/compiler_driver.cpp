@@ -42,7 +42,7 @@ void CompilerDriver::DeclareGlobalTypes()
         std::println("\tFor module '{}'", module->name);
         try
         {
-            RunTopLevelAnalysis(*module);
+            l0::DeclareGlobalTypes(*module);
         }
         catch (const SemanticError& err)
         {
@@ -68,17 +68,38 @@ void CompilerDriver::DeclareExternalTypes()
     }
 }
 
-void CompilerDriver::DefineGlobalSymbols()
+void CompilerDriver::FillGlobalTypes()
 {
-    std::println("Defining global symbols");
+    std::println("Filling global types");
     for (const auto& module : modules_)
     {
         std::println("\tFor module '{}'", module->name);
-
-        std::println("\t\tRun GlobalScopeBuilder");
         try
         {
-            BuildGlobalScope(*module);
+            l0::FillGlobalTypes(*module);
+        }
+        catch (const SemanticError& err)
+        {
+            std::println("Semantic error occured: {}", err.GetMessage());
+            exit(-1);
+        }
+        catch (const ScopeError& err)
+        {
+            std::println("Scope error occured: {}", err.GetMessage());
+            exit(-1);
+        }
+    }
+}
+
+void CompilerDriver::DeclareGlobalVariables()
+{
+    std::println("Declaring global variables");
+    for (const auto& module : modules_)
+    {
+        std::println("\tFor module '{}'", module->name);
+        try
+        {
+            l0::DeclareGlobalVariables(*module);
         }
         catch (const SemanticError& err)
         {
@@ -220,7 +241,7 @@ void CompilerDriver::SemanticCheckModule(Module& module)
     std::println("\t\tChecking types");
     try
     {
-        RunTypecheck(module);
+        CheckTypes(module);
     }
     catch (const SemanticError& err)
     {

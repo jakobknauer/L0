@@ -20,7 +20,8 @@ class CompilerDriver
     void DeclareEnvironmentSymbols();
     void DeclareGlobalTypes();
     void DeclareExternalTypes();
-    void DefineGlobalSymbols();
+    void FillGlobalTypes();
+    void DeclareGlobalVariables();
     void DeclareExternalVariables();
     void RunSemanticAnalysis();
     void GenerateIR();
