@@ -1,6 +1,8 @@
 #ifndef L0_AST_MODULE_H
 #define L0_AST_MODULE_H
 
+#include <llvm/IR/Module.h>
+
 #include <filesystem>
 #include <memory>
 
@@ -23,6 +25,8 @@ struct Module
     std::vector<std::shared_ptr<Function>> callables{};
     std::vector<std::shared_ptr<Declaration>> global_declarations{};
     std::vector<std::shared_ptr<TypeDeclaration>> global_type_declarations{};
+
+    llvm::Module* intermediate_representation{nullptr};
 };
 
 }  // namespace l0

@@ -2,7 +2,7 @@
 
 #include "l0/semantics/semantic_error.h"
 
-namespace l0
+namespace l0::detail
 {
 
 ReferencePass::ReferencePass(Module& module)
@@ -182,4 +182,4 @@ bool ReferencePass::IsLValue(std::shared_ptr<Expression> value) const
     return false;
 }
 
-}  // namespace l0
+}  // namespace l0::detail

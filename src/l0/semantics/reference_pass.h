@@ -1,12 +1,12 @@
-#ifndef L0_SEMANTICS_REFERENCE_PASS
-#define L0_SEMANTICS_REFERENCE_PASS
+#ifndef L0_SEMANTICS_REFERENCE_PASS_H
+#define L0_SEMANTICS_REFERENCE_PASS_H
 
 #include "l0/ast/expression.h"
 #include "l0/ast/module.h"
 #include "l0/ast/statement.h"
 #include "l0/ast/type_expression.h"
 
-namespace l0
+namespace l0::detail
 {
 
 /// @brief Handles aspects reference semantics that go beyond the type system.
@@ -58,6 +58,6 @@ class ReferencePass : private IStatementVisitor, private IExpressionVisitor, pri
     Module& module_;
 };
 
-}  // namespace l0
+}  // namespace l0::detail
 
 #endif

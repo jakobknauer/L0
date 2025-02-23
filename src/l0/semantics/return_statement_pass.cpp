@@ -2,7 +2,7 @@
 
 #include "l0/semantics/semantic_error.h"
 
-namespace l0
+namespace l0::detail
 {
 
 ReturnStatementPass::ReturnStatementPass(Module& module)
@@ -208,4 +208,4 @@ void ReturnStatementPass::Visit(StructExpression& struct_expression)
 
 void ReturnStatementPass::Visit(EnumExpression&) {}
 
-}  // namespace l0
+}  // namespace l0::detail

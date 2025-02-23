@@ -11,7 +11,7 @@
 #include "l0/semantics/type_resolver.h"
 #include "l0/types/types.h"
 
-namespace l0
+namespace l0::detail
 {
 
 class ReturnStatementPass : private IStatementVisitor, private IExpressionVisitor, private ITypeExpressionVisitor
@@ -56,6 +56,6 @@ class ReturnStatementPass : private IStatementVisitor, private IExpressionVisito
     void Visit(EnumExpression& enum_expression) override;
 };
 
-}  // namespace l0
+}  // namespace l0::detail
 
 #endif

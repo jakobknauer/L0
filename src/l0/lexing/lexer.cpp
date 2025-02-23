@@ -9,6 +9,24 @@
 namespace l0
 {
 
+std::vector<Token> Tokenize(std::istream& input)
+{
+    return detail::Lexer{input}.GetTokens();
+}
+
+LexerError::LexerError(std::string message)
+    : message_{message}
+{
+}
+
+std::string LexerError::GetMessage() const
+{
+    return message_;
+}
+
+namespace detail
+{
+
 static const std::unordered_map<char, TokenType> SINGLE_CHARACTER_TOKENS{
     {'(', TokenType::OpeningParen},
     {')', TokenType::ClosingParen},
@@ -304,19 +322,6 @@ Token Lexer::ReadStringLiteral()
         .data = string,
     };
 }
-
-LexerError::LexerError(std::string message)
-    : message_{message}
-{
-}
-
-std::string LexerError::GetMessage() const
-{
-    return message_;
-}
-
-namespace detail
-{
 
 bool IsValidFirstIdentifierCharacter(char c)
 {

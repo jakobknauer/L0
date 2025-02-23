@@ -1,4 +1,12 @@
-add_library(generation generator.h generator.cpp type_converter.h
-                       type_converter.cpp generator_error.h generator_error.cpp)
+add_library(
+  generation
+  generation.cpp
+  generation.h
+  generator.cpp
+  generator.h
+  generator_error.cpp
+  generator_error.h
+  type_converter.cpp
+  type_converter.h)
 
 target_link_libraries(generation common)

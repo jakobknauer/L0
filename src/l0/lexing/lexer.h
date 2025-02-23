@@ -10,14 +10,22 @@
 namespace l0
 {
 
-class ILexer
+std::vector<Token> Tokenize(std::istream& input);
+
+class LexerError
 {
    public:
-    virtual ~ILexer() = default;
-    virtual std::vector<Token> GetTokens() = 0;
+    LexerError(std::string message);
+    std::string GetMessage() const;
+
+   private:
+    const std::string message_;
 };
 
-class Lexer : public ILexer
+namespace detail
+{
+
+class Lexer
 {
    public:
     Lexer(std::istream& input);
@@ -41,19 +49,6 @@ class Lexer : public ILexer
 
     std::unordered_set<char> operator_characters_;
 };
-
-class LexerError
-{
-   public:
-    LexerError(std::string message);
-    std::string GetMessage() const;
-
-   private:
-    const std::string message_;
-};
-
-namespace detail
-{
 
 bool IsValidFirstIdentifierCharacter(char c);
 
