@@ -1,11 +1,11 @@
 #include "l0/semantics/semantics.h"
 
+#include "l0/semantics/declare_global_types.h"
 #include "l0/semantics/declare_variables.h"
 #include "l0/semantics/fill_types.h"
 #include "l0/semantics/reference_pass.h"
 #include "l0/semantics/resolver.h"
 #include "l0/semantics/return_statement_pass.h"
-#include "l0/semantics/top_level_analyzer.h"
 #include "l0/semantics/typechecker.h"
 
 namespace l0
@@ -13,7 +13,7 @@ namespace l0
 
 void DeclareGlobalTypes(Module& module)
 {
-    detail::TopLevelAnalyzer{module}.Run();
+    detail::DeclareGlobalTypes(module);
 }
 
 void FillGlobalTypes(Module& module)

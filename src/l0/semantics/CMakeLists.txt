@@ -2,6 +2,8 @@ add_library(
   semantics
   conversion_checker.cpp
   conversion_checker.h
+  declare_global_types.cpp
+  declare_global_types.h
   declare_variables.cpp
   declare_variables.h
   fill_types.cpp
@@ -18,8 +20,6 @@ add_library(
   semantic_error.h
   semantics.cpp
   semantics.h
-  top_level_analyzer.cpp
-  top_level_analyzer.h
   type_resolver.cpp
   type_resolver.h
   typechecker.cpp

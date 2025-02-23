@@ -20,6 +20,7 @@ void CompilerDriver::LoadModules(const std::vector<std::filesystem::path>& paths
     std::println("Loading {} module(s)", paths.size());
     for (const auto& path : paths)
     {
+        std::println("\tLoading source file '{}'", path.string());
         LoadModule(path);
     }
 }
@@ -119,6 +120,7 @@ void CompilerDriver::DeclareExternalVariables()
     std::println("Declaring external variables");
     for (const auto& module : modules_)
     {
+        std::println("\tFor module '{}'", module->name);
         for (const auto& other_module : modules_)
         {
             if (other_module->name != module->name)
@@ -165,7 +167,6 @@ void CompilerDriver::StoreIR()
 
 void CompilerDriver::LoadModule(const std::filesystem::path& input_path)
 {
-    std::println("\tLoading source file '{}'", input_path.string());
     std::ifstream input_file{input_path};
 
     std::println("\t\tLexical analysis");
@@ -200,8 +201,6 @@ void CompilerDriver::LoadModule(const std::filesystem::path& input_path)
 
 void CompilerDriver::FillEnvironmentScope(Module& module)
 {
-    using namespace l0;
-
     module.environment->DeclareType(Typename::Unit);
     module.environment->DeclareType(Typename::Boolean);
     module.environment->DeclareType(Typename::Integer);
