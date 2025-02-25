@@ -171,7 +171,7 @@ bool ReferencePass::IsLValue(std::shared_ptr<Expression> value) const
         return true;
     }
     else if (auto unary_op = dynamic_pointer_cast<UnaryOp>(value);
-             unary_op && (unary_op->op == UnaryOp::Operator::Caret))
+             unary_op && (unary_op->overload == UnaryOp::Overload::Dereferenciation))
     {
         return true;
     }
